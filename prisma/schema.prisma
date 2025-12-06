@@ -1,57 +1,77 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
+// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
+
 generator client {
   provider = "prisma-client-js"
 }
 
 datasource db {
   provider = "postgresql"
+  url      = env("DATABASE_URL")
 }
 
 model User {
-  id            String   @id @default(cuid())
-  email         String   @unique
+  id            String           @id @default(uuid())
+  email         String           @unique
   name          String
-  username      String   @unique
+  username      String           @unique
   password      String
   confirme_code String?
   avatar        String?
-  createdAt     DateTime @default(now())
-  updatedAt     DateTime @updatedAt
+  is_active     Boolean          @default(false)
+  createdAt     DateTime         @default(now())
+  updatedAt     DateTime         @updatedAt
+  workspaces    User_workspace[]
+  projects      project[]
+  notifications notification[]
 }
 
 model User_workspace {
-  id          String   @id @default(cuid())
+  id          String   @id @default(uuid())
   userId      String
   workspaceId String
   role        String
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 
-  @@unique([userId, workspaceId])
+  User      User      @relation(fields: [userId], references: [id])
+  Workspace Workspace @relation(fields: [workspaceId], references: [id])
 }
 
 model Workspace {
-  id           String   @id @default(cuid())
+  id           String           @id @default(uuid())
   name         String
-  max_projects Int      @default(10)
-  createdAt    DateTime @default(now())
-  updatedAt    DateTime @updatedAt
+  max_projects Int              @default(10)
+  createdAt    DateTime         @default(now())
+  updatedAt    DateTime         @updatedAt
+  users        User_workspace[]
+  projects     project[]
 }
 
 model project {
-  id           String   @id @default(cuid())
+  id           String   @id @default(uuid())
+  domain       String   @unique
   name         String
   description  String?
   workspaceId  String
+  userId       String
   environments Json     @default("[]")
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
+
+  Workspace Workspace @relation(fields: [workspaceId], references: [id])
+  User      User      @relation(fields: [userId], references: [id])
 }
 
 model notification {
-  id        String   @id @default(cuid())
+  id        String   @id @default(uuid())
   userId    String
   message   String
   read      Boolean  @default(false)
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+  User      User     @relation(fields: [userId], references: [id])
 }

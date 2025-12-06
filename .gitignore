@@ -1,3 +1,2 @@
 .env
-nodemodules/
-/src/generated/prisma
+node_modules/

@@ -1,0 +1,167 @@
+import nodemailer from "nodemailer";
+
+export async function sendEmail(
+  to: string,
+  subject: string,
+  title: string,
+  code: string,
+  body: string,
+) {
+  const transporter = nodemailer.createTransport({
+    service: "gmail",
+    auth: {
+      user: process.env.MAIL_USER,
+      pass: process.env.MAIL_PASS,
+    },
+  });
+
+  const htmlBody = `
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Confirmação de E-mail - Honor</title>
+  <style>
+    body {
+      background-color: #f4f4f4;
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      color: #333333;
+    }
+    table {
+      border-spacing: 0;
+    }
+    .email-wrapper {
+      width: 100%;
+      background-color: #f4f4f4;
+      padding: 20px 0;
+    }
+    .email-container {
+      max-width: 600px;
+      margin: 0 auto;
+      background-color: #ffffff;
+      border-radius: 12px;
+      overflow: hidden;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+    }
+    .email-header {
+      background: linear-gradient(135deg, #de6220 0%, #854216 100%);
+      color: white;
+      padding: 30px 20px;
+      text-align: center;
+    }
+    .email-header h1 {
+      margin: 0;
+      font-size: 24px;
+      font-weight: 600;
+    }
+    .email-content {
+      padding: 30px 25px;
+      text-align: center;
+    }
+    .email-content h2 {
+      font-size: 22px;
+      color: #2c3e50;
+      margin-top: 0;
+      margin-bottom: 10px;
+    }
+    .email-content h4 {
+      font-size: 16px;
+      color: #7f8c8d;
+      margin: 10px 0 20px;
+      font-weight: normal;
+    }
+    .code-box {
+      display: inline-block;
+      background-color: #f0f2ff;
+      color: #de6220;
+      font-size: 28px;
+      font-weight: bold;
+      letter-spacing: 4px;
+      padding: 14px 20px;
+      border-radius: 10px;
+      margin: 20px 0;
+      border: 2px dashed #de6220;
+      font-family: 'Courier New', monospace;
+    }
+    .email-text {
+      font-size: 14px;
+      line-height: 1.6;
+      color: #555555;
+      margin: 15px 0;
+    }
+    .email-footer {
+      background-color: #f8f9fa;
+      padding: 20px;
+      text-align: center;
+      font-size: 13px;
+      color: #95a5a6;
+    }
+    .email-footer a {
+      color: #182b1c;
+      text-decoration: none;
+    }
+    @media only screen and (max-width: 600px) {
+      .email-container {
+        margin: 10px;
+        border-radius: 8px;
+      }
+      .code-box {
+        font-size: 24px;
+        letter-spacing: 3px;
+        padding: 12px 16px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <table width="100%" cellpadding="0" cellspacing="0" role="presentation" class="email-wrapper">
+    <tr>
+      <td align="center">
+        <div class="email-container">
+          <!-- Cabeçalho -->
+          <div class="email-header">
+            <h1>GoHost</h1>
+          </div>
+
+          <!-- Conteúdo -->
+          <div class="email-content">
+            <h2>${title}</h2>
+            <h4>${body} 👇</h4>
+
+            <div class="code-box">${code}</div>
+
+            <p class="email-text"><strong>Por favor, não compartilhe este código com ninguém.</strong></p>
+            <p class="email-text">Obrigado por usar o GoHost!</p>
+          </div>
+
+          <!-- Rodapé -->
+          <div class="email-footer">
+            <p>Atenciosamente,<br><strong>Equipe GoHost</strong></p>
+            <p>Precisa de ajuda? <a href="mailto:${process.env.MAIL_USER}">${process.env.MAIL_USER}</a></p>
+            <p>&copy; 2025 GoHost. Todos os direitos reservados.</p>
+          </div>
+        </div>
+      </td>
+    </tr>
+  </table>
+</body>
+</html>
+  `;
+
+  const mailOptions = {
+    from: `"Honor - Sistema de Convites" <${process.env.MAIL_USER}>`,
+    to,
+    subject,
+    html: htmlBody,
+  };
+
+  try {
+    const info = await transporter.sendMail(mailOptions);
+    console.log("E-mail enviado:", info.messageId);
+    return info;
+  } catch (error) {
+    console.error("Erro ao enviar o e-mail:", error);
+    throw new Error("Erro ao enviar o e-mail");
+  }
+}
