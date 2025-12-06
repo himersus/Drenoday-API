@@ -38,8 +38,11 @@ export const login = async (req: Request, res: Response) => {
         const token = jwt.sign(payload, process.env.JWT_SECRET as string);
 
         res.status(200).json({ token });
-    } catch (error) {
-        return res.status(500).json({ message: "O login falhou" });
+    } catch (error : any) {
+        return res.status(500).json({
+             message: "O login falhou",
+             error: error.message
+            });
     }
 };
 
