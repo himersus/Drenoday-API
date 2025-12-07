@@ -175,10 +175,13 @@ export const loginGoogle = async (req: Request, res: Response) => {
         return res.status(401).json({ message: "Usuário não autenticado" });
     }
 
+    console.log("REQ.USER:", req.user);
+
+
     // Dados vindos do Google
-    const email = user.userAuth.emails[0].value;
-    const provider_id = user.provider_id || user.id;
-    const name = user.userAuth.displayName || email.split('@')[0];
+    const email = user.emails[0].value || user.email;
+    const provider_id =  user.id;
+    const name = user.displayName || email.split('@')[0];
 
     let userInDb = await prisma.user.findFirst({
         where: { email },
