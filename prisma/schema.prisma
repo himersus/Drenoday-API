@@ -28,15 +28,15 @@ model User {
 }
 
 model User_workspace {
-  id          String   @id @default(uuid())
+  id          String             @id @default(uuid())
   userId      String
   workspaceId String
-  role        String?
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
-
-  User      User      @relation(fields: [userId], references: [id])
-  Workspace Workspace @relation(fields: [workspaceId], references: [id])
+  role        roleWorkspace?     @default(member)
+  status      statusSolicitation @default(pending)
+  createdAt   DateTime           @default(now())
+  updatedAt   DateTime           @updatedAt
+  User        User               @relation(fields: [userId], references: [id])
+  Workspace   Workspace          @relation(fields: [workspaceId], references: [id])
 }
 
 model Workspace {
@@ -101,6 +101,12 @@ enum PaymentStatus {
   pending
   completed
   failed
+}
+
+enum statusSolicitation {
+  pending
+  approved
+  rejected
 }
 
 enum roleWorkspace {

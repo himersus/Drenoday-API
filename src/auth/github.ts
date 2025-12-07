@@ -8,41 +8,39 @@ passport.use(new GitHubStrategy({
     clientID: process.env.GITHUB_CLIENT_ID!,
     clientSecret: process.env.GITHUB_CLIENT_SECRET!,
     callbackURL: process.env.GITHUB_CALLBACK_URL!,
+    scope: ["read:user", "user:email"],
+    passReqToCallback: true,
+    userProfileURL: "https://api.github.com/user"
 },
-    async (accessToken : string, refreshToken: string, profile: any, done: any) => {
-        try {
-            const githubId = profile.id;
-            const username = profile.username;
-            const email = profile.emails?.[0]?.value || null;
+async (req : any, accessToken: string, refreshToken: string, profile: any, done: any) => {
 
-            // procurar usuário existente
-            let user = await prisma.user.findFirst({
-                where: { provider_id: githubId },
-            });
-
-            // se não existe → cria
-            if (!user) {
-                user = await prisma.user.create({
-                    data: {
-                        provider: "github",
-                        name: profile.displayName || username,
-                        provider_id: githubId,
-                        username: username!,
-                        email,
-                        password: Math.random().toString(36).slice(-8), // senha aleatória
-                        is_active: true,
-                    }
-                });
+    try {
+        // 1. Buscar todos emails manualmente
+        const res = await fetch("https://api.github.com/user/emails", {
+            headers: {
+                "User-Agent": "drenoday",
+                "Authorization": `token ${accessToken}`,
+                "Accept": "application/vnd.github+json",
             }
+        });
 
-            profile.token = accessToken;
-            profile.userAuth = user;
-            return done(null, profile);
-        } catch (error) {
-            return done(error, null);
+        const emails = await res.json();
+
+        const primary = emails.find((e: any) => e.primary && e.verified);
+
+        if (!primary) {
+            return done(new Error("Nenhum email verificado no GitHub."));
         }
+
+        // 2. Forçar email dentro do profile
+        profile.emails = [{ value: primary.email }];
+
+        return done(null, profile);
+
+    } catch (error) {
+        return done(error);
     }
-));
+}));
 
 passport.serializeUser((user: any, done: any) => done(null, user));
 passport.deserializeUser((user: any, done: any) => done(null, user));

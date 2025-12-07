@@ -116,25 +116,33 @@ export const verifyCode = async (req: Request, res: Response) => {
     }
 }
 
-export const logingitHub = async (req: Request, res: Response) => {
+export const logingitHub = async (req: Request | any, res: Response) => {
     const user: any = req.user;
+    const userId = req.userId;
+
+    if (!userId || !validate(userId)) {
+        return res.status(401).json({ message: "Usuário não autenticado" });
+    }
 
     if (!user) {
         return res.status(401).json({ message: "Usuário não autenticado" });
     }
 
-    // Dados vindos do GitHub
-    const username = user.userAuth.username;
-    const email = user.email || null; // GitHub às vezes não envia email
-    const provider_id = user.provider_id || user.id;
-
     const userInDb = await prisma.user.findFirst({
-        where: { OR: [{ email }, { provider_id }, { username }] },
+        where: { id: userId },
     });
 
     if (!userInDb) {
         return res.status(404).json({ message: "Usuário não encontrado" });
     }
+
+    await prisma.user.update({
+        where: { id: userInDb.id },
+        data: {
+            provider: "github",
+            provider_id: user.provider_id || user.id,
+        }
+    });
 
 
     const encrypted = CryptoJS.AES.encrypt(
@@ -158,7 +166,6 @@ export const logingitHub = async (req: Request, res: Response) => {
     const token = jwt.sign(payload, process.env.JWT_SECRET as string);
     return res.redirect(`${process.env.FRONTEND_URL}/auth/success?token=${token}`);
 };
-
 
 export const loginGoogle = async (req: Request, res: Response) => {
     const user: any = req.user;

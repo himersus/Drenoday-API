@@ -8,6 +8,7 @@ import passport from "passport";
 import { getUserRepos } from "../controller/github";
 import { createWorkspace, getWorkspace, updateWorkspace } from "../controller/Workspace";
 import { createProject, getMyProjects, getProject } from "../controller/Project";
+import { addMember, removeMember } from "../controller/member";
 dotenv.config();
 
 
@@ -39,16 +40,18 @@ router.post('/user/create', createUser);
 router.get('/user/me', verifyAuthentication, UserLoged);
 router.put('/user/:id', verifyAuthentication, updateUser);
 
-
 // {{Create Workspace ROUTE}}
 router.post('/workspace/create', verifyAuthentication, createWorkspace);
 router.get('/workspace/get/:workspaceId', verifyAuthentication, getWorkspace);
 router.put('/workspace/update/:workspaceId', verifyAuthentication, updateWorkspace);
 
-
-// Project
+// {{ Project ROUTES}}
 router.post('/project/create', verifyAuthentication, createProject);
 router.get('/project/get/:projectId', verifyAuthentication, getProject);
 router.get('/project/my/:workspaceId', verifyAuthentication, getMyProjects);
+
+// {{ Member ROUTES}}
+router.post('/workspace/member/add', verifyAuthentication, addMember);
+router.post('/workspace/member/remove', verifyAuthentication, removeMember);
 
 export default router;
