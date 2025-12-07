@@ -33,7 +33,7 @@ export const login = async (req: Request, res: Response) => {
             return res.status(401).json({ message: "Usuário ou senha inválida" });
         }
 
-        const payload = { id: user.id, is_active: user.is_active, username: user.username, email: user.email };
+        const payload = { id: user.id, is_active: user.is_active, username: user.username, email: user.email, provider: user.provider };
 
         const token = jwt.sign(payload, process.env.JWT_SECRET as string);
 
@@ -114,3 +114,32 @@ export const verifyCode = async (req: Request, res: Response) => {
         return res.status(500).json({ message: "Falha ao verificar o código." });
     }
 }
+
+export const logingitHub = async (req: Request, res: Response) => {
+    const user: any = req.user;
+
+    if (!user) {
+        return res.status(401).json({ message: "Usuário não autenticado" });
+    }
+
+    // Dados vindos do GitHub
+    const username = user.userAuth.username;
+    const email = user.email || null; // GitHub às vezes não envia email
+    const provider_id = user.provider_id || user.id;
+
+    const userInDb = await prisma.user.findFirst({
+        where: { OR: [{ email }, { provider_id }, { username }] },
+    });
+
+    const payload = {
+        id : userInDb?.id,
+        is_active : userInDb?.is_active,
+        username : userInDb?.username,
+        email : userInDb?.email,
+        provider: "github",
+        token_git: user.token
+    };
+    
+    const token = jwt.sign(payload, process.env.JWT_SECRET as string);
+    return res.redirect(`${process.env.FRONTEND_URL}/auth/success?token=${token}`);
+};
