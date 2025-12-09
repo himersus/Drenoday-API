@@ -96,7 +96,7 @@ mkdir -p ${targetPath} \
 && git clone -b ${project.branch} "${cloneUrl}" "${targetPath}" \
 && cd ${targetPath} \
 && docker build -t ${domain}_image . \
-&& docker rm -f ${domain}_container || true \
+&& docker rm -f ${domain}_container 2>/dev/null || true \
 && docker run -d \
     --name ${domain}_container \
     --network traefik-network \
