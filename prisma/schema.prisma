@@ -8,24 +8,25 @@ datasource db {
 }
 
 model User {
-  id            String           @id @default(uuid())
-  email         String           @unique
-  name          String
-  username      String           @unique
-  password      String
-  confirme_code String?
-  avatar        String?
-  roleUser      roleUser         @default(user)
-  github_token  String?
-  provider      Provider?        @default(local)
-  provider_id   String?
-  is_active     Boolean          @default(false)
-  createdAt     DateTime         @default(now())
-  updatedAt     DateTime         @updatedAt
-  workspaces    User_workspace[]
-  projects      project[]
-  notifications notification[]
-  payments      payment[]
+  id              String           @id @default(uuid())
+  email           String           @unique
+  name            String
+  username        String           @unique
+  password        String
+  confirme_code   String?
+  avatar          String?
+  roleUser        roleUser         @default(user)
+  github_token    String?
+  github_username String?
+  github_id       String?
+  provider        Provider?        @default(local)
+  is_active       Boolean          @default(false)
+  createdAt       DateTime         @default(now())
+  updatedAt       DateTime         @updatedAt
+  workspaces      User_workspace[]
+  projects        project[]
+  notifications   notification[]
+  payments        payment[]
 }
 
 model User_workspace {
@@ -54,6 +55,8 @@ model project {
   id           String    @id @default(uuid())
   domain       String    @unique
   name         String
+  branch       String    @default("main")
+  repo_url     String    @default("")
   description  String?
   workspaceId  String
   userId       String

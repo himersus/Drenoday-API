@@ -4,13 +4,23 @@ dotenv.config();
 import { PrismaClient } from '@prisma/client';
 import { validate } from "uuid";
 import { generateUniqueDomain } from "../modify/domain";
-
+import { exec } from "child_process";
+import CryptoJS from "crypto-js";
 
 const prisma = new PrismaClient();
 
 export const createProject = async (req: Request | any, res: Response) => {
-    const { name, description, environments, workspaceId, time_in_day, amount } = req.body;
+    const { name, description, branch, repo_url, environments, workspaceId, time_in_day, amount } = req.body;
     const userId = req.userId;
+
+    if (!validate(userId)) {
+        return res.status(401).json({ message: "Usuário não autenticado" });
+    }
+
+    if (!repo_url) {
+        return res.status(400).json({ message: "Branch e Repo URL devem ser strings" });
+    }
+
     try {
         const existUser = await prisma.user.findFirst({
             where: {
@@ -24,6 +34,10 @@ export const createProject = async (req: Request | any, res: Response) => {
 
         if (!existUser) {
             return res.status(404).json({ message: "Usuário não encontrado" });
+        }
+
+        if (!existUser.github_id || !existUser.github_token || !existUser.github_username) {
+            return res.status(400).json({ message: "Informações do GitHub são obrigatórias, tente sincronizar com o github" });
         }
 
         if (!name) {
@@ -47,6 +61,8 @@ export const createProject = async (req: Request | any, res: Response) => {
                 name,
                 description,
                 workspaceId,
+                branch,
+                repo_url,
                 userId: existUser.id,
                 domain: domain as string,
                 environments: environments || [],
@@ -64,6 +80,45 @@ export const createProject = async (req: Request | any, res: Response) => {
                 projectId: project.id
             }
         });
+
+        const encrypted = existUser.github_token;
+
+        const bytes = CryptoJS.AES.decrypt(encrypted, process.env.JWT_SECRET!);
+        const token = bytes.toString(CryptoJS.enc.Utf8);
+
+        // clone_url vindo da API do GitHub: "https://github.com/user/exemplo.git"
+        const cloneUrl = repo_url.replace("https://", `https://x-access-token:${token}@`);
+        const deployDir = process.env.DEPLOY_DIR;
+        const targetPath = `${deployDir}/${existUser.username}/${domain}`;
+
+const cmd = `
+mkdir -p ${targetPath} \
+&& git clone -b ${project.branch} "${cloneUrl}" "${targetPath}" \
+&& cd ${targetPath} \
+&& docker build -t ${domain}_image . \
+&& docker rm -f ${domain}_container || true \
+&& docker run -d \
+    --name ${domain}_container \
+    --network traefik-network \
+    -l "traefik.enable=true" \
+    -l "traefik.http.routers.${domain}.rule=Host(\`${domain}.enor.tech\`)" \
+    -l "traefik.http.routers.${domain}.entrypoints=websecure" \
+    -l "traefik.http.routers.${domain}.tls.certresolver=myresolver" \
+    ${domain}_image
+`;
+
+        exec(cmd, (error, stdout, stderr) => {
+            if (error) {
+                console.error(`Erro ao executar comandos: ${error.message}`);
+                return;
+            }
+            if (stderr) {
+                console.error(`stderr: ${stderr}`);
+                return;
+            }
+            console.log(`stdout: ${stdout}`);
+        });
+
         res.status(201).json(project);
     } catch (error) {
         res.status(500).json({

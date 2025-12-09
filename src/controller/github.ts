@@ -4,6 +4,8 @@ import { Request, Response } from "express";
 import CryptoJS from 'crypto-js';
 import { validate } from "uuid";
 import { PrismaClient } from "@prisma/client";
+import dotenv from "dotenv";
+dotenv.config();
 
 const prisma = new PrismaClient();
 
@@ -28,7 +30,7 @@ export const getUserRepos = async (req: Request | any, res: Response) => {
         return res.status(404).json({ message: "Token do GitHub não encontrado, faça login com o github" });
     }
 
-    const bytes = CryptoJS.AES.decrypt(encrypted, process.env.TOKEN_SECRET!);
+    const bytes = CryptoJS.AES.decrypt(encrypted, process.env.JWT_SECRET!);
     const token = bytes.toString(CryptoJS.enc.Utf8);
 
     if (!token) {
@@ -54,4 +56,42 @@ export const getUserRepos = async (req: Request | any, res: Response) => {
     }
 };
 
+export const syncUserWithGitHub = async (req : Request | any, res: Response) => {
+    const userId = req.userId;
+    const { github_username, github_token, github_id } = req.body;
 
+    if (!github_username || !github_token || !github_id) {
+        return res.status(400).json({ message: "Dados do GitHub não fornecidos" });
+    }
+
+    if (!userId || !validate(userId)) {
+        return res.status(401).json({ message: "Usuário não autenticado" });
+    }
+    const existUser = await prisma.user.findUnique({
+        where: { id: userId }
+    });
+
+    if (!existUser) {
+        return res.status(404).json({ message: "Usuário não encontrado" });
+    }
+
+
+
+    const encryptedToken = CryptoJS.AES.encrypt(github_token, process.env.JWT_SECRET!).toString();
+
+    try {
+        await prisma.user.update({
+            where: { id: userId },
+            data: {
+                github_username,
+                github_token: encryptedToken,
+                github_id
+            }
+        });
+
+        return res.status(200).json({ message: "Sincronização com GitHub realizada com sucesso" });
+    } catch (error) {
+        console.error(error);
+        return res.status(500).json({ message: "Erro ao sincronizar com GitHub" });
+    }
+};
