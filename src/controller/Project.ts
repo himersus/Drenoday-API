@@ -93,18 +93,7 @@ export const createProject = async (req: Request | any, res: Response) => {
 
 const cmd = `
 mkdir -p ${targetPath} \
-&& git clone -b ${project.branch} "${cloneUrl}" "${targetPath}" \
-&& cd ${targetPath} \
-&& docker build -t ${domain}_image . \
-&& docker rm -f ${domain}_container 2>/dev/null || true \
-&& docker run -d \
-    --name ${domain}_container \
-    --network traefik-network \
-    -l "traefik.enable=true" \
-    -l "traefik.http.routers.${domain}.rule=Host(\`${domain}.enor.tech\`)" \
-    -l "traefik.http.routers.${domain}.entrypoints=websecure" \
-    -l "traefik.http.routers.${domain}.tls.certresolver=myresolver" \
-    ${domain}_image
+&& git clone -b ${project.branch} "${cloneUrl}" "${targetPath}"
 `;
 
         exec(cmd, (error, stdout, stderr) => {
