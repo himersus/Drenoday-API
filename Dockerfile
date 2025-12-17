@@ -5,6 +5,9 @@ WORKDIR /app
 COPY package*.json ./
 COPY prisma ./prisma/
 
+# instalar git
+RUN apk add --no-cache git openssh
+
 RUN yarn install 
 
 RUN yarn prisma generate
