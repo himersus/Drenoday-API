@@ -6,7 +6,7 @@ import { login, loginGitHub, loginGoogle, sendCodeVerification } from "../contro
 import passport from "passport";
 import { getUserRepos, syncUserWithGitHub } from "../controller/github";
 import { createWorkspace, deleteWorkspace, getAllWorkspaces, getWorkspace, updateWorkspace } from "../controller/Workspace";
-import { createProject, deleteProject, getMyProjects, GetPendingProjectsPayments, getProject, updateProject } from "../controller/Project";
+import { createProject, deleteProject, getMyProjects, GetPendingProjectsPayments, getProject, runTheProject, updateProject } from "../controller/Project";
 import { addMember, removeMember } from "../controller/member";
 
 dotenv.config();
@@ -53,6 +53,7 @@ router.post('/workspace/member/remove', verifyAuthentication, removeMember);
 
 // {{ Project ROUTES}}
 router.post('/project/create', verifyAuthentication, createProject);
+router.post('/project/run', verifyAuthentication, runTheProject);
 router.get('/project/each/:projectId', verifyAuthentication, getProject);
 router.get('/project/my/:workspaceId', verifyAuthentication, getMyProjects);
 router.get('/project/pending', verifyAuthentication, GetPendingProjectsPayments);

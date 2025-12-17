@@ -52,20 +52,22 @@ model Workspace {
 }
 
 model project {
-  id           String    @id @default(uuid())
-  domain       String    @unique
+  id           String      @id @default(uuid())
+  domain       String      @unique
   name         String
-  branch       String    @default("main")
-  repo_url     String    @default("")
+  branch       String      @default("main")
+  repo_url     String      @default("")
   description  String?
   workspaceId  String
   build_cmd    String?
+  clone        cloneStatus @default(cloning)
+  run_status   runStatus   @default(stoped)
   start_cmd    String?
-  tecnology   tecnology? @default(docker)
+  tecnology    tecnology?  @default(docker)
   userId       String
-  environments Json      @default("[]")
-  createdAt    DateTime  @default(now())
-  updatedAt    DateTime  @updatedAt
+  environments Json        @default("[]")
+  createdAt    DateTime    @default(now())
+  updatedAt    DateTime    @updatedAt
   payments     payment[]
 
   Workspace Workspace @relation(fields: [workspaceId], references: [id])
@@ -136,4 +138,17 @@ enum roleUser {
 enum tecnology {
   nodejs
   docker
+}
+
+enum cloneStatus {
+  cloning
+  cloned
+  failed
+}
+
+enum runStatus {
+  building
+  stoped
+  running
+  failed
 }

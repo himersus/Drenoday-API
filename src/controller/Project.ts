@@ -91,7 +91,7 @@ export const createProject = async (req: Request | any, res: Response) => {
                 Accept: "application/vnd.github+json"
             }
         });
-        
+
         if (!response.ok) {
             return res
                 .status(response.status)
@@ -103,31 +103,115 @@ export const createProject = async (req: Request | any, res: Response) => {
         // clone_url vindo da API do GitHub: "https://github.com/user/exemplo.git"
         const cloneUrl = repo_url.replace("https://", `https://x-access-token:${token}@`);
         const deployDir = process.env.DEPLOY_DIR;
-        const targetPath = `${deployDir}/${existUser.username}/${domain}`;
+        const targetPath = `${deployDir}/${existUser.username}/${project.domain}`;
 
-        console.log(`git clone -b ${project.branch} "${cloneUrl}" "${targetPath}"`);
         const cmd = `
 mkdir -p ${targetPath} \
 && git clone -b ${project.branch} "${cloneUrl}" "${targetPath}"
 `;
         exec(cmd, (error, stdout, stderr) => {
             if (error) {
+                prisma.project.update({
+                    where: { id: project.id },
+                    data: { clone: 'failed' }
+                });
                 console.error(`Erro ao executar comandos: ${error.message}`);
                 return;
             }
-            if (stderr) {
-                console.warn(`git info: ${stderr}`);
-                return;
-            }
+
+            // enviar um socket a dizer que o deploy foi criado com sucesso
+            prisma.project.update({
+                where: { id: project.id },
+                data: { clone: 'cloned' }
+            });
+
             console.log(`stdout: ${stdout}`);
         });
-
         res.status(201).json(project);
     } catch (error) {
         res.status(500).json({
             message: "Failed to create project",
             error: (error as Error).message
         });
+    }
+};
+
+export const runTheProject = async (req: Request | any, res: Response) => {
+    const { projectId } = req.params;
+    const userId = req.userId;
+
+    if (!validate(projectId) || !validate(userId)) {
+        return res.status(400).json({ message: "ID inválido" });
+    }
+
+    try {
+        const project = await prisma.project.findFirst({
+            where: { id: projectId },
+        });
+
+        if (!project) {
+            return res.status(404).json({ message: "Projeto não encontrado" });
+        }
+
+        const existUser = await prisma.user.findFirst({
+            where: { id: userId },
+        });
+
+        if (!existUser) {
+            return res.status(404).json({ message: "Usuário não encontrado" });
+        }
+
+        if (project.userId !== userId) {
+            return res.status(403).json({ message: "Você não tem permissão para executar este projeto" });
+        }
+
+        if (project.clone !== 'cloned') {
+            return res.status(400).json({ message: "O repositório ainda não foi clonado completamente" });
+        }
+
+        const deployDir = process.env.DEPLOY_DIR;
+        const targetPath = `${deployDir}/${existUser.username}/${project.domain}`;
+
+        const createComposeTreakfik = `
+services:
+  api:
+    build: .
+    container_name: ${project.domain}
+    restart: always
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.${project.domain}.rule=Host(\`${project.domain}\`)"
+      - "traefik.http.routers.${project.domain}.entrypoints=websecure"
+      - "traefik.http.routers.${project.domain}.tls.certresolver=myresolver"
+      - "traefik.http.services.${project.domain}.loadbalancer.server.port=3000"
+    networks:
+      - traefik-network
+networks:
+  traefik-network:
+    external: true
+`;
+
+        const cmd = `cd ${targetPath} && echo '${createComposeTreakfik}' > docker-compose.yml && docker-compose up -d --build`;
+        exec(cmd, (error, stdout, stderr) => {
+            if (error) {
+                console.error(`Erro ao executar comandos: ${error.message}`);
+                prisma.project.update({
+                    where: { id: project.id },
+                    data: { run_status: 'failed' }
+                });
+                return;
+            }
+            // madar socket a dizer que o deploy foi iniciado com sucesso
+            prisma.project.update({
+                where: { id: project.id },
+                data: { run_status: 'running' }
+            });
+
+            console.log(`stdout: ${stdout}`);
+        });
+        res.status(200).json({ message: "Projeto iniciado com sucesso" });
+    } catch (error) {
+        res.status(500).json({ error: "Failed to run project" });
     }
 };
 
