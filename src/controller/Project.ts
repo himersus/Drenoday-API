@@ -85,23 +85,38 @@ export const createProject = async (req: Request | any, res: Response) => {
         const bytes = CryptoJS.AES.decrypt(encrypted, process.env.JWT_SECRET!);
         const token = bytes.toString(CryptoJS.enc.Utf8);
 
+        const response = await fetch("https://api.github.com/user", {
+            headers: {
+                Authorization: `Bearer ${token}`,
+                Accept: "application/vnd.github+json"
+            }
+        });
+        
+        if (!response.ok) {
+            return res
+                .status(response.status)
+                .json({
+                    message: "A sua sessão do GitHub expirou, por favor sincronize novamente"
+                });
+        }
+
         // clone_url vindo da API do GitHub: "https://github.com/user/exemplo.git"
         const cloneUrl = repo_url.replace("https://", `https://x-access-token:${token}@`);
         const deployDir = process.env.DEPLOY_DIR;
         const targetPath = `${deployDir}/${existUser.username}/${domain}`;
 
-const cmd = `
+        console.log(`git clone -b ${project.branch} "${cloneUrl}" "${targetPath}"`);
+        const cmd = `
 mkdir -p ${targetPath} \
 && git clone -b ${project.branch} "${cloneUrl}" "${targetPath}"
 `;
-
         exec(cmd, (error, stdout, stderr) => {
             if (error) {
                 console.error(`Erro ao executar comandos: ${error.message}`);
                 return;
             }
             if (stderr) {
-                console.error(`stderr: ${stderr}`);
+                console.warn(`git info: ${stderr}`);
                 return;
             }
             console.log(`stdout: ${stdout}`);

@@ -59,6 +59,9 @@ model project {
   repo_url     String    @default("")
   description  String?
   workspaceId  String
+  build_cmd    String?
+  start_cmd    String?
+  tecnology   tecnology? @default(docker)
   userId       String
   environments Json      @default("[]")
   createdAt    DateTime  @default(now())
@@ -128,4 +131,9 @@ enum typePayment {
 enum roleUser {
   admin
   user
+}
+
+enum tecnology {
+  nodejs
+  docker
 }
