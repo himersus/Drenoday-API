@@ -12,6 +12,3 @@ services:
     networks:
       - traefik-network  # Connect to the Traefik network
 
-networks:
-  traefik-network:
-    external: true
