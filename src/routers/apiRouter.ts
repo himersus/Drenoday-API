@@ -53,7 +53,7 @@ router.post('/workspace/member/remove', verifyAuthentication, removeMember);
 
 // {{ Project ROUTES}}
 router.post('/project/create', verifyAuthentication, createProject);
-router.post('/project/run', verifyAuthentication, runTheProject);
+router.post('/project/run/:projectId', verifyAuthentication, runTheProject);
 router.get('/project/each/:projectId', verifyAuthentication, getProject);
 router.get('/project/my/:workspaceId', verifyAuthentication, getMyProjects);
 router.get('/project/pending', verifyAuthentication, GetPendingProjectsPayments);
