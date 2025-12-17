@@ -6,7 +6,8 @@ import { validate } from "uuid";
 import { generateUniqueDomain } from "../modify/domain";
 import { exec } from "child_process";
 import CryptoJS from "crypto-js";
-
+import fs from "fs";
+import { spawn } from "child_process";
 const prisma = new PrismaClient();
 
 export const createProject = async (req: Request | any, res: Response) => {
@@ -191,23 +192,32 @@ networks:
     external: true
 `;
 
-        const cmd = `cd ${targetPath} && echo '${createComposeTreakfik}' > docker-compose.yml && docker-compose up -d --build`;
-        exec(cmd, (error, stdout, stderr) => {
-            if (error) {
-                console.error(`Erro ao executar comandos: ${error.message}`);
+        fs.writeFileSync(`${targetPath}/docker-compose.yml`, createComposeTreakfik);
+
+        const deploy = spawn("docker-compose", ["up", "-d", "--build"], { cwd: targetPath });
+
+        deploy.stdout.on("data", (data) => {
+            console.log(`stdout: ${data}`);
+        });
+
+        deploy.stderr.on("data", (data) => {
+            console.error(`stderr: ${data}`);
+        });
+
+        deploy.on("close", (code) => {
+            if (code === 0) {
                 prisma.project.update({
                     where: { id: project.id },
-                    data: { run_status: 'failed' }
+                    data: { run_status: "running" }
                 });
-                return;
+                // Enviar socket notificando sucesso
+            } else {
+                prisma.project.update({
+                    where: { id: project.id },
+                    data: { run_status: "failed" }
+                });
+                // Enviar socket notificando erro
             }
-            // madar socket a dizer que o deploy foi iniciado com sucesso
-            prisma.project.update({
-                where: { id: project.id },
-                data: { run_status: 'running' }
-            });
-
-            console.log(`stdout: ${stdout}`);
         });
         res.status(200).json({ message: "Projeto iniciado com sucesso" });
     } catch (error) {
