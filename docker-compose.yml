@@ -1,0 +1,11 @@
+services:
+  api:
+    build: .
+    container_name: drenoday
+    restart: always
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.drenoday.rule=Host(`drenoday.enor.tech`)"
+      - "traefik.http.routers.drenoday.entrypoints=websecure"
+      - "traefik.http.routers.drenoday.tls.certresolver=le"
+      - "traefik.http.services.drenoday.loadbalancer.server.port=3000"
