@@ -120,6 +120,10 @@ mkdir -p ${targetPath} \
                 return;
             }
 
+            if (stderr) {
+                console.error(`info : ${stderr}`);
+            }
+
             // enviar um socket a dizer que o deploy foi criado com sucesso
             prisma.project.update({
                 where: { id: project.id },
