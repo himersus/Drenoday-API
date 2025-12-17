@@ -59,6 +59,7 @@ model project {
   repo_url     String      @default("")
   description  String?
   workspaceId  String
+  port         String     @default("3000")
   build_cmd    String?
   clone        cloneStatus @default(cloning)
   run_status   runStatus   @default(stoped)
