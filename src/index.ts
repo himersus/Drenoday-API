@@ -1,7 +1,5 @@
 
 import 'dotenv/config';
-
-import { PrismaClient } from '@prisma/client';
 import express from "express";
 import dotenv from 'dotenv';
 import router from "./routers/apiRouter";
@@ -11,13 +9,19 @@ import cors from "cors";
 import "./auth/github";
 import "./auth/googleAuth";
 
+// configurar o socket
+import { createServer } from "http";
+import { initSocket } from "./sockets/index";
 
+const port = process.env.PORT || 3000;
+const app = express();
 dotenv.config();
 
-const prisma = new PrismaClient();
+// Cria servidor HTTP a partir do Express
+const httpServer = createServer(app);
 
-const app = express();
-const port = process.env.PORT || 3000;
+// Inicializa Socket.IO
+initSocket(httpServer);
 
 // CONFIGURAR SESSÃO
 app.use(session({ secret: process.env.SESSION_SECRET!, resave: false, saveUninitialized: true }));
@@ -35,8 +39,10 @@ app.get('/', (req, res) => {
     res.send('Welcome to the Gohost API!');
 });
 
+
+
 app.use('/api/v1', router);
 
-app.listen(port, () => {
+httpServer.listen(port, () => {
     console.log(`Server is running on http://localhost:${port}`);
-}); 
+});

@@ -11,8 +11,82 @@ import { spawn } from "child_process";
 import path from "path";
 const prisma = new PrismaClient();
 
+
+function parseGithubRepo(url: string) {
+    const clean = url
+        .replace(/\.git$/, "")
+        .replace(/\/$/, "")
+        .split("/");
+
+    if (clean.length < 5) return null;
+
+    return {
+        owner: clean[3],
+        repo: clean[4]
+    };
+}
+
+async function repositoryUsesDocker(
+  owner: string,
+  repo: string,
+  githubToken: string
+): Promise<boolean> {
+  const headers = {
+    'Authorization': `Bearer ${githubToken}`,
+    'Accept': 'application/vnd.github+json',
+    'X-GitHub-Api-Version': '2022-11-28'
+  };
+
+  try {
+    // Verifica se existe Dockerfile na raiz
+    const dockerfileResponse = await fetch(
+      `https://api.github.com/repos/${owner}/${repo}/contents/Dockerfile`,
+      { headers }
+    );
+
+    if (dockerfileResponse.ok) {
+      return true;
+    }
+
+    // Verifica se existe docker-compose.yml ou docker-compose.yaml
+    const composeYmlResponse = await fetch(
+      `https://api.github.com/repos/${owner}/${repo}/contents/docker-compose.yml`,
+      { headers }
+    );
+
+    if (composeYmlResponse.ok) {
+      return true;
+    }
+
+    const composeYamlResponse = await fetch(
+      `https://api.github.com/repos/${owner}/${repo}/contents/docker-compose.yaml`,
+      { headers }
+    );
+
+    if (composeYamlResponse.ok) {
+      return true;
+    }
+
+    // Verifica se existe pasta .docker
+    const dockerDirResponse = await fetch(
+      `https://api.github.com/repos/${owner}/${repo}/contents/.docker`,
+      { headers }
+    );
+
+    if (dockerDirResponse.ok) {
+      return true;
+    }
+
+    return false;
+  } catch (error) {
+    console.error('Erro ao verificar Docker no repositório:', error);
+    throw error;
+  }
+}
+
+
 export const createProject = async (req: Request | any, res: Response) => {
-    const { name, description, branch, repo_url, environments, workspaceId, time_in_day, amount } = req.body;
+    const { name, description, branch, port, repo_url, environments, workspaceId, time_in_day, amount } = req.body;
     const userId = req.userId;
 
     if (!validate(userId)) {
@@ -21,6 +95,24 @@ export const createProject = async (req: Request | any, res: Response) => {
 
     if (!repo_url) {
         return res.status(400).json({ message: "Branch e Repo URL devem ser strings" });
+    }
+
+    if (!branch || typeof branch !== 'string') {
+        return res.status(400).json({ message: "Branch é obrigatório e deve ser uma string" });
+    }
+
+    const portNumber = Number(port);
+
+    if (!port || typeof port !== 'string' || !Number.isInteger(portNumber)) {
+        return res.status(400).json({
+            message: "Port é obrigatório e deve ser um número valido"
+        });
+    }
+
+    if (portNumber < 1024 || portNumber > 65535) {
+        return res.status(400).json({
+            message: "Port deve estar entre 1024 e 65535"
+        });
     }
 
     try {
@@ -57,35 +149,64 @@ export const createProject = async (req: Request | any, res: Response) => {
             });
         }
 
+        const encrypted = existUser.github_token;
+
+        const bytes = CryptoJS.AES.decrypt(encrypted, process.env.JWT_SECRET!);
+        const token = bytes.toString(CryptoJS.enc.Utf8);
+
+        if (!token) {
+            return res.status(500).json({
+                message: "Erro ao descriptografar token do GitHub"
+            });
+        }
+
+        try {
+            const parsed = parseGithubRepo(repo_url);
+            if (!parsed) {
+                return res.status(400).json({
+                    message: "URL do repositório GitHub inválida"
+                });
+            }
+            if (await repositoryUsesDocker(parsed.owner, parsed.repo, token) === false) {
+                return res.status(400).json({
+                    message: "O repositório deve conter um Dockerfile na raiz"
+                });
+            }
+        } catch (error) {
+            return res.status(400).json({
+                message: "Erro ao verificar o repositório: " + (error as Error).message
+            });
+        }
+
+        console.log(`Criando projeto para o usuário ${existUser.username} com o repositório ${repo_url}`);
+
         const project = await prisma.project.create({
             data: {
-                name,
-                description,
-                workspaceId,
-                branch,
-                repo_url,
-                userId: existUser.id,
-                domain: domain as string,
-                environments: environments || [],
+                name, // nome do projeto
+                description, // descrição do projeto
+                workspaceId, // workspaceId
+                branch, // branch do repositório
+                repo_url, // URL do repositório
+                port: `${port}`, // porta onde a aplicação irá rodar
+                userId: existUser.id, // ID do usuário que criou o projeto
+                domain: domain as string, // domínio único gerado
+                environments: environments || [], // variáveis de ambiente
             }
         });
 
         const payment = await prisma.payment.create({
             data: {
-                userId: existUser.id,
-                amount: amount,
-                time_in_day: time_in_day || 0,
-                status: 'pending',
-                type_payment: 'monthly',
-                qty_months: 1,
-                projectId: project.id
+                userId: existUser.id, // ID do usuário que realizou o pagamento
+                amount: amount, // valor do pagamento
+                time_in_day: time_in_day || 0, // tempo em dias do pagamento
+                status: 'pending', // status do pagamento
+                type_payment: 'monthly', // tipo de pagamento
+                qty_months: 1, // quantidade de meses
+                projectId: project.id // ID do projeto associado ao pagamento
             }
         });
 
-        const encrypted = existUser.github_token;
 
-        const bytes = CryptoJS.AES.decrypt(encrypted, process.env.JWT_SECRET!);
-        const token = bytes.toString(CryptoJS.enc.Utf8);
 
         const response = await fetch("https://api.github.com/user", {
             headers: {
