@@ -1,5 +1,5 @@
 services:
-  api:
+  drenoday:
     build: .
     container_name: drenoday
     restart: always
@@ -11,6 +11,8 @@ services:
       - "traefik.http.services.drenoday.loadbalancer.server.port=3000"
     networks:
       - traefik-network
+    volumes:
+      - /home/deploy:/home/deploy
 
 networks:
   traefik-network:

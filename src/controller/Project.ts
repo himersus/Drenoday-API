@@ -106,23 +106,9 @@ export const createProject = async (req: Request | any, res: Response) => {
         const deployDir = process.env.DEPLOY_DIR;
         const targetPath = `${deployDir}/${existUser.username}/${project.domain}`;
 
-        // && git clone -b ${project.branch} "${cloneUrl}" "${targetPath}"
-        console.log('Pasta', targetPath);
-
         const cmd = `
-whoami &&
-pwd &&
-echo "DEPLOY_DIR=$DEPLOY_DIR" &&
-mkdir -pv ${targetPath}
-`;
-
-        exec(cmd, (error, stdout, stderr) => {
-            console.log('STDOUT:\n', stdout);
-            console.log('STDERR:\n', stderr);
-            console.log('ERROR:\n', error);
-        });
-        /*const cmd = `
 mkdir -p ${targetPath} \
+&& git clone -b ${project.branch} "${cloneUrl}" "${targetPath}"
 `;
         exec(cmd, (error, stdout, stderr) => {
             if (error) {
@@ -145,7 +131,7 @@ mkdir -p ${targetPath} \
             });
 
             console.log(`stdout: ${stdout}`);
-        }); */
+        });
         res.status(201).json(project);
     } catch (error) {
         res.status(500).json({
