@@ -106,9 +106,10 @@ export const createProject = async (req: Request | any, res: Response) => {
         const deployDir = process.env.DEPLOY_DIR;
         const targetPath = `${deployDir}/${existUser.username}/${project.domain}`;
 
+        // && git clone -b ${project.branch} "${cloneUrl}" "${targetPath}"
+        console.log('Pasta', targetPath);
         const cmd = `
 mkdir -p ${targetPath} \
-&& git clone -b ${project.branch} "${cloneUrl}" "${targetPath}"
 `;
         exec(cmd, (error, stdout, stderr) => {
             if (error) {
