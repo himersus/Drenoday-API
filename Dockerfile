@@ -5,8 +5,8 @@ WORKDIR /app
 COPY package*.json ./
 COPY prisma ./prisma/
 
-# instalar git
-RUN apk add --no-cache git openssh
+# instalar git e docker-cli
+RUN apk add --no-cache git openssh docker-cli bash
 
 RUN yarn install 
 

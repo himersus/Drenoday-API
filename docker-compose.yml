@@ -1,6 +1,6 @@
 services:
   api:
-    build: .
+    build: drenoday
     container_name: drenoday
     restart: always
     labels:
@@ -12,7 +12,9 @@ services:
     networks:
       - traefik-network
     volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
       - /home/deploy:/home/deploy
+
 
 networks:
   traefik-network:
