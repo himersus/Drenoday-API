@@ -179,7 +179,7 @@ export const runTheProject = async (req: Request | any, res: Response) => {
 
         const createComposeTreakfik = `
 services:
-  api:
+  ${project.domain}:
     build: .
     container_name: ${project.domain}
     restart: always
