@@ -1,5 +1,5 @@
 services:
-  drenoday:
+  api:
     build: .
     container_name: drenoday
     restart: always
