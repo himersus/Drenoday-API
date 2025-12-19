@@ -186,7 +186,7 @@ services:
     restart: always
     labels:
       - "traefik.enable=true"
-      - "traefik.http.routers.${project.domain}.rule=Host(\`${project.domain}\`)"
+      - "traefik.http.routers.${project.domain}.rule=Host(\`${project.domain}.enor.tech\`)"
       - "traefik.http.routers.${project.domain}.entrypoints=websecure"
       - "traefik.http.routers.${project.domain}.tls.certresolver=myresolver"
       - "traefik.http.services.${project.domain}.loadbalancer.server.port=${project.port}"
@@ -234,7 +234,7 @@ networks:
             }
         });
 
-        res.status(200).json({ message: "Projeto iniciado com sucesso" });
+        res.status(200).json({ message: "Deploy iniciado" });
     } catch (error) {
         res.status(500).json({ error: "Failed to run project" });
     }
