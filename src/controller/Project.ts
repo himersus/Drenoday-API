@@ -170,9 +170,9 @@ export const runTheProject = async (req: Request | any, res: Response) => {
             return res.status(403).json({ message: "Você não tem permissão para executar este projeto" });
         }
 
-        if (project.clone !== 'cloned') {
+        /*if (project.clone !== 'cloned') {
             return res.status(400).json({ message: "O repositório ainda não foi clonado completamente" });
-        }
+        }*/
 
         const deployDir = process.env.DEPLOY_DIR;
         const targetPath = `${deployDir}/${existUser.username}/${project.domain}`;
