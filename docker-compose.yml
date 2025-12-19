@@ -1,6 +1,6 @@
 services:
   api:
-    build: drenoday
+    build: .
     container_name: drenoday
     restart: always
     labels:
