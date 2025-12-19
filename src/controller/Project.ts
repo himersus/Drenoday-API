@@ -8,6 +8,7 @@ import { exec } from "child_process";
 import CryptoJS from "crypto-js";
 import fs from "fs";
 import { spawn } from "child_process";
+import path from "path";
 const prisma = new PrismaClient();
 
 export const createProject = async (req: Request | any, res: Response) => {
@@ -195,34 +196,44 @@ networks:
   traefik-network:
     external: true
 `;
+        // garantir diretório
+        fs.mkdirSync(targetPath, { recursive: true });
 
-        fs.writeFileSync(`${targetPath}/docker-compose.yml`, createComposeTreakfik);
+        // criar docker-compose
+        fs.writeFileSync(
+            path.join(targetPath, "docker-compose.yml"),
+            createComposeTreakfik
+        );
 
-        const deploy = spawn("docker-compose", ["up", "-d", "--build"], { cwd: targetPath });
+        // subir container
+        const deploy = spawn(
+            "docker",
+            ["compose", "up", "-d", "--build"],
+            { cwd: targetPath }
+        );
 
         deploy.stdout.on("data", (data) => {
-            console.log(`stdout: ${data}`);
+            console.log("[docker]", data.toString());
         });
 
         deploy.stderr.on("data", (data) => {
-            console.error(`stderr: ${data}`);
+            console.error("[docker error]", data.toString());
         });
 
-        deploy.on("close", (code) => {
+        deploy.on("close", async (code) => {
             if (code === 0) {
-                prisma.project.update({
+                await prisma.project.update({
                     where: { id: project.id },
                     data: { run_status: "running" }
                 });
-                // Enviar socket notificando sucesso
             } else {
-                prisma.project.update({
+                await prisma.project.update({
                     where: { id: project.id },
                     data: { run_status: "failed" }
                 });
-                // Enviar socket notificando erro
             }
         });
+
         res.status(200).json({ message: "Projeto iniciado com sucesso" });
     } catch (error) {
         res.status(500).json({ error: "Failed to run project" });
