@@ -1,13 +1,17 @@
 FROM node:24-alpine
 
+# instalar dependências necessárias
+RUN apk add --no-cache \
+    git \
+    openssh \
+    docker-cli \
+    docker-cli-compose \
+    bash
+
 WORKDIR /app
 
 COPY package*.json ./
 COPY prisma ./prisma/
-
-# instalar git e docker-cli
-RUN apk add --no-cache git openssh docker-cli bash
-RUN apt-get update && apt-get install -y docker.io docker-compose
 
 RUN yarn install 
 
