@@ -327,36 +327,27 @@ networks:
         );
 
         // subir container
-        const deploy = spawn(
-            "docker compose up -d --build",
-            {
-                cwd: targetPath,
-                shell: true,
-                env: process.env
-            }
-        );
+        exec(
+        "docker compose down && docker compose up -d --build",
+        { cwd: targetPath, env: process.env },
+        async (error, stdout, stderr) => {
+        if (error) {
+            console.error("[docker error]", stderr);
+            await prisma.project.update({
+                where: { id: project.id },
+                data: { run_status: "failed" }
+            });
+            return;
+        }
 
-        deploy.stdout.on("data", (data : any) => {
-            console.log("[docker]", data.toString());
-        });
+    console.log("[docker]", stdout);
 
-        deploy.stderr.on("data", (data : any) => {
-            console.error("[docker error]", data.toString());
-        });
-
-        deploy.on("close", async (code : number) => {
-            if (code === 0) {
-                await prisma.project.update({
-                    where: { id: project.id },
-                    data: { run_status: "running" }
-                });
-            } else {
-                await prisma.project.update({
-                    where: { id: project.id },
-                    data: { run_status: "failed" }
-                });
-            }
-        });
+    await prisma.project.update({
+      where: { id: project.id },
+      data: { run_status: "running" }
+    });
+  }
+);
 
         res.status(200).json({ message: "Deploy iniciado" });
     } catch (error) {
