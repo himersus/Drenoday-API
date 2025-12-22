@@ -10,7 +10,7 @@ import fs from "fs";
 import { spawn } from "child_process";
 import path from "path";
 const prisma = new PrismaClient();
-import { sendSocketContent } from "../sockets/index"
+import {sendSocketContent} from "../sockets/index"
 import { startLogStream } from "../helper/logs";
 
 
@@ -29,61 +29,61 @@ function parseGithubRepo(url: string) {
 }
 
 async function repositoryUsesDocker(
-    owner: string,
-    repo: string,
-    githubToken: string
+  owner: string,
+  repo: string,
+  githubToken: string
 ): Promise<boolean> {
-    const headers = {
-        'Authorization': `Bearer ${githubToken}`,
-        'Accept': 'application/vnd.github+json',
-        'X-GitHub-Api-Version': '2022-11-28'
-    };
+  const headers = {
+    'Authorization': `Bearer ${githubToken}`,
+    'Accept': 'application/vnd.github+json',
+    'X-GitHub-Api-Version': '2022-11-28'
+  };
 
-    try {
-        // Verifica se existe Dockerfile na raiz
-        const dockerfileResponse = await fetch(
-            `https://api.github.com/repos/${owner}/${repo}/contents/Dockerfile`,
-            { headers }
-        );
+  try {
+    // Verifica se existe Dockerfile na raiz
+    const dockerfileResponse = await fetch(
+      `https://api.github.com/repos/${owner}/${repo}/contents/Dockerfile`,
+      { headers }
+    );
 
-        if (dockerfileResponse.ok) {
-            return true;
-        }
-
-        // Verifica se existe docker-compose.yml ou docker-compose.yaml
-        const composeYmlResponse = await fetch(
-            `https://api.github.com/repos/${owner}/${repo}/contents/docker-compose.yml`,
-            { headers }
-        );
-
-        if (composeYmlResponse.ok) {
-            return true;
-        }
-
-        const composeYamlResponse = await fetch(
-            `https://api.github.com/repos/${owner}/${repo}/contents/docker-compose.yaml`,
-            { headers }
-        );
-
-        if (composeYamlResponse.ok) {
-            return true;
-        }
-
-        // Verifica se existe pasta .docker
-        const dockerDirResponse = await fetch(
-            `https://api.github.com/repos/${owner}/${repo}/contents/.docker`,
-            { headers }
-        );
-
-        if (dockerDirResponse.ok) {
-            return true;
-        }
-
-        return false;
-    } catch (error) {
-        console.error('Erro ao verificar Docker no repositório:', error);
-        throw error;
+    if (dockerfileResponse.ok) {
+      return true;
     }
+
+    // Verifica se existe docker-compose.yml ou docker-compose.yaml
+    const composeYmlResponse = await fetch(
+      `https://api.github.com/repos/${owner}/${repo}/contents/docker-compose.yml`,
+      { headers }
+    );
+
+    if (composeYmlResponse.ok) {
+      return true;
+    }
+
+    const composeYamlResponse = await fetch(
+      `https://api.github.com/repos/${owner}/${repo}/contents/docker-compose.yaml`,
+      { headers }
+    );
+
+    if (composeYamlResponse.ok) {
+      return true;
+    }
+
+    // Verifica se existe pasta .docker
+    const dockerDirResponse = await fetch(
+      `https://api.github.com/repos/${owner}/${repo}/contents/.docker`,
+      { headers }
+    );
+
+    if (dockerDirResponse.ok) {
+      return true;
+    }
+
+    return false;
+  } catch (error) {
+    console.error('Erro ao verificar Docker no repositório:', error);
+    throw error;
+  }
 }
 
 // {{Create projecto}}
@@ -234,7 +234,7 @@ export const createProject = async (req: Request | any, res: Response) => {
 mkdir -p ${targetPath} \
 && git clone -b ${project.branch} "${cloneUrl}" "${targetPath}"
 `;
-        exec(cmd, (error: any, stdout: string, stderr: string) => {
+        exec(cmd, (error : any, stdout : string, stderr : string) => {
             if (error) {
                 prisma.project.update({
                     where: { id: project.id },
@@ -330,60 +330,48 @@ networks:
             path.join(targetPath, "docker-compose.yml"),
             createComposeTreakfik
         );
+        
 
-        let buildDeploy;
-
-        try {
-            buildDeploy = await prisma.deploy.create({
-                data: {
-                    projectId: projectId,
-                }
-            });
-        } catch (error) {
-
-            return res.status(500).json({ 
-                message: "Erro ao criar o deploy no banco de dados",
-                error: (error as any).message
-            });
-
-        }
-
-
+        const buildDeploy = await prisma.deploy.create({
+            data : {
+                projectId : projectId,
+            }
+        });
 
         // subir container
         exec(
-            "docker-compose down && docker-compose up -d --build",
-            { cwd: targetPath },
-            async (error, stdout, stderr) => {
-                if (error) {
-                    console.error("[docker error]", stderr);
-                    await prisma.deploy.update({
-                        where: { id: buildDeploy.id ? buildDeploy.id : "" },
-                        data: {
-                            status: "failed"
-                        }
-                    });
-
-                    return;
+        "docker-compose down && docker-compose up -d --build",
+        { cwd: targetPath},
+        async (error, stdout, stderr) => {
+        if (error) {
+            console.error("[docker error]", stderr);
+            await prisma.deploy.update({
+                where: { id: buildDeploy.id },
+                data : {
+                    status : "failed"
                 }
+            });
+          
+            return;
+        }
 
-                console.log("[docker]", stdout);
+        console.log("[docker]", stdout);
 
-                await prisma.deploy.update({
-                    where: { id: buildDeploy.id ? buildDeploy.id : "" },
-                    data: { status: "running" }
-                });
-            }
-        );
+        await prisma.deploy.update({
+            where: { id: buildDeploy.id },
+            data: { status: "running" }
+        });
+        }
+    );
 
         startLogStream(buildDeploy.id, project.domain);
 
         res.status(200).json({ message: "Deploy iniciado" });
-    } catch (error: any) {
-        res.status(500).json({
+    } catch (error : any) {
+        res.status(500).json({ 
             message: "Failed to run project",
             error: error.message
-        });
+         });
     }
 };
 
