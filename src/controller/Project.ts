@@ -366,8 +366,11 @@ networks:
         startLogStream(buildDeploy.id, project.domain);
 
         res.status(200).json({ message: "Deploy iniciado" });
-    } catch (error) {
-        res.status(500).json({ error: "Failed to run project" });
+    } catch (error : any) {
+        res.status(500).json({ 
+            message: "Failed to run project",
+            error: error.message
+         });
     }
 };
 

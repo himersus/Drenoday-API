@@ -1,7 +1,6 @@
 
 import { sendSocketContent } from "../sockets/index"
-import { PrismaClient } from "../../generated/prisma/client";
-
+import { PrismaClient } from '@prisma/client';
 const prisma = new PrismaClient();
 import { spawn } from "child_process";
 
