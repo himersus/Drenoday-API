@@ -328,10 +328,11 @@ networks:
 
         // subir container
         const deploy = spawn(
-            "docker",
-            ["compose", "up", "-d", "--build"],
+            "docker-compose",
+            ["up", "-d", "--build"],
             { cwd: targetPath }
         );
+
 
         deploy.stdout.on("data", (data : any) => {
             console.log("[docker]", data.toString());
