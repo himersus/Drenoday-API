@@ -80,7 +80,8 @@ model deploy {
   id           String      @id @default(uuid())
   projectId    String
   status       runStatus   @default(building)
-  logs         Json        @default("[]")
+  success      Boolean     @default(true)
+  logs         String[]    @default([])
   createdAt    DateTime    @default(now())
   updatedAt    DateTime    @updatedAt
   Project      project   @relation(fields : [projectId], references : [id])
