@@ -328,7 +328,7 @@ networks:
 
         // subir container
         exec(
-        "docker compose down && docker compose up -d --build",
+        "docker-compose down && docker-compose up -d --build",
         { cwd: targetPath},
         async (error, stdout, stderr) => {
         if (error) {

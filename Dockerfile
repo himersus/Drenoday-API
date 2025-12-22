@@ -7,6 +7,7 @@ COPY prisma ./prisma/
 
 # instalar git e docker-cli
 RUN apk add --no-cache git openssh docker-cli bash
+RUN apt-get update && apt-get install -y docker.io docker-compose
 
 RUN yarn install 
 
