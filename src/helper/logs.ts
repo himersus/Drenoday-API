@@ -5,6 +5,11 @@ const prisma = new PrismaClient();
 import { spawn } from "child_process";
 
 export function startLogStream(deployId: string, containerName: string) {
+
+  if (!containerName || !deployId) {
+    console.error("Container name is required to start log stream.");
+    return;
+  }
   const logs = spawn("docker", [
     "logs",
     "-f",
