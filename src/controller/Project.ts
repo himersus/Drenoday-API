@@ -10,6 +10,8 @@ import fs from "fs";
 import { spawn } from "child_process";
 import path from "path";
 const prisma = new PrismaClient();
+import {sendSocketContent} from "../sockets/index"
+import { startLogStream } from "../helper/logs";
 
 
 function parseGithubRepo(url: string) {
@@ -84,7 +86,7 @@ async function repositoryUsesDocker(
   }
 }
 
-
+// {{Create projecto}}
 export const createProject = async (req: Request | any, res: Response) => {
     const { name, description, branch, port, repo_url, environments, workspaceId, time_in_day, amount } = req.body;
     const userId = req.userId;
@@ -263,6 +265,9 @@ mkdir -p ${targetPath} \
     }
 };
 
+
+
+
 export const runTheProject = async (req: Request | any, res: Response) => {
     const { projectId } = req.params;
     const userId = req.userId;
@@ -326,6 +331,12 @@ networks:
             createComposeTreakfik
         );
 
+        const buildDeploy = await prisma.deploy.create({
+            data : {
+                projectId : projectId,
+            }
+        });
+
         // subir container
         exec(
         "docker-compose down && docker-compose up -d --build",
@@ -333,21 +344,26 @@ networks:
         async (error, stdout, stderr) => {
         if (error) {
             console.error("[docker error]", stderr);
-            await prisma.project.update({
-                where: { id: project.id },
-                data: { run_status: "failed" }
+            await prisma.deploy.update({
+                where: { id: buildDeploy.id },
+                data : {
+                    status : "failed"
+                }
             });
+          
             return;
         }
 
         console.log("[docker]", stdout);
 
-    await prisma.project.update({
-      where: { id: project.id },
-      data: { run_status: "running" }
-    });
-  }
-);
+        await prisma.deploy.update({
+            where: { id: buildDeploy.id },
+            data: { status: "running" }
+        });
+        }
+    );
+
+        startLogStream(buildDeploy.id, project.domain);
 
         res.status(200).json({ message: "Deploy iniciado" });
     } catch (error) {
