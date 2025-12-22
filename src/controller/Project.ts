@@ -341,7 +341,10 @@ networks:
             });
         } catch (error) {
 
-            return res.status(500).json({ message: "Erro ao criar o deploy no banco de dados" });
+            return res.status(500).json({ 
+                message: "Erro ao criar o deploy no banco de dados",
+                error: (error as any).message
+            });
 
         }
 
