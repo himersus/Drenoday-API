@@ -11,6 +11,10 @@ const prisma = new PrismaClient();
 
 export const getUserRepos = async (req: Request | any, res: Response) => {
     const userId = req.userId;
+    const page = req.params.page || 1;
+    const limit = req.params.limit || 10;
+    const offset = (limit * page) - limit;
+
 
     if (!userId || !validate(userId)) {
         return res.status(401).json({ message: "Usuário não autenticado" });
@@ -38,12 +42,20 @@ export const getUserRepos = async (req: Request | any, res: Response) => {
     }
 
     try {
-        const response = await axios.get("https://api.github.com/user/repos", {
-            headers: {
+        const response = await axios.get("https://api.github.com/user/repos",
+            {
+                headers: {
                 Authorization: `Bearer ${token}`,
                 Accept: "application/vnd.github+json"
+                },
+                params: {
+                    sort: "updated",
+                    direction: "desc",
+                    page,
+                    per_page: limit
+                }
             }
-        });
+        );
 
         if (response.status !== 200) {
             return res.status(response.status).json({ message: "Erro ao buscar repositórios" });

@@ -232,7 +232,7 @@ export const createProject = async (req: Request | any, res: Response) => {
 mkdir -p ${targetPath} \
 && git clone -b ${project.branch} "${cloneUrl}" "${targetPath}"
 `;
-        exec(cmd, (error, stdout, stderr) => {
+        exec(cmd, (error : any, stdout : string, stderr : string) => {
             if (error) {
                 prisma.project.update({
                     where: { id: project.id },
@@ -333,15 +333,15 @@ networks:
             { cwd: targetPath }
         );
 
-        deploy.stdout.on("data", (data) => {
+        deploy.stdout.on("data", (data : any) => {
             console.log("[docker]", data.toString());
         });
 
-        deploy.stderr.on("data", (data) => {
+        deploy.stderr.on("data", (data : any) => {
             console.error("[docker error]", data.toString());
         });
 
-        deploy.on("close", async (code) => {
+        deploy.on("close", async (code : number) => {
             if (code === 0) {
                 await prisma.project.update({
                     where: { id: project.id },
