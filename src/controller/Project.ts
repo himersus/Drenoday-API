@@ -328,7 +328,7 @@ networks:
 
         // subir container
         exec(
-        "docker compose down && docker compose up -d --build",
+        "docker-compose down && docker-compose up -d --build",
         { cwd: targetPath, env: process.env },
         async (error, stdout, stderr) => {
         if (error) {
@@ -340,7 +340,7 @@ networks:
             return;
         }
 
-    console.log("[docker]", stdout);
+        console.log("[docker]", stdout);
 
     await prisma.project.update({
       where: { id: project.id },
