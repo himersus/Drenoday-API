@@ -328,8 +328,8 @@ networks:
 
         // subir container
         exec(
-        "docker-compose down && docker-compose up -d --build",
-        { cwd: targetPath, env: process.env },
+        "docker compose down && docker compose up -d --build",
+        { cwd: targetPath},
         async (error, stdout, stderr) => {
         if (error) {
             console.error("[docker error]", stderr);
