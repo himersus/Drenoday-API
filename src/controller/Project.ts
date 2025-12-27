@@ -340,7 +340,8 @@ networks:
         sendSocketContent("deploy_status", {
             deployId: buildDeploy.id,
             projectId: projectId,
-            status: "building"
+            status: "building",
+            message: "Iniciando build do deploy"
         });
         // subir container
         exec(
@@ -359,7 +360,8 @@ networks:
                     sendSocketContent("deploy_status", {
                         deployId: buildDeploy.id,
                         projectId: projectId,
-                        status: "failed"
+                        status: "failed",
+                        message: "Erro ao construir o deploy: " + stderr
                     });
                     return;
                 }
@@ -376,7 +378,8 @@ networks:
                 sendSocketContent("deploy_status", {
                     deployId: buildDeploy.id,
                     projectId: projectId,
-                    status: "running"
+                    status: "running",
+                    message: "Deploy executando com sucesso"
                 });
             }
         );

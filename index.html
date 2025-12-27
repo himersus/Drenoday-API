@@ -6,9 +6,13 @@
 </head>
 <body>
   <h1>Teste Socket.IO</h1>
+  <div id="logs">
+    <!-- Logs de deploy aparecerão aqui -->
+    
+  </div>
   <script>
     // Conecta ao servidor Socket.IO
-    const socket = io("http://localhost:3003");
+    const socket = io("http://localhost:3000");
 
     // Ao conectar
     socket.on("connect", () => {
@@ -16,8 +20,14 @@
     });
 
     // Recebe mensagens do servidor
-    socket.on("message", (msg) => {
-      console.log("Mensagem recebida do servidor:", msg);
+    socket.on("deploy_status", (msg) => {
+      console.log("Status de deploy:", msg);
+      const logsDiv = document.getElementById("logs");
+      if (logsDiv) {
+        const logEntry = document.createElement("div");
+        logEntry.textContent = `Status de deploy: ${JSON.stringify(msg)}`;
+        logsDiv.appendChild(logEntry);
+      }
     });
   </script>
 </body>
