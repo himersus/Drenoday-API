@@ -331,20 +331,19 @@ networks:
             createComposeTreakfik
         );
 
-
         const buildDeploy = await prisma.deploy.create({
             data: {
                 projectId: projectId,
             }
         });
-        sendSocketContent("deploy_status", {
+        sendSocketContent("deploy_logs", {
             deployId: buildDeploy.id,
             projectId: projectId,
             status: "building",
             message: "Iniciando build do deploy"
         });
-        // verificar se existe esse diretorio para fazer o deploy
-        if (!fs.existsSync(targetPath)) {
+        // verificar se existeo dockerfile no targetPath para continuar
+        if (!fs.existsSync(path.join(targetPath, "Dockerfile"))) {
             await prisma.deploy.update({
                 where: { id: buildDeploy.id },
                 data: {
@@ -352,13 +351,22 @@ networks:
                     success: false
                 }
             });
-            sendSocketContent("deploy_status", {
+            sendSocketContent("deploy_logs", {
                 deployId: buildDeploy.id,
                 projectId: projectId,
                 status: "failed",
-                message: "Este projecto não está disponível para deploy"
+                message: "Este projecto não está disponível para deploy, verifique se o Dockerfile existe na raiz do repositório"
             });
-            return res.status(404).json({ message: "Este projecto não está disponível para deploy" });
+            return res.status(404).json({ message: "Este projecto não está disponível para deploy, verifique se o Dockerfile existe na raiz do repositório" });
+        }
+
+        // criar a varialeis de ambiente
+        let envContent = "";
+        if (project.environments && project.environments.length > 0) {
+            project.environments.forEach((envVar: string) => {
+                envContent += `${envVar}\n`;
+            });
+            fs.writeFileSync(path.join(targetPath, ".env"), envContent);
         }
         // subir container
         exec(
@@ -374,7 +382,7 @@ networks:
                             success: false
                         }
                     });
-                    sendSocketContent("deploy_status", {
+                    sendSocketContent("deploy_logs", {
                         deployId: buildDeploy.id,
                         projectId: projectId,
                         status: "failed",
@@ -384,7 +392,7 @@ networks:
                 }
 
                 console.log("[docker]", stdout);
-                sendSocketContent("deploy_status", {
+                sendSocketContent("deploy_logs", {
                     deployId: buildDeploy.id,
                     projectId: projectId,
                     status: "building",
@@ -398,7 +406,7 @@ networks:
                         success: true
                     }
                 });
-                sendSocketContent("deploy_status", {
+                sendSocketContent("deploy_logs", {
                     deployId: buildDeploy.id,
                     projectId: projectId,
                     status: "running",
@@ -407,7 +415,7 @@ networks:
             }
         );
 
-        startLogStream(buildDeploy.id, project.domain);
+        startLogStream(buildDeploy.id,  project.domain);
 
         res.status(200).json({ message: "Deploy iniciado" });
     } catch (error: any) {
@@ -453,6 +461,25 @@ export const getProject = async (req: Request | any, res: Response) => {
 export const getMyProjects = async (req: Request | any, res: Response) => {
     const userId = req.userId; // Supondo que o ID do usuário logado esteja disponível em req.userId
     const workspaceId = req.params.workspaceId;
+    if (!validate(userId)) {
+        return res.status(401).json({ message: "Usuário não autenticado" });
+    }
+
+    if (!validate(workspaceId)) {
+        return res.status(400).json({ message: "ID do workspace inválido" });
+    }
+
+     const userWorkspace = await prisma.user_workspace.findFirst({
+            where: {
+                userId,
+                workspaceId
+            }
+        });
+        
+    if (!userWorkspace) {
+        return res.status(403).json({ message: "Você não tem acesso a este workspace" });
+    }
+
     try {
         const projects = await prisma.project.findMany({
             where: { userId, workspaceId },
@@ -460,7 +487,7 @@ export const getMyProjects = async (req: Request | any, res: Response) => {
 
         res.status(200).json(projects);
     } catch (error) {
-        res.status(500).json({ error: "Failed to retrieve projects" });
+        res.status(500).json({ message: "Falha ao recuperar projetos" });
     }
 };
 
@@ -482,8 +509,15 @@ export const updateProject = async (req: Request | any, res: Response) => {
             return res.status(404).json({ message: "Projeto não encontrado" });
         }
 
-        if (project.userId !== userId) {
-            return res.status(403).json({ message: "Você não tem permissão para atualizar este projeto" });
+        const userWorkspace = await prisma.user_workspace.findFirst({
+            where: {
+                userId,
+                workspaceId: project.workspaceId,
+            }
+        });
+
+        if (!userWorkspace || userWorkspace.role !== 'master') {
+            return res.status(403).json({ message: "Você não tem acesso a este projeto" });
         }
 
         const updatedProject = await prisma.project.update({
@@ -497,7 +531,7 @@ export const updateProject = async (req: Request | any, res: Response) => {
 
         res.status(200).json(updatedProject);
     } catch (error) {
-        res.status(500).json({ error: "Failed to update project" });
+        res.status(500).json({ error: "Falha ao atualizar projeto" });
     }
 };
 
@@ -506,11 +540,11 @@ export const deleteProject = async (req: Request | any, res: Response) => {
     const userId = req.userId;
 
     if (!validate(projectId) || !validate(userId)) {
-        return res.status(400).json({ message: "ID inválido" });
+        return res.status(400).json({ message: "Projecto ou utilizador inválido" });
     }
 
     try {
-        const project = await prisma.project.findUnique({
+        const project = await prisma.project.findFirst({
             where: { id: projectId },
         });
 
@@ -518,11 +552,22 @@ export const deleteProject = async (req: Request | any, res: Response) => {
             return res.status(404).json({ message: "Projeto não encontrado" });
         }
 
-        if (project.userId !== userId) {
-            return res.status(403).json({ message: "Você não tem permissão para deletar este projeto" });
+        const userWorkspace = await prisma.user_workspace.findFirst({
+            where: {
+                userId,
+                workspaceId: project.workspaceId
+            }
+        });
+
+        if (!userWorkspace || userWorkspace.role !== 'master') {
+            return res.status(403).json({ message: "Você não tem acesso a este projeto" });
         }
 
         await prisma.payment.deleteMany({
+            where: { projectId: projectId },
+        });
+
+        await prisma.deploy.deleteMany({
             where: { projectId: projectId },
         });
 
@@ -533,7 +578,7 @@ export const deleteProject = async (req: Request | any, res: Response) => {
         res.status(200).json({ message: "Projeto deletado com sucesso" });
     } catch (error) {
         res.status(500).json({
-            message: "Failed to delete project",
+            message: "Falha ao deletar projeto",
             error: (error as Error).message
         });
     }

@@ -20,7 +20,7 @@
     });
 
     // Recebe mensagens do servidor
-    socket.on("deploy_status", (msg) => {
+    socket.on("deploy_logs", (msg) => {
       console.log("Status de deploy:", msg);
       const logsDiv = document.getElementById("logs");
       if (logsDiv) {

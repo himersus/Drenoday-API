@@ -158,7 +158,6 @@ export const loginGoogle = async (req: Request, res: Response) => {
                 username: possibleUsername || email.split('@')[0] + Math.floor(1000 + Math.random() * 9000).toString(),
                 email,
                 provider: "google",
-                provider_id,
                 password: Math.random().toString(36).slice(-8), // senha aleatória
                 is_active: true,
             }

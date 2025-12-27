@@ -66,7 +66,7 @@ model project {
   start_cmd    String?
   tecnology    tecnology?  @default(docker)
   userId       String
-  environments Json        @default("[]")
+  environments String[]    @default([])
   createdAt    DateTime    @default(now())
   updatedAt    DateTime    @updatedAt
   payments     payment[]

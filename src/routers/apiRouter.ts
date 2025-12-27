@@ -8,6 +8,7 @@ import { getUserRepos, syncUserWithGitHub } from "../controller/github";
 import { createWorkspace, deleteWorkspace, getAllWorkspaces, getWorkspace, updateWorkspace } from "../controller/Workspace";
 import { createProject, deleteProject, getMyProjects, GetPendingProjectsPayments, getProject, runTheProject, updateProject } from "../controller/Project";
 import { addMember, removeMember } from "../controller/member";
+import { getDeploy, listDeploys } from "../controller/Deploy";
 
 dotenv.config();
 
@@ -49,16 +50,18 @@ router.put('/workspace/update/:workspaceId', verifyAuthentication, updateWorkspa
 router.delete('/workspace/delete/:workspaceId', verifyAuthentication, deleteWorkspace);
 // {{ Member ROUTES}}
 router.post('/workspace/member/add', verifyAuthentication, addMember);
-router.post('/workspace/member/remove', verifyAuthentication, removeMember);
+router.delete('/workspace/member/remove', verifyAuthentication, removeMember);
 
 // {{ Project ROUTES}}
 router.post('/project/create', verifyAuthentication, createProject);
 router.post('/project/run/:projectId', verifyAuthentication, runTheProject);
 router.get('/project/each/:projectId', verifyAuthentication, getProject);
 router.get('/project/my/:workspaceId', verifyAuthentication, getMyProjects);
-router.get('/project/pending', verifyAuthentication, GetPendingProjectsPayments);
+//router.get('/project/pending', verifyAuthentication, GetPendingProjectsPayments);
 router.put('/project/update/:projectId', verifyAuthentication, updateProject);
 router.delete('/project/delete/:projectId', verifyAuthentication, deleteProject);
 
+router.get('/deploy/all/:projectId', verifyAuthentication, listDeploys);
+router.get('/deploy/each/:deployId', verifyAuthentication, getDeploy);
 
 export default router;

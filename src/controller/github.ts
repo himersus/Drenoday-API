@@ -87,8 +87,6 @@ export const syncUserWithGitHub = async (req : Request | any, res: Response) => 
         return res.status(404).json({ message: "Usuário não encontrado" });
     }
 
-
-
     const encryptedToken = CryptoJS.AES.encrypt(github_token, process.env.JWT_SECRET!).toString();
 
     try {

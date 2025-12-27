@@ -4,19 +4,22 @@ import CryptoJS from 'crypto-js';
 import { validate } from "uuid";
 import { PrismaClient } from "@prisma/client";
 
-
 const prisma = new PrismaClient();
 
 export const addMember = async (req: Request | any, res: Response) => {
-    const { email, workspaceId } = req.body;
+    const { username, workspaceId, role } = req.body;
     const userId = req.userId;
     
     if (!userId || !validate(userId)) {
         return res.status(401).json({ message: "Usuário não autenticado" });
     }
 
+    if (role && !['member', 'master'].includes(role)) {
+        return res.status(400).json({ message: "Função inválida fornecida" });
+    }
+
     try {
-        const existUserLogado = await prisma.user.findUnique({
+        const existUserLogado = await prisma.user.findFirst({
             where: { id: userId }
         });
 
@@ -36,8 +39,14 @@ export const addMember = async (req: Request | any, res: Response) => {
             return res.status(403).json({ message: "Apenas administradores podem adicionar membros" });
         }
 
-        const user = await prisma.user.findUnique({
-            where: { email },
+        const user = await prisma.user.findFirst({
+            where: {
+                OR: [
+                    {id : validate(username) ? username : undefined },
+                    { username },
+                    { email: username }
+                ] 
+            },
         });
 
         if (!user) {
@@ -59,7 +68,7 @@ export const addMember = async (req: Request | any, res: Response) => {
             data: {
                 userId: user.id,
                 workspaceId: workspaceId,
-                role: 'member',
+                role: role || 'member',
             },
         });
 
@@ -70,7 +79,7 @@ export const addMember = async (req: Request | any, res: Response) => {
 };
 
 export const removeMember = async (req: Request | any, res: Response) => {
-    const { email, workspaceId } = req.body;
+    const { username, workspaceId } = req.body;
 
     const userId = req.userId;
     
@@ -99,8 +108,14 @@ export const removeMember = async (req: Request | any, res: Response) => {
             return res.status(403).json({ message: "Apenas administradores podem remover membros" });
         }
 
-        const user = await prisma.user.findUnique({
-            where: { email },
+        const user = await prisma.user.findFirst({
+            where: {
+                OR: [
+                    {id : validate(username) ? username : undefined },
+                    { username },
+                    { email: username }
+                ] 
+            },
         });
 
         if (!user) {

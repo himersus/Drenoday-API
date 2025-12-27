@@ -4,7 +4,7 @@ import { PrismaClient } from '@prisma/client';
 const prisma = new PrismaClient();
 import { spawn } from "child_process";
 
-export function startLogStream(deployId: string, containerName: string) {
+export function startLogStream(deployId: string, projectId: string, containerName: string) {
 
   if (!containerName || !deployId) {
     console.error("Container name is required to start log stream.");
@@ -25,9 +25,11 @@ export function startLogStream(deployId: string, containerName: string) {
 
       console.log("[log]", line);
 
-      sendSocketContent("logs", {
+      sendSocketContent("deploy_logs", {
+        projectId: projectId,
         deployId: deployId,
-        line: line
+        status : "running",
+        message: line
       })
 
       // salvar no banco
