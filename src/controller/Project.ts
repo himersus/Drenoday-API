@@ -343,6 +343,23 @@ networks:
             status: "building",
             message: "Iniciando build do deploy"
         });
+        // verificar se existe esse diretorio para fazer o deploy
+        if (!fs.existsSync(targetPath)) {
+            await prisma.deploy.update({
+                where: { id: buildDeploy.id },
+                data: {
+                    status: "failed",
+                    success: false
+                }
+            });
+            sendSocketContent("deploy_status", {
+                deployId: buildDeploy.id,
+                projectId: projectId,
+                status: "failed",
+                message: "Este projecto não está disponível para deploy"
+            });
+            return res.status(404).json({ message: "Este projecto não está disponível para deploy" });
+        }
         // subir container
         exec(
             "docker-compose down && docker-compose up -d --build",
@@ -367,6 +384,12 @@ networks:
                 }
 
                 console.log("[docker]", stdout);
+                sendSocketContent("deploy_status", {
+                    deployId: buildDeploy.id,
+                    projectId: projectId,
+                    status: "building",
+                    message: stdout
+                });
 
                 await prisma.deploy.update({
                     where: { id: buildDeploy.id },
