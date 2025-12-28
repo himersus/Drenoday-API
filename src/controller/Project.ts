@@ -411,10 +411,10 @@ networks:
                     status: "running",
                     message: "Deploy executando com sucesso"
                 });
+                startLogStream(buildDeploy.id, projectId, project.domain);
             }
         );
 
-        startLogStream(buildDeploy.id, projectId, project.domain);
 
         res.status(200).json({ message: "Deploy iniciado" });
     } catch (error: any) {
