@@ -4,6 +4,31 @@ import { PrismaClient } from '@prisma/client';
 const prisma = new PrismaClient();
 import { spawn } from "child_process";
 
+export function collectLogs(deployId: string, projectId: string, logLines: string[]) {
+  logLines.map(async (line) => {
+    if (!line.trim()) return;
+
+    console.log("[log]", line);
+
+    sendSocketContent("deploy_logs", {
+      projectId: projectId,
+      deployId: deployId,
+      status: "running",
+      message: line
+    })
+
+    // salvar no banco
+    await prisma.deploy.update({
+      where: { id: deployId },
+      data: {
+        logs: {
+          push: line
+        }
+      }
+    });
+  });
+}
+
 export function startLogStream(deployId: string, projectId: string, containerName: string) {
 
   if (!containerName || !deployId) {
@@ -19,29 +44,7 @@ export function startLogStream(deployId: string, projectId: string, containerNam
 
   logs.stdout.on("data", async (data: Buffer) => {
     const lines = data.toString().split("\n");
-
-    lines.map(async (line) => {
-      if (!line.trim()) return;
-
-      console.log("[log]", line);
-
-      sendSocketContent("deploy_logs", {
-        projectId: projectId,
-        deployId: deployId,
-        status : "running",
-        message: line
-      })
-
-      // salvar no banco
-      await prisma.deploy.update({
-        where: { id: deployId },
-        data: {
-          logs: {
-            push: line
-          }
-        }
-      });
-    });
+    collectLogs(deployId, projectId, lines);
   }
   );
 

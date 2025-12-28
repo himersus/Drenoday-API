@@ -59,7 +59,7 @@ model project {
   repo_url     String      @default("")
   description  String?
   workspaceId  String
-  port         String     @default("3000")
+  port         String      @default("3000")
   build_cmd    String?
   clone        cloneStatus @default(cloning)
   run_status   runStatus   @default(stoped)
@@ -70,21 +70,29 @@ model project {
   createdAt    DateTime    @default(now())
   updatedAt    DateTime    @updatedAt
   payments     payment[]
-  deploy  deploy[]
+  deploy       deploy[]
 
   Workspace Workspace @relation(fields: [workspaceId], references: [id])
   User      User      @relation(fields: [userId], references: [id])
 }
 
 model deploy {
-  id           String      @id @default(uuid())
-  projectId    String
-  status       runStatus   @default(building)
-  success      Boolean     @default(true)
-  logs         String[]    @default([])
-  createdAt    DateTime    @default(now())
-  updatedAt    DateTime    @updatedAt
-  Project      project   @relation(fields : [projectId], references : [id])
+  id        String    @id @default(uuid())
+  projectId String
+  status    runStatus @default(building)
+  success   Boolean   @default(true)
+  logs      String[]  @default([])
+
+  // dados do commit
+  commit_id     String?
+  commit_msg    String?
+  commit_author String?
+  commit_email  String?
+  commit_date   DateTime?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  Project   project  @relation(fields: [projectId], references: [id])
 }
 
 model payment {

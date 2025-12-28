@@ -12,6 +12,7 @@ import "./auth/googleAuth";
 // configurar o socket
 import { createServer } from "http";
 import { initSocket } from "./sockets/index";
+import bodyParser from 'body-parser';
 
 const port = process.env.PORT || 3000;
 const app = express();
@@ -36,10 +37,8 @@ app.use(cors({
 }));
 
 app.get('/', (req, res) => {
-    res.send('Welcome to the Gohost API!');
+    res.send('Welcome to drenoday API!');
 });
-
-
 
 app.use('/api/v1', router);
 

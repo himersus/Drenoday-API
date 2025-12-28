@@ -11,22 +11,8 @@ import { spawn } from "child_process";
 import path from "path";
 const prisma = new PrismaClient();
 import { sendSocketContent } from "../sockets/index"
-import { startLogStream } from "../helper/logs";
-
-
-function parseGithubRepo(url: string) {
-    const clean = url
-        .replace(/\.git$/, "")
-        .replace(/\/$/, "")
-        .split("/");
-
-    if (clean.length < 5) return null;
-
-    return {
-        owner: clean[3],
-        repo: clean[4]
-    };
-}
+import { collectLogs, startLogStream } from "../helper/logs";
+import { parseGithubRepo, getLastCommitFromBranch } from "../helper/github";
 
 async function repositoryUsesDocker(
     owner: string,
@@ -266,8 +252,6 @@ mkdir -p ${targetPath} \
 };
 
 
-
-
 export const runTheProject = async (req: Request | any, res: Response) => {
     const { projectId } = req.params;
     const userId = req.userId;
@@ -297,6 +281,9 @@ export const runTheProject = async (req: Request | any, res: Response) => {
             return res.status(403).json({ message: "Você não tem permissão para executar este projeto" });
         }
 
+        if (!existUser.github_token) {
+            return res.status(400).json({ message: "Token do GitHub não encontrado, tente sincronizar novamente" });
+        }
         /*if (project.clone !== 'cloned') {
             return res.status(400).json({ message: "O repositório ainda não foi clonado completamente" });
         }*/
@@ -331,9 +318,20 @@ networks:
             createComposeTreakfik
         );
 
+        const lastCommit = await getLastCommitFromBranch(
+            project.repo_url,
+            project.branch,
+            existUser.github_token!
+        );
+
         const buildDeploy = await prisma.deploy.create({
             data: {
                 projectId: projectId,
+                commit_id: lastCommit.sha || "unknown",
+                commit_msg: lastCommit.message || "unknown",
+                commit_author: lastCommit.author || "unknown",
+                commit_email: lastCommit.email || "unknown",
+                commit_date: lastCommit.date || new Date()
             }
         });
         sendSocketContent("deploy_logs", {
@@ -392,13 +390,14 @@ networks:
                 }
 
                 console.log("[docker]", stdout);
+                const logSplit = stdout.split("\n");
                 sendSocketContent("deploy_logs", {
                     deployId: buildDeploy.id,
                     projectId: projectId,
                     status: "building",
-                    message: stdout
+                    message: logSplit[logSplit.length - 2] || "Build do deploy concluído"
                 });
-
+                collectLogs(buildDeploy.id, projectId, logSplit);
                 await prisma.deploy.update({
                     where: { id: buildDeploy.id },
                     data: {
@@ -469,13 +468,13 @@ export const getMyProjects = async (req: Request | any, res: Response) => {
         return res.status(400).json({ message: "ID do workspace inválido" });
     }
 
-     const userWorkspace = await prisma.user_workspace.findFirst({
-            where: {
-                userId,
-                workspaceId
-            }
-        });
-        
+    const userWorkspace = await prisma.user_workspace.findFirst({
+        where: {
+            userId,
+            workspaceId
+        }
+    });
+
     if (!userWorkspace) {
         return res.status(403).json({ message: "Você não tem acesso a este workspace" });
     }
