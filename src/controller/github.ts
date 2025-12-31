@@ -46,16 +46,15 @@ export const getUserRepos = async (req: Request | any, res: Response) => {
         const response = await axios.get("https://api.github.com/user/repos",
             {
                 headers: {
-                Authorization: `Bearer ${token}`,
-                Accept: "application/vnd.github+json"
+                    Authorization: `Bearer ${token}`,
+                    Accept: "application/vnd.github+json"
                 },
                 params: {
+                    affiliation: "owner,collaborator,organization_member",
+                    visibility: "all",
+                    type: "all",
                     sort: "updated",
                     direction: "desc",
-                    affiliation: "owner,collaborator,organization_member,public,private",
-                    type: "all",
-                    visibility: "all",
-                    name,
                     page,
                     per_page: limit
                 }
@@ -66,6 +65,12 @@ export const getUserRepos = async (req: Request | any, res: Response) => {
             return res.status(response.status).json({ message: "Erro ao buscar repositórios" });
         }
 
+        if (name) {
+            response.data = response.data.filter((repo: any) =>
+                repo.name.toLowerCase().includes((name as string).toLowerCase())
+            );
+        }
+
         return res.json(response.data);
     } catch (error) {
         console.error(error);
@@ -73,7 +78,7 @@ export const getUserRepos = async (req: Request | any, res: Response) => {
     }
 };
 
-export const syncUserWithGitHub = async (req : Request | any, res: Response) => {
+export const syncUserWithGitHub = async (req: Request | any, res: Response) => {
     const userId = req.userId;
     const { github_username, github_token, github_id } = req.body;
 
