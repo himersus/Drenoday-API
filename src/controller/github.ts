@@ -51,8 +51,6 @@ export const getUserRepos = async (req: Request | any, res: Response) => {
                 },
                 params: {
                     affiliation: "owner,collaborator,organization_member",
-                    visibility: "all",
-                    type: "all",
                     sort: "updated",
                     direction: "desc",
                     page,
