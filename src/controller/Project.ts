@@ -37,33 +37,33 @@ async function repositoryUsesDocker(
         }
 
         // Verifica se existe docker-compose.yml ou docker-compose.yaml
-        const composeYmlResponse = await fetch(
+        /*const composeYmlResponse = await fetch(
             `https://api.github.com/repos/${owner}/${repo}/contents/docker-compose.yml`,
             { headers }
         );
 
         if (composeYmlResponse.ok) {
             return true;
-        }
+        }*/
 
-        const composeYamlResponse = await fetch(
+        /*const composeYamlResponse = await fetch(
             `https://api.github.com/repos/${owner}/${repo}/contents/docker-compose.yaml`,
             { headers }
         );
 
         if (composeYamlResponse.ok) {
             return true;
-        }
+        }*/
 
         // Verifica se existe pasta .docker
-        const dockerDirResponse = await fetch(
+        /*const dockerDirResponse = await fetch(
             `https://api.github.com/repos/${owner}/${repo}/contents/.docker`,
             { headers }
         );
 
         if (dockerDirResponse.ok) {
             return true;
-        }
+        }*/
 
         return false;
     } catch (error) {
@@ -81,8 +81,8 @@ export const createProject = async (req: Request | any, res: Response) => {
         return res.status(401).json({ message: "Usuário não autenticado" });
     }
 
-    if (!repo_url) {
-        return res.status(400).json({ message: "Branch e Repo URL devem ser strings" });
+    if (!repo_url || typeof repo_url !== 'string') {
+        return res.status(400).json({ message: "O Repo URL deve ser uma string" });
     }
 
     if (!branch || typeof branch !== 'string') {
@@ -155,11 +155,11 @@ export const createProject = async (req: Request | any, res: Response) => {
                     message: "URL do repositório GitHub inválida"
                 });
             }
-            if (await repositoryUsesDocker(parsed.owner, parsed.repo, token) === false) {
+            /*if (await repositoryUsesDocker(parsed.owner, parsed.repo, token) === false) {
                 return res.status(400).json({
                     message: "O repositório deve conter um Dockerfile na raiz"
                 });
-            }
+            }*/
         } catch (error) {
             return res.status(400).json({
                 message: "Erro ao verificar o repositório: " + (error as Error).message
