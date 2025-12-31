@@ -14,6 +14,7 @@ export const getUserRepos = async (req: Request | any, res: Response) => {
     const page = req.params.page || 1;
     const limit = req.params.limit || 10;
     const offset = (limit * page) - limit;
+    const name = req.query.name || "";
 
 
     if (!userId || !validate(userId)) {
@@ -51,6 +52,10 @@ export const getUserRepos = async (req: Request | any, res: Response) => {
                 params: {
                     sort: "updated",
                     direction: "desc",
+                    affiliation: "owner,collaborator,organization_member,public,private",
+                    type: "all",
+                    visibility: "all",
+                    name,
                     page,
                     per_page: limit
                 }
