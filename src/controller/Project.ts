@@ -1,7 +1,7 @@
 import { Request, Response } from "express";
 import dotenv from "dotenv";
 dotenv.config();
-import { PrismaClient } from '@prisma/client';
+import { PrismaClient, typePayment } from '@prisma/client';
 import { validate } from "uuid";
 import { generateUniqueDomain } from "../modify/domain";
 import { exec } from "child_process";
@@ -13,6 +13,7 @@ const prisma = new PrismaClient();
 import { sendSocketContent } from "../sockets/index"
 import { collectLogs, startLogStream } from "../helper/logs";
 import { parseGithubRepo, getLastCommitFromBranch } from "../helper/github";
+import { stopProject } from "../helper/stopProject";
 
 async function repositoryUsesDocker(
     owner: string,
@@ -74,7 +75,7 @@ async function repositoryUsesDocker(
 
 // {{Create projecto}}
 export const createProject = async (req: Request | any, res: Response) => {
-    const { name, description, branch, port, repo_url, environments, workspaceId, time_in_day, amount } = req.body;
+    const { name, description, plan_name, payment_form, branch, port, repo_url, environments, workspaceId } = req.body;
     const userId = req.userId;
 
     if (!validate(userId)) {
@@ -101,6 +102,40 @@ export const createProject = async (req: Request | any, res: Response) => {
         return res.status(400).json({
             message: "Port deve estar entre 1024 e 65535"
         });
+    }
+
+    if (!plan_name || typeof plan_name !== 'string') {
+        return res.status(400).json({ message: "O nome do plano deve exisir e ser uma string" });
+    }
+
+    const existPlan = await prisma.plan.findFirst({
+        where: {
+            name: plan_name
+        }
+    });
+
+    if (!existPlan) {
+        return res.status(400).json({ message: "Plano não encontrado" });
+    }
+
+    const payment_form_str = payment_form as typePayment || 'monthly';
+
+    if (payment_form_str !== 'monthly' && payment_form_str !== 'yearly' && payment_form_str !== 'daily') {
+        return res.status(400).json({ message: "Forma de pagamento inválida" });
+    }
+
+    let amount = existPlan.price;
+    let time_in_day: number | undefined = undefined;
+    if (payment_form_str === 'yearly') {
+        amount = existPlan.price * 12 - (existPlan.price * 0.5);
+        time_in_day = existPlan.duration * 12;
+    } else  if (payment_form_str === 'daily') {
+        amount = existPlan.price;
+        time_in_day = existPlan.duration;
+    }
+    else {
+        amount = existPlan.price;
+        time_in_day = existPlan.duration;
     }
 
     try {
@@ -185,16 +220,16 @@ export const createProject = async (req: Request | any, res: Response) => {
         const payment = await prisma.payment.create({
             data: {
                 userId: existUser.id, // ID do usuário que realizou o pagamento
+                planId: existPlan.id, // ID do plano escolhido
+                plan_name: existPlan.name, // nome do plano escolhido
                 amount: amount, // valor do pagamento
                 time_in_day: time_in_day || 0, // tempo em dias do pagamento
                 status: 'pending', // status do pagamento
-                type_payment: 'monthly', // tipo de pagamento
+                type_payment: payment_form_str, // tipo de pagamento
                 qty_months: 1, // quantidade de meses
                 projectId: project.id // ID do projeto associado ao pagamento
             }
         });
-
-
 
         const response = await fetch("https://api.github.com/user", {
             headers: {
@@ -267,6 +302,11 @@ export const runTheProject = async (req: Request | any, res: Response) => {
 
         if (!project) {
             return res.status(404).json({ message: "Projeto não encontrado" });
+        }
+
+        const now = new Date();
+        if (!project.date_expire || project.date_expire < now) {
+            return res.status(403).json({ message: "O plano associado a este projeto expirou. Por favor, renove o plano para continuar." });
         }
 
         const existUser = await prisma.user.findFirst({
@@ -420,6 +460,30 @@ networks:
     } catch (error: any) {
         res.status(500).json({
             message: "Failed to run project",
+            error: error.message
+        });
+    }
+};
+
+export const stopTheProject = async (req: Request | any, res: Response) => {
+    const { projectId } = req.params;
+    const userId = req.userId;
+
+    if (!validate(projectId) || !validate(userId)) {
+        return res.status(400).json({ message: "ID inválido" });
+    }
+
+    try {
+        const stopResponse = await stopProject(projectId, userId);
+
+        if (stopResponse && stopResponse.statusCode !== 200) {
+            return res.status(stopResponse.statusCode).json({ message: stopResponse.message });
+        }
+
+        res.status(200).json({ message: "Projeto parado com sucesso" });
+    } catch (error: any) {
+        res.status(500).json({
+            message: "Failed to stop project",
             error: error.message
         });
     }

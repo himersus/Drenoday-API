@@ -51,7 +51,7 @@ export const sendCodeVerification = async (req: Request, res: Response) => {
     const { email } = req.body;
 
     try {
-        const user = await prisma.user.findUnique({
+        const user = await prisma.user.findFirst({
             where: { email },
         });
 

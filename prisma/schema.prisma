@@ -59,6 +59,7 @@ model project {
   repo_url     String      @default("")
   description  String?
   workspaceId  String
+  date_expire  DateTime?
   port         String      @default("3000")
   build_cmd    String?
   clone        cloneStatus @default(cloning)
@@ -96,20 +97,36 @@ model deploy {
 }
 
 model payment {
-  id           String        @id @default(uuid())
-  userId       String
-  projectId    String
-  date_start   DateTime?
-  date_end     DateTime?
-  time_in_day  Int?          @default(0)
-  type_payment typePayment
-  qty_months   Int
-  amount       Float
-  status       PaymentStatus @default(pending)
-  createdAt    DateTime      @default(now())
-  updatedAt    DateTime      @updatedAt
-  project      project       @relation(fields: [projectId], references: [id])
-  User         User          @relation(fields: [userId], references: [id])
+  id            String        @id @default(uuid())
+  userId        String
+  projectId     String
+  planId        String
+  plan_name     String        @default("")
+  date_start    DateTime?
+  date_end      DateTime?
+  proof_payment String?       // URL ou caminho do comprovante de pagamento
+  time_in_day   Int?          @default(0)
+  type_payment  typePayment
+  qty_months    Int?          @default(0)
+  amount        Float
+  status        PaymentStatus @default(pending)
+  createdAt     DateTime      @default(now())
+  updatedAt     DateTime      @updatedAt
+  project       project       @relation(fields: [projectId], references: [id])
+  User          User          @relation(fields: [userId], references: [id])
+  Plan          plan          @relation(fields: [planId], references: [id])
+}
+
+model plan {
+  id           String    @id @default(uuid())
+  name         String    @unique
+  description  String?
+  price        Float
+  duration     Int // duration in days
+  max_projects Int       @default(1)
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+  payments     payment[]
 }
 
 model notification {
