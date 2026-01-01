@@ -103,6 +103,13 @@ export const createPayment = async (req: Request | any, res: Response) => {
         where: { name: plan_name }
     });
 
+    const existPlayment = await prisma.payment.findFirst({
+        where: {
+            projectId: projectId,
+            status: 'completed'
+        }
+    });
+
 
     if (!existPlan) {
         return res.status(404).json({ message: "Plano não encontrado" });

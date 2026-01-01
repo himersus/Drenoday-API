@@ -120,7 +120,7 @@ export const createProject = async (req: Request | any, res: Response) => {
         return res.status(400).json({ message: "Plano não encontrado" });
     }
 
-    if (proof_payment && typeof proof_payment !== 'string') {
+    if (existPlan.name !== "free" && (proof_payment && typeof proof_payment !== 'string')) {
         return res.status(400).json({ message: "Comprovante de pagamento inválido" });
     }
 
@@ -228,9 +228,9 @@ export const createProject = async (req: Request | any, res: Response) => {
                 userId: existUser.id, // ID do usuário que realizou o pagamento
                 planId: existPlan.id, // ID do plano escolhido
                 plan_name: existPlan.name, // nome do plano escolhido
-                amount: amount, // valor do pagamento
+                amount: existPlan.name === "free" ? 0 : amount, // valor do pagamento
                 time_in_day: time_in_day || 0, // tempo em dias do pagamento
-                status: 'pending', // status do pagamento
+                status: existPlan.name === "free" ? 'completed' : 'pending', // status do pagamento
                 type_payment: payment_form_str, // tipo de pagamento
                 qty_months: 1, // quantidade de meses
                 projectId: project.id // ID do projeto associado ao pagamento
@@ -291,7 +291,6 @@ mkdir -p ${targetPath} \
         });
     }
 };
-
 
 export const runTheProject = async (req: Request | any, res: Response) => {
     const { projectId } = req.params;
