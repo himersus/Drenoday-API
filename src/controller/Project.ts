@@ -75,7 +75,9 @@ async function repositoryUsesDocker(
 
 // {{Create projecto}}
 export const createProject = async (req: Request | any, res: Response) => {
-    const { name, description, plan_name, payment_form, branch, port, repo_url, environments, workspaceId } = req.body;
+    const { name, description, plan_name, payment_form,
+         branch, port, repo_url, environments, workspaceId, 
+         proof_payment } = req.body;
     const userId = req.userId;
 
     if (!validate(userId)) {
@@ -118,6 +120,10 @@ export const createProject = async (req: Request | any, res: Response) => {
         return res.status(400).json({ message: "Plano não encontrado" });
     }
 
+    if (proof_payment && typeof proof_payment !== 'string') {
+        return res.status(400).json({ message: "Comprovante de pagamento inválido" });
+    }
+
     const payment_form_str = payment_form as typePayment || 'monthly';
 
     if (payment_form_str !== 'monthly' && payment_form_str !== 'yearly' && payment_form_str !== 'daily') {
@@ -129,7 +135,7 @@ export const createProject = async (req: Request | any, res: Response) => {
     if (payment_form_str === 'yearly') {
         amount = existPlan.price * 12 - (existPlan.price * 0.5);
         time_in_day = existPlan.duration * 12;
-    } else  if (payment_form_str === 'daily') {
+    } else if (payment_form_str === 'daily') {
         amount = existPlan.price;
         time_in_day = existPlan.duration;
     }

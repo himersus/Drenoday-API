@@ -146,7 +146,7 @@ export const loginGoogle = async (req: Request, res: Response) => {
     });
 
     if (!userInDb && create === 'false') {
-        return res.status(404).json({ message: "Usuário não encontrado" });
+        return res.redirect(`${process.env.FRONTEND_URL}/auth/error?message='Usuário não encontrado. Por favor, registre-se primeiro.'`);
     }
 
     if (!userInDb && create === 'true') {
