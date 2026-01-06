@@ -125,7 +125,7 @@ export const loginGitHub = async (req: Request | any, res: Response) => {
         return res.status(401).json({ message: "Usuário não autenticado" });
     }
 
-    return res.redirect(`${process.env.FRONTEND_URL}/github?token=${token}&username=${user.username}&id=${user.id}`);
+    return res.redirect(`${process.env.FRONTEND_URL}/auth/github?token=${token}&username=${user.username}&id=${user.id}`);
 };
 
 export const loginGoogle = async (req: Request | any, res: Response) => {
