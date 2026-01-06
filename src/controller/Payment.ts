@@ -6,9 +6,48 @@ import axios from "axios";
 import dotenv from "dotenv";
 import { randomUUID } from 'crypto';
 
+
+const token = "123";
 dotenv.config();
 
 const prisma = new PrismaClient();
+
+const generateReferenceNumber = (): string => {
+    // numero de 9 digitos mas nao pode começar com 9 nem 0
+    let number = '';
+    const firstDigit = Math.floor(Math.random() * 8) + 1; // Gera um número entre 1 e 8
+    number += firstDigit.toString();
+
+    for (let i = 1; i < 9; i++) {
+        const digit = Math.floor(Math.random() * 10); // Gera um número entre 0 e 9
+        number += digit.toString();
+    }
+    return `${number}`;
+};
+
+export const getAllReferences = async (req: Request, res: Response) => {
+    try {
+        const options = {
+            method: 'GET',
+            url: 'https://gwy-api.appypay.co.ao/v2.0/references',
+            headers: {
+                Accept: 'application/json',
+                Authorization: `Bearer ${token}`
+            }
+        };
+
+        const response = await axios.request(options);
+
+        return res.status(200).json(response.data);
+    } catch (error: any) {
+        console.error(error.response?.data || error);
+
+        return res.status(500).json({
+            message: 'Erro ao obter referências de pagamento',
+            error: error.response?.data || error.message,
+        });
+    }
+};
 
 
 export const referenceSendPaymentGateway = async (req: Request, res: Response) => {
@@ -20,34 +59,33 @@ export const referenceSendPaymentGateway = async (req: Request, res: Response) =
         expiration.setDate(expiration.getDate() + 7);
         const expirationDateStr = expiration.toISOString();
 
-        const token = "123";
+        const ref = generateReferenceNumber();
+        console.log('Generated Reference Number:', ref);
 
         const options = {
             method: 'POST',
             url: 'https://gwy-api.appypay.co.ao/v2.0/references',
             headers: {
                 'Content-Type': 'application/json',
-                'Accept-Language': '',
-                Assertion: '',
                 Accept: 'application/json',
                 Authorization: `Bearer ${token}`
             },
             data: {
-                paymentMethod: '',
+                paymentMethod: process.env.PG_PAYMENT_METHOD_ID,
                 references: [
                     {
-                        referenceNumber: '',
+                        //referenceNumber: ref,
                         currency: 'AOA',
                         amounts: [
                             { amount: amount, descriptionLine1: description },
                         ],
-                        //minAmount: 100,
-                        //maxAmount: 200,
+                        minAmount: 10,
+                        maxAmount: 20,
                         startDate: now,
                         expirationDate: expirationDateStr
                     }
                 ],
-                createdBy: 'Justino Soares'
+                createdBy: 'DrenoDaySystem',
             }
         };
 

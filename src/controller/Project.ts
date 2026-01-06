@@ -230,7 +230,7 @@ mkdir -p ${targetPath} \
 
             console.log(`stdout: ${stdout}`);
         });
-        res.status(201).json(project);
+        res.status(201).json({...project, paid : false});
     } catch (error) {
         res.status(500).json({
             message: "Failed to create project",
@@ -308,10 +308,15 @@ export const getProject = async (req: Request | any, res: Response) => {
             }
         });
 
+        let paid = false;
+        const now = new Date();
+        if (project.date_expire && project.date_expire > now) {
+            paid = true;
+        }
         if (!userWorkspace) {
             return res.status(403).json({ message: "Você não tem acesso a este projeto" });
         }
-        return res.status(200).json(project);
+        return res.status(200).json({...project, paid : paid});
     } catch (error) {
         return res.status(500).json({ message: "erro ao buscar projeto" });
     }
@@ -344,7 +349,16 @@ export const getMyProjects = async (req: Request | any, res: Response) => {
             where: { userId, workspaceId },
         });
 
-        res.status(200).json(projects);
+        const projectsWithPaymentStatus = projects.map(project => {
+            let paid = false;
+            const now = new Date();
+            if (project.date_expire && project.date_expire > now) {
+                paid = true;
+            }
+            return { ...project, paid };
+        });
+
+        res.status(200).json(projectsWithPaymentStatus);
     } catch (error) {
         res.status(500).json({ message: "Falha ao recuperar projetos" });
     }

@@ -10,7 +10,7 @@ import { createProject, deleteProject, getMyProjects, getProject, runTheProject,
 import { addMember, removeMember } from "../controller/member";
 import { getDeploy, listDeploys } from "../controller/Deploy";
 import { addPlan, deletePlan, getPlanById, getPlans } from "../controller/Plan";
-import { confirmPayment, createPayment, getAppyPayToken, getPaymentById, getUserPayments, referenceSendPaymentGateway } from "../controller/Payment";
+import { confirmPayment, createPayment, getAllReferences, getAppyPayToken, getPaymentById, getUserPayments, referenceSendPaymentGateway } from "../controller/Payment";
 
 dotenv.config();
 
@@ -94,6 +94,7 @@ router.get('/pay/each/:paymentId', verifyAuthentication, getPaymentById);
 // {{ API de pagamento }}
 router.get('/pay/token', getAppyPayToken);
 router.post('/pay/reference', referenceSendPaymentGateway);
+router.get('/pay/reference', getAllReferences);
 
 
 

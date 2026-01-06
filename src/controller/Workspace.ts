@@ -1,4 +1,4 @@
-import { Request, Response } from "express";
+import e, { Request, Response } from "express";
 import dotenv from "dotenv";
 dotenv.config();
 import { PrismaClient } from "@prisma/client";
@@ -59,7 +59,7 @@ export const createWorkspace = async (req: Request | any, res: Response) => {
                 role: "master",
             }
         });
-        res.status(201).json(workspace);
+        res.status(201).json({...workspace, username: existUser.username});
     } catch (error) {
         res.status(500).json({ error: "Failed to create workspace" });
     }
@@ -71,6 +71,15 @@ export const getWorkspace = async (req: Request | any, res: Response) => {
 
     if (!validate(workspaceId) || !validate(userId)) {
         return res.status(400).json({ message: "Invalid workspace ID" });
+    }
+
+    const existUser = await prisma.user.findFirst({
+        where: {
+            id: userId,
+        },
+    });
+    if (!existUser) {
+        return res.status(404).json({ message: "Usuário não encontrado" });
     }
     const existUserInWorkspace = await prisma.user_workspace.findFirst({
         where: {
@@ -90,7 +99,7 @@ export const getWorkspace = async (req: Request | any, res: Response) => {
         if (!workspace) {
             return res.status(404).json({ message: "Workspace not found" });
         }
-        res.status(200).json(workspace);
+        res.status(200).json({...workspace, username : existUser.username });
     } catch (error) {
         res.status(500).json({ message: "Failed to retrieve workspace" });
     }
@@ -99,6 +108,14 @@ export const getWorkspace = async (req: Request | any, res: Response) => {
 export const getAllWorkspaces = async (req: Request | any, res: Response) => {
     const userId = req.userId;
     try {
+        const existUser = await prisma.user.findFirst({
+            where: {
+                id: userId,
+            },
+        });
+        if (!existUser) {
+            return res.status(404).json({ message: "Usuário não encontrado" });
+        }
         const workspaces = await prisma.user_workspace.findMany({
             where: {
                 userId: userId
@@ -113,7 +130,14 @@ export const getAllWorkspaces = async (req: Request | any, res: Response) => {
                 }
             }
         });
-        res.status(200).json(allWorkspaces);
+
+        const workspacesWithUsernames = await Promise.all(allWorkspaces.map(async (workspace) => {  
+            return {
+                ...workspace,
+                username: existUser.username
+            };
+        }));
+        res.status(200).json(workspacesWithUsernames);
     } catch (error) {
         res.status(500).json({ error: "Failed to retrieve workspaces" });
     }
@@ -126,6 +150,15 @@ export const updateWorkspace = async (req: Request | any, res: Response) => {
 
     if (!validate(workspaceId) || !validate(userId)) {
         return res.status(400).json({ message: "Invalid workspace ID" });
+    }
+
+    const existUser = await prisma.user.findFirst({
+        where: {
+            id: userId,
+        },
+    });
+    if (!existUser) {
+        return res.status(404).json({ message: "Usuário não encontrado" });
     }
     const existUserInWorkspace = await prisma.user_workspace.findFirst({
         where: {
@@ -156,7 +189,7 @@ export const updateWorkspace = async (req: Request | any, res: Response) => {
                 name
             }
         });
-        res.status(200).json(workspace);
+        res.status(200).json({...workspace, username: existUser.username});
     } catch (error) {
         res.status(500).json({ message: "Failed to update workspace" });
     }
