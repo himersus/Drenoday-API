@@ -27,7 +27,7 @@ router.get('/auth/github',
         scope: ['read:user', 'user:email', 'repo']
     })
 );
-router.get('/auth/github/callback', passport.authenticate('github', { failureRedirect: '/auth/login' }), loginGitHub);
+router.get('/auth/github/callback', passport.authenticate('github', { failureRedirect: '/auth/github' }), loginGitHub);
 
 // {{GOOGLE AUTH ROUTES}}
 router.get('/auth/google',

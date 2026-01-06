@@ -120,9 +120,8 @@ export const loginGitHub = async (req: Request | any, res: Response) => {
     const user: any = req.user;
     const token = (req.user as any).token;
 
-
     if (!user) {
-        return res.status(401).json({ message: "Usuário não autenticado" });
+        return res.redirect(`${process.env.FRONTEND_URL}/auth/error?message=Usuário não encontrado. Por favor, registre-se primeiro.`);
     }
 
     return res.redirect(`${process.env.FRONTEND_URL}/auth/github?token=${token}&username=${user.username}&id=${user.id}`);
