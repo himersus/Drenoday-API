@@ -7,7 +7,7 @@
   "license": "MIT",
   "type": "commonjs",
   "scripts": {
-    "dev": "tsx watch src/index.ts",
+    "dev": "nodemon",
     "build": "tsc",
     "start": "tsx watch src/index.ts"
   },
@@ -47,6 +47,7 @@
     "uuid": "^13.0.0"
   },
   "devDependencies": {
+    "ts-node": "^10.9.2",
     "ts-node-dev": "^2.0.0",
     "tsx": "^4.21.0"
   }

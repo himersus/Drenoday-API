@@ -6,9 +6,11 @@ import { login, loginGitHub, loginGoogle, sendCodeVerification, verifyCode } fro
 import passport from "passport";
 import { getUserRepos, syncUserWithGitHub } from "../controller/github";
 import { createWorkspace, deleteWorkspace, getAllWorkspaces, getWorkspace, updateWorkspace } from "../controller/Workspace";
-import { createProject, deleteProject, getMyProjects, GetPendingProjectsPayments, getProject, runTheProject, updateProject } from "../controller/Project";
+import { createProject, deleteProject, getMyProjects, getProject, runTheProject, updateProject } from "../controller/Project";
 import { addMember, removeMember } from "../controller/member";
 import { getDeploy, listDeploys } from "../controller/Deploy";
+import { addPlan, deletePlan, getPlanById, getPlans } from "../controller/Plan";
+import { confirmPayment, createPayment, getAppyPayToken, getPaymentById, getUserPayments, referenceSendPaymentGateway } from "../controller/Payment";
 
 dotenv.config();
 
@@ -28,7 +30,17 @@ router.get('/auth/github',
 router.get('/auth/github/callback', passport.authenticate('github', { failureRedirect: '/auth/login' }), loginGitHub);
 
 // {{GOOGLE AUTH ROUTES}}
-router.get('/auth/google', passport.authenticate('google', { scope: ['profile', 'email'] }));
+router.get('/auth/google',
+  (req, res, next) => {
+    const create = req.query.create;
+
+    passport.authenticate('google', {
+      scope: ['profile', 'email'],
+      state: JSON.stringify({ create })
+    })(req, res, next);
+  }
+);
+
 router.get('/auth/google/callback', passport.authenticate('google', { failureRedirect: '/auth/google' }), loginGoogle);
 
 // Github 
@@ -48,6 +60,8 @@ router.get('/workspace/each/:workspaceId', verifyAuthentication, getWorkspace);
 router.get('/workspace/all', verifyAuthentication, getAllWorkspaces);
 router.put('/workspace/update/:workspaceId', verifyAuthentication, updateWorkspace);
 router.delete('/workspace/delete/:workspaceId', verifyAuthentication, deleteWorkspace);
+
+
 // {{ Member ROUTES}}
 router.post('/workspace/member/add', verifyAuthentication, addMember);
 router.delete('/workspace/member/remove', verifyAuthentication, removeMember);
@@ -57,11 +71,31 @@ router.post('/project/create', verifyAuthentication, createProject);
 router.post('/project/run/:projectId', verifyAuthentication, runTheProject);
 router.get('/project/each/:projectId', verifyAuthentication, getProject);
 router.get('/project/my/:workspaceId', verifyAuthentication, getMyProjects);
-//router.get('/project/pending', verifyAuthentication, GetPendingProjectsPayments);
+
 router.put('/project/update/:projectId', verifyAuthentication, updateProject);
 router.delete('/project/delete/:projectId', verifyAuthentication, deleteProject);
 
+// {{ Deploy ROUTES}}
 router.get('/deploy/all/:projectId', verifyAuthentication, listDeploys);
 router.get('/deploy/each/:deployId', verifyAuthentication, getDeploy);
+
+// {{ Plan ROUTES}}
+router.post('/plan/create', verifyAuthentication, addPlan);
+router.get('/plan/all',  getPlans);
+router.get('/plan/each/:planId', getPlanById);
+router.delete('/plan/delete/:planId', verifyAuthentication, deletePlan);
+
+// {{ Pay ROUTES}}
+router.post('/pay/create', verifyAuthentication, createPayment);
+router.post('/pay/confirm', verifyAuthentication, confirmPayment);
+router.get('/pay/my', verifyAuthentication, getUserPayments);
+router.get('/pay/each/:paymentId', verifyAuthentication, getPaymentById);
+
+// {{ API de pagamento }}
+router.get('/pay/token', getAppyPayToken);
+router.post('/pay/reference', referenceSendPaymentGateway);
+
+
+
 
 export default router;

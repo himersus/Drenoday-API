@@ -114,7 +114,7 @@ model payment {
   updatedAt     DateTime      @updatedAt
   project       project       @relation(fields: [projectId], references: [id])
   User          User          @relation(fields: [userId], references: [id])
-  Plan          plan          @relation(fields: [planId], references: [id])
+  Plan          plan          @relation(fields: [planId], references: [id], onDelete: SetDefault)
 }
 
 model plan {

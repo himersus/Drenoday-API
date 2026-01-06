@@ -124,16 +124,17 @@ export const loginGitHub = async (req: Request | any, res: Response) => {
     if (!user) {
         return res.status(401).json({ message: "Usuário não autenticado" });
     }
-    
+
     return res.redirect(`${process.env.FRONTEND_URL}/github?token=${token}&username=${user.username}&id=${user.id}`);
 };
 
-export const loginGoogle = async (req: Request, res: Response) => {
+export const loginGoogle = async (req: Request | any, res: Response) => {
     const user: any = req.user;
-    const create = req.query.create as string || 'false';
+     const state = JSON.parse(req.query.state || '{}');
+    const create = state.create || 'true';
 
     if (!user) {
-        return res.status(401).json({ message: "Usuário não autenticado" });
+        return res.redirect(`${process.env.FRONTEND_URL}/auth/error?message=Usuário não encontrado. Por favor, registre-se primeiro.`);
     }
 
     // Dados vindos do Google

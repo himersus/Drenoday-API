@@ -9,7 +9,7 @@ const prisma = new PrismaClient();
 export const addMember = async (req: Request | any, res: Response) => {
     const { username, workspaceId, role } = req.body;
     const userId = req.userId;
-    
+
     if (!userId || !validate(userId)) {
         return res.status(401).json({ message: "Usuário não autenticado" });
     }
@@ -42,10 +42,10 @@ export const addMember = async (req: Request | any, res: Response) => {
         const user = await prisma.user.findFirst({
             where: {
                 OR: [
-                    {id : validate(username) ? username : undefined },
+                    { id: validate(username) ? username : undefined },
                     { username },
                     { email: username }
-                ] 
+                ]
             },
         });
 
@@ -72,8 +72,8 @@ export const addMember = async (req: Request | any, res: Response) => {
             },
         });
 
-        res.status(200).json({ message: "Membro adicionado com sucesso"});
-    } catch (error : any) {
+        res.status(200).json({ message: "Membro adicionado com sucesso" });
+    } catch (error: any) {
         res.status(500).json({ message: "Erro ao adicionar membro", error: error.message });
     }
 };
@@ -82,7 +82,7 @@ export const removeMember = async (req: Request | any, res: Response) => {
     const { username, workspaceId } = req.body;
 
     const userId = req.userId;
-    
+
     if (!userId || !validate(userId)) {
         return res.status(401).json({ message: "Usuário não autenticado" });
     }
@@ -111,10 +111,10 @@ export const removeMember = async (req: Request | any, res: Response) => {
         const user = await prisma.user.findFirst({
             where: {
                 OR: [
-                    {id : validate(username) ? username : undefined },
+                    { id: validate(username) ? username : undefined },
                     { username },
                     { email: username }
-                ] 
+                ]
             },
         });
 
@@ -137,8 +137,8 @@ export const removeMember = async (req: Request | any, res: Response) => {
             where: { id: existingMember.id },
         });
 
-        res.status(200).json({ message: "Membro removido com sucesso"});
-    } catch (error : any) {
+        res.status(200).json({ message: "Membro removido com sucesso" });
+    } catch (error: any) {
         res.status(500).json({ message: "Erro ao remover membro", error: error.message });
     }
 };
