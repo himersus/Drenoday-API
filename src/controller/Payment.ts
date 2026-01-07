@@ -5,24 +5,22 @@ import { sendSocketContent } from "../sockets";
 import axios from "axios";
 import dotenv from "dotenv";
 import { randomUUID } from 'crypto';
+import { referenceSendPaymentService, verificationPayment } from "../services/Payment";
 
 
-const token = "123";
+const token = process.env.PG_TOKEN || '';
 dotenv.config();
 
 const prisma = new PrismaClient();
 
-const generateReferenceNumber = (): string => {
-    // numero de 9 digitos mas nao pode começar com 9 nem 0
-    let number = '';
-    const firstDigit = Math.floor(Math.random() * 8) + 1; // Gera um número entre 1 e 8
-    number += firstDigit.toString();
-
-    for (let i = 1; i < 9; i++) {
-        const digit = Math.floor(Math.random() * 10); // Gera um número entre 0 e 9
-        number += digit.toString();
+const generateMerchantId = (): string => {
+    // no maximo 15 digitos, deve conter pelomenos um caracter e todos devem ser alfanumericos
+    const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
+    let merchantId = '';
+    for (let i = 0; i < 15; i++) {
+        merchantId += chars.charAt(Math.floor(Math.random() * chars.length));
     }
-    return `${number}`;
+    return merchantId;
 };
 
 export const getAllReferences = async (req: Request, res: Response) => {
@@ -49,49 +47,52 @@ export const getAllReferences = async (req: Request, res: Response) => {
     }
 };
 
-
-export const referenceSendPaymentGateway = async (req: Request, res: Response) => {
+export const referenceSendPaymentGateway = async (req: Request | any, res: Response) => {
     try {
-        const { amount, description } = req.body;
+        const { description, projectId, plan_name } = req.body;
+        const userId = req.userId;
 
-        const now = new Date().toISOString();
-        const expiration = new Date();
-        expiration.setDate(expiration.getDate() + 7);
-        const expirationDateStr = expiration.toISOString();
+        const verifyPayRaw: any = await verificationPayment(userId, projectId, plan_name);
+        if (verifyPayRaw.code != 200) {
+            return res.status(verifyPayRaw.code || 400).json({
+                message: verifyPayRaw.message
+            });
+        }
 
-        const ref = generateReferenceNumber();
-        console.log('Generated Reference Number:', ref);
+        const verifyPay =  verifyPayRaw.data;
 
-        const options = {
-            method: 'POST',
-            url: 'https://gwy-api.appypay.co.ao/v2.0/references',
-            headers: {
-                'Content-Type': 'application/json',
-                Accept: 'application/json',
-                Authorization: `Bearer ${token}`
-            },
+        const merchantId = generateMerchantId();
+
+        // valor real deve ser o: verifyPay.amount
+        const data: any = await referenceSendPaymentService(merchantId, 1, description);
+        if (data.code != 200) {
+            return res.status(data.code || 400).json({
+                message: data.message || ""
+            })
+        }
+
+        const createPayment = await prisma.payment.create({
             data: {
-                paymentMethod: process.env.PG_PAYMENT_METHOD_ID,
-                references: [
-                    {
-                        //referenceNumber: ref,
-                        currency: 'AOA',
-                        amounts: [
-                            { amount: amount, descriptionLine1: description },
-                        ],
-                        minAmount: 10,
-                        maxAmount: 20,
-                        startDate: now,
-                        expirationDate: expirationDateStr
-                    }
-                ],
-                createdBy: 'DrenoDaySystem',
+                userId: userId, // ID do usuário que realizou o pagamento
+                planId: verifyPay.plan_id, // ID do plano escolhido
+                plan_name: verifyPay.plan_name, // nome do plano escolhido
+                amount: 0,//verifyPay.amount, // valor do pagamento
+                time_in_day: verifyPay.time_in_day || 0, // tempo em dias do pagamento
+                status: 'pending', // status do pagamento
+                type_payment: verifyPay.type_payment, // tipo de pagamento
+                qty_months: 1, // quantidade de meses
+                projectId: projectId// ID do projeto associado ao pagamento
             }
-        };
+        })
 
-        const response = await axios.request(options);
-
-        return res.status(200).json(response.data);
+        sendSocketContent("new_payment", {
+            userId: userId,
+            paymentId: createPayment.id,
+            amount: verifyPay.amount,
+            plan_name: verifyPay.plan_name,
+            status: 'pending',
+        });
+        return res.status(200).json(data);
     } catch (error: any) {
         console.error(error.response?.data || error);
 
@@ -103,33 +104,31 @@ export const referenceSendPaymentGateway = async (req: Request, res: Response) =
 };
 
 
-
-
 export const getAppyPayToken = async (req: Request, res: Response) => {
-  try {
-    const params = new URLSearchParams();
-    params.append('grant_type', 'client_credentials');
-    params.append('client_id', process.env.PG_API_CLIENT_ID!);
-    params.append('client_secret', process.env.PG_API_SECRET!);
-    params.append('resource', 'bee57785-7a19-4f1c-9c8d-aa03f2f0e333');
+    try {
+        const params = new URLSearchParams();
+        params.append('grant_type', 'client_credentials');
+        params.append('client_id', process.env.PG_API_CLIENT_ID!);
+        params.append('client_secret', process.env.PG_API_SECRET!);
+        params.append('resource', process.env.PG_RESOURCE_ID!);
 
-    const response = await axios.post(
-      `https://login.microsoftonline.com/auth.appypay.co.ao/oauth2/token`,
-      params,
-      {
-        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-      }
-    );
+        const response = await axios.post(
+            `https://login.microsoftonline.com/auth.appypay.co.ao/oauth2/token`,
+            params,
+            {
+                headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+            }
+        );
 
-    return res.status(200).json(response.data);
+        return res.status(200).json(response.data);
 
-  } catch (error: any) {
-    console.error(error.response?.data || error);
-    return res.status(500).json({
-      message: 'Erro ao obter token AppyPay',
-      error: error.response?.data || error.message,
-    });
-  }
+    } catch (error: any) {
+        console.error(error.response?.data || error);
+        return res.status(500).json({
+            message: 'Erro ao obter token AppyPay',
+            error: error.response?.data || error.message,
+        });
+    }
 };
 
 
@@ -199,7 +198,7 @@ export const confirmPayment = async (req: Request | any, res: Response) => {
             status: status == 'completed' ? 'Pago' : 'Rejeitado',
         });
 
-        return res.status(201).json( payment );
+        return res.status(201).json(payment);
     } catch (error) {
         console.error(error);
         return res.status(500).json({ message: "Erro ao registrar pagamento" });
@@ -382,7 +381,7 @@ export const getPaymentById = async (req: Request | any, res: Response) => {
             return res.status(404).json({ message: "Pagamento não encontrado" });
         }
 
-        return res.status(200).json( payment );
+        return res.status(200).json(payment);
     }
     catch (error) {
         console.error(error);
