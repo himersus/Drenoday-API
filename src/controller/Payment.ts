@@ -6,6 +6,7 @@ import axios from "axios";
 import dotenv from "dotenv";
 import { randomUUID } from 'crypto';
 import { referenceSendPaymentService, verificationPayment } from "../services/Payment";
+import { error } from "console";
 
 
 const token = process.env.PG_TOKEN || '';
@@ -50,6 +51,7 @@ export const getAllReferences = async (req: Request, res: Response) => {
 export const referenceSendPaymentGateway = async (req: Request | any, res: Response) => {
     try {
         const { description, projectId, plan_name } = req.body;
+
         const userId = req.userId;
 
         const verifyPayRaw: any = await verificationPayment(userId, projectId, plan_name);
@@ -59,7 +61,7 @@ export const referenceSendPaymentGateway = async (req: Request | any, res: Respo
             });
         }
 
-        const verifyPay =  verifyPayRaw.data;
+        const verifyPay = verifyPayRaw.data;
 
         const merchantId = generateMerchantId();
 
@@ -67,7 +69,10 @@ export const referenceSendPaymentGateway = async (req: Request | any, res: Respo
         const data: any = await referenceSendPaymentService(merchantId, 1, description);
         if (data.code != 200) {
             return res.status(data.code || 400).json({
-                message: data.message || ""
+                message: data.message || "",
+                error: data.error || {
+                    message: "Erro desconhecido ao criar referência de pagamento"
+                }
             })
         }
 
@@ -103,7 +108,6 @@ export const referenceSendPaymentGateway = async (req: Request | any, res: Respo
     }
 };
 
-
 export const getAppyPayToken = async (req: Request, res: Response) => {
     try {
         const params = new URLSearchParams();
@@ -131,6 +135,12 @@ export const getAppyPayToken = async (req: Request, res: Response) => {
     }
 };
 
+
+export const webhookPayment = async (req: Request, res: Response) => {
+    console.log("Webhook recebido:", req.body);
+    // Aqui você pode processar os dados recebidos no webhook conforme necessário
+    res.status(200).json({ message: "Webhook recebido com sucesso" });
+};
 
 
 

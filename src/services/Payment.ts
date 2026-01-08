@@ -8,7 +8,8 @@ const prisma = new PrismaClient();
 type responseService = {
     message : string,
     code : number,
-    data : any | null | undefined
+    data? : any,
+    error?: any,
 }
 
 export const verificationPayment = async (userId: string, projectId: string, plan_name: string) => {
@@ -115,7 +116,7 @@ export const verificationPayment = async (userId: string, projectId: string, pla
 }
 
 export const referenceSendPaymentService = async (merchantId: string, amount: number, description: string) : Promise<responseService> => {
-    const token = getAppyPayToken();
+    const getToken = await getAppyPayToken();
 
     const options = {
         method: 'POST',
@@ -123,7 +124,7 @@ export const referenceSendPaymentService = async (merchantId: string, amount: nu
         headers: {
             'Content-Type': 'application/json',
             Accept: 'application/json',
-            Authorization: `Bearer ${token}`
+            Authorization: `Bearer ${getToken.token}`
         },
         data: {
             amount: amount,
@@ -152,13 +153,14 @@ export const referenceSendPaymentService = async (merchantId: string, amount: nu
             }
         }
         return {
-            message: "A solicitação foi rejeitada, tente novamente",
+            message: "A solicitação foi rejeitada, tente novamente---",
             code: 400,
             data : undefined
         }
-    } catch (error) {
+    } catch (error : any) {
         return {
             message: "A solicitação foi rejeitada, tente novamente",
+            error: error,
             code: 400,
             data : undefined
         }
