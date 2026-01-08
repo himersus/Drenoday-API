@@ -10,7 +10,8 @@ import { createProject, deleteProject, getMyProjects, getProject, runTheProject,
 import { addMember, removeMember } from "../controller/member";
 import { getDeploy, listDeploys } from "../controller/Deploy";
 import { addPlan, deletePlan, getPlanById, getPlans } from "../controller/Plan";
-import { confirmPayment, createPayment, getAllReferences, getAppyPayToken, getPaymentById, getUserPayments, referenceSendPaymentGateway, webhookPayment } from "../controller/Payment";
+import { confirmPayment, createPayment,  getAppyPayToken, getPaymentById, getUserPayments, referenceSendPaymentGateway, webhookPayment } from "../controller/Payment";
+import { getOneNotification, markNotificationAsRead, myNotifications } from "../controller/Notification";
 
 dotenv.config();
 
@@ -91,9 +92,13 @@ router.post('/pay/confirm', verifyAuthentication, confirmPayment);
 router.get('/pay/my', verifyAuthentication, getUserPayments);
 router.get('/pay/each/:paymentId', verifyAuthentication, getPaymentById);
 
-// {{ API de pagamento }}
+// {{ API DE PAGAMENTO EXTERNA }}
 router.post('/pay/reference', verifyAuthentication, referenceSendPaymentGateway);
-router.get('/pay/reference', getAllReferences);
 router.post('/pay/webhook', webhookPayment);
+
+// {{ NOTIFICATION ROUTES}}
+router.get("/notification/my", verifyAuthentication, myNotifications);
+router.post("/notification/read/:notificationId", verifyAuthentication, markNotificationAsRead);
+router.get("/notification/each/:notificationId", verifyAuthentication, getOneNotification);
 
 export default router;

@@ -4,16 +4,12 @@ import { PaymentStatus, PrismaClient, statusSolicitation, typePayment } from "@p
 import { sendSocketContent } from "../sockets";
 import axios from "axios";
 import dotenv from "dotenv";
-import { randomUUID } from 'crypto';
 import { referenceSendPaymentService, verificationPayment } from "../services/Payment";
-import { error } from "console";
 import { createNotification } from "../services/notification";
 
 
-const token = process.env.PG_TOKEN || '';
-dotenv.config();
-
 const prisma = new PrismaClient();
+dotenv.config();
 
 const generateMerchantId = (): string => {
     // no maximo 15 digitos, deve conter pelomenos um caracter e todos devem ser alfanumericos
@@ -25,29 +21,7 @@ const generateMerchantId = (): string => {
     return merchantId;
 };
 
-export const getAllReferences = async (req: Request, res: Response) => {
-    try {
-        const options = {
-            method: 'GET',
-            url: 'https://gwy-api.appypay.co.ao/v2.0/references',
-            headers: {
-                Accept: 'application/json',
-                Authorization: `Bearer ${token}`
-            }
-        };
 
-        const response = await axios.request(options);
-
-        return res.status(200).json(response.data);
-    } catch (error: any) {
-        console.error(error.response?.data || error);
-
-        return res.status(500).json({
-            message: 'Erro ao obter referências de pagamento',
-            error: error.response?.data || error.message,
-        });
-    }
-};
 
 export const referenceSendPaymentGateway = async (req: Request | any, res: Response) => {
     try {
@@ -70,10 +44,10 @@ export const referenceSendPaymentGateway = async (req: Request | any, res: Respo
         const data: any = await referenceSendPaymentService(merchantId, 1, description);
         if (data.code != 200) {
             return res.status(data.code || 400).json({
-                message: data.message || "",
-                error: data.error || {
+                message: data.message || "Erro ao criar referência de pagamento",
+                /*error: data.error || {
                     message: "Erro desconhecido ao criar referência de pagamento"
-                }
+                }*/
             })
         }
 
@@ -135,7 +109,6 @@ export const getAppyPayToken = async (req: Request, res: Response) => {
         });
     }
 };
-
 
 export const webhookPayment = async (req: Request, res: Response) => {
     const webhook = req.body;
@@ -201,7 +174,7 @@ export const webhookPayment = async (req: Request, res: Response) => {
             message: "Forma de pagamento inválida"
         });
     }
-    const project = await prisma.project.update({
+    await prisma.project.update({
         where: {
             id: existPayment.projectId
         },

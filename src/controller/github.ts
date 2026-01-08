@@ -78,16 +78,16 @@ export const getUserRepos = async (req: Request | any, res: Response) => {
 
 export const syncUserWithGitHub = async (req: Request | any, res: Response) => {
     const userId = req.userId;
-    const { github_username, github_token, github_id } = req.body;
+    const { github_username, github_token, github_user_id } = req.cookies;
 
-    if (!github_username || !github_token || !github_id) {
+    if (!github_username || !github_token || !github_user_id) {
         return res.status(400).json({ message: "Dados do GitHub não fornecidos" });
     }
 
     if (!userId || !validate(userId)) {
         return res.status(401).json({ message: "Usuário não autenticado" });
     }
-    const existUser = await prisma.user.findUnique({
+    const existUser = await prisma.user.findFirst({
         where: { id: userId }
     });
 
@@ -103,7 +103,7 @@ export const syncUserWithGitHub = async (req: Request | any, res: Response) => {
             data: {
                 github_username,
                 github_token: encryptedToken,
-                github_id
+                github_id : github_user_id
             }
         });
 

@@ -124,12 +124,32 @@ export const loginGitHub = async (req: Request | any, res: Response) => {
         return res.redirect(`${process.env.FRONTEND_URL}/auth/error?message=Usuário não encontrado. Por favor, registre-se primeiro.`);
     }
 
-    return res.redirect(`${process.env.FRONTEND_URL}/auth/github?token=${token}&username=${user.username}&id=${user.id}`);
+    res.cookie('github_token', token, {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === 'production',
+        sameSite: 'lax',
+        maxAge: 24 * 60 * 60 * 1000, // 1 dia
+    });
+
+    res.cookie('github_username', user.username, {
+        httpOnly: false,
+        secure: process.env.NODE_ENV === 'production',
+        sameSite: 'lax',
+        maxAge: 24 * 60 * 60 * 1000, // 1 dia
+    });
+
+    res.cookie('github_user_id', user.id, {
+        httpOnly: false,
+        secure: process.env.NODE_ENV === 'production',
+        sameSite: 'lax',
+        maxAge: 24 * 60 * 60 * 1000, // 1 dia
+    });
+    return res.redirect(`${process.env.FRONTEND_URL}/auth/github`);
 };
 
 export const loginGoogle = async (req: Request | any, res: Response) => {
     const user: any = req.user;
-     const state = JSON.parse(req.query.state || '{}');
+    const state = JSON.parse(req.query.state || '{}');
     const create = state.create || 'true';
 
     if (!user) {
