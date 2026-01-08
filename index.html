@@ -30,7 +30,7 @@
       }
     });
 
-    socket.on("webhook_payment", (msg) => {
+    socket.on("confirmed_payment", (msg) => {
       console.log("Webhook de pagamento recebido:", msg);
       const logsDiv = document.getElementById("logs");
       if (logsDiv) {

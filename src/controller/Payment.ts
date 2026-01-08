@@ -112,6 +112,7 @@ export const getAppyPayToken = async (req: Request, res: Response) => {
 
 export const webhookPayment = async (req: Request, res: Response) => {
     const webhook = req.body;
+     await createNotification(null, "Operação", "Operação de webhook de pagamento recebida.");
 
     const data = webhook.data;
     if (!data) {
@@ -121,7 +122,7 @@ export const webhookPayment = async (req: Request, res: Response) => {
         sendSocketContent("webhook_error", {
             data: req.body
         });
-        createNotification(null, "Falha no pagamento", "Ocorreu uma falha no pagamento.");
+        await createNotification(null, "Falha no pagamento", "Ocorreu uma falha no pagamento.");
         return res.status(400).json({ message: "Falha no pagamento" });
     }
 
@@ -139,14 +140,14 @@ export const webhookPayment = async (req: Request, res: Response) => {
         sendSocketContent("webhook_error", {
             data: req.body
         });
-        createNotification(null, "Falha no pagamento", "Pagamento não encontrado para o webhook recebido.");
+        await createNotification(null, "Falha no pagamento", "Pagamento não encontrado para o webhook recebido.");
         return res.status(404).json({ message: "Pagamento não encontrado para o webhook recebido" });
     }
 
     const userId = existPayment.userId;
 
     if (!userId || !validate(userId)) {
-        createNotification(null, "Falha no pagamento", "Usuário do pagamento não autenticado para o webhook recebido.");
+        await createNotification(null, "Falha no pagamento", "Usuário do pagamento não autenticado para o webhook recebido.");
         return res.status(401).json({ message: "Usuário não autenticado" });
     }
 
@@ -155,7 +156,7 @@ export const webhookPayment = async (req: Request, res: Response) => {
     });
 
     if (!existUser) {
-        createNotification(null, "Falha no pagamento", "Usuário do pagamento não encontrado para o webhook recebido.");
+        await createNotification(null, "Falha no pagamento", "Usuário do pagamento não encontrado para o webhook recebido.");
         return res.status(404).json({ message: "Usuário não encontrado" });
     }
 
@@ -198,7 +199,7 @@ export const webhookPayment = async (req: Request, res: Response) => {
         status: "Pago",
         message: "Pagamento realizado com sucesso"
     });
-    createNotification(existPayment.userId, "Sucesso", "Pagamento realizado com sucesso.");
+    await createNotification(existPayment.userId, "Sucesso", "Pagamento realizado com sucesso.");
     // Aqui você pode processar os dados recebidos no webhook conforme necessário
     res.status(200).json({ message: "Webhook recebido com sucesso" });
 };
