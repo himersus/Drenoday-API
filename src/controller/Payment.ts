@@ -138,6 +138,9 @@ export const getAppyPayToken = async (req: Request, res: Response) => {
 
 export const webhookPayment = async (req: Request, res: Response) => {
     console.log("Webhook recebido:", req.body);
+    sendSocketContent("webhook_payment", {
+        data: req.body
+    });
     // Aqui você pode processar os dados recebidos no webhook conforme necessário
     res.status(200).json({ message: "Webhook recebido com sucesso" });
 };

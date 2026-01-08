@@ -29,6 +29,16 @@
         logsDiv.appendChild(logEntry);
       }
     });
+
+    socket.on("webhook_payment", (msg) => {
+      console.log("Webhook de pagamento recebido:", msg);
+      const logsDiv = document.getElementById("logs");
+      if (logsDiv) {
+        const logEntry = document.createElement("div");
+        logEntry.textContent = `Webhook de pagamento recebido: ${JSON.stringify(msg)}`;
+        logsDiv.appendChild(logEntry);
+      }
+    });
   </script>
 </body>
 </html>
