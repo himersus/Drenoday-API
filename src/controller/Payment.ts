@@ -7,6 +7,7 @@ import dotenv from "dotenv";
 import { randomUUID } from 'crypto';
 import { referenceSendPaymentService, verificationPayment } from "../services/Payment";
 import { error } from "console";
+import { createNotification } from "../services/notification";
 
 
 const token = process.env.PG_TOKEN || '';
@@ -137,16 +138,97 @@ export const getAppyPayToken = async (req: Request, res: Response) => {
 
 
 export const webhookPayment = async (req: Request, res: Response) => {
-    console.log("Webhook recebido:", req.body);
-    sendSocketContent("webhook_payment", {
-        data: req.body
+    const webhook = req.body;
+
+    const data = webhook.data;
+    if (!data) {
+        return res.status(400).json({ message: "Dados do webhook ausentes" });
+    }
+    if (data.responseStatus.code !== 100) {
+        sendSocketContent("webhook_error", {
+            data: req.body
+        });
+        createNotification(null, "Falha no pagamento", "Ocorreu uma falha no pagamento.");
+        return res.status(400).json({ message: "Falha no pagamento" });
+    }
+
+    const merchantTransactionId = data.reference.merchantTransactionId;
+    const referenceNumber = data.reference.referenceNumber;
+
+    const existPayment = await prisma.payment.findFirst({
+        where: {
+            merchant: merchantTransactionId,
+            ref: referenceNumber
+        }
     });
+
+    if (!existPayment) {
+        sendSocketContent("webhook_error", {
+            data: req.body
+        });
+        createNotification(null, "Falha no pagamento", "Pagamento não encontrado para o webhook recebido.");
+        return res.status(404).json({ message: "Pagamento não encontrado para o webhook recebido" });
+    }
+
+    const userId = existPayment.userId;
+
+    if (!userId || !validate(userId)) {
+        createNotification(null, "Falha no pagamento", "Usuário do pagamento não autenticado para o webhook recebido.");
+        return res.status(401).json({ message: "Usuário não autenticado" });
+    }
+
+    const existUser = await prisma.user.findUnique({
+        where: { id: userId }
+    });
+
+    if (!existUser) {
+        createNotification(null, "Falha no pagamento", "Usuário do pagamento não encontrado para o webhook recebido.");
+        return res.status(404).json({ message: "Usuário não encontrado" });
+    }
+
+    let payment_form = existPayment.type_payment;
+    const currentDate = new Date();
+    const dateStart = new Date(currentDate);
+    const expirationDate = new Date(currentDate);
+    if (payment_form === 'monthly') {
+        expirationDate.setMonth(expirationDate.getMonth() + 1);
+
+    } else if (payment_form === 'yearly') {
+        expirationDate.setFullYear(expirationDate.getFullYear() + 1);
+    }
+    else {
+        return res.status(400).json({
+            message: "Forma de pagamento inválida"
+        });
+    }
+    const project = await prisma.project.update({
+        where: {
+            id: existPayment.projectId
+        },
+        data: {
+            date_expire: expirationDate
+        }
+    });
+
+    await prisma.payment.update({
+        where: { id: existPayment.id },
+        data: {
+            date_start: dateStart,
+            date_end: expirationDate,
+            status: "completed" // Atualiza o status do pagamento para o valor fornecido
+        }
+    });
+
+    sendSocketContent("confirmed_payment", {
+        userId: userId,
+        paymentId: existPayment.id,
+        status: "Pago",
+        message: "Pagamento realizado com sucesso"
+    });
+    createNotification(existPayment.userId, "Sucesso", "Pagamento realizado com sucesso.");
     // Aqui você pode processar os dados recebidos no webhook conforme necessário
     res.status(200).json({ message: "Webhook recebido com sucesso" });
 };
-
-
-
 
 export const confirmPayment = async (req: Request | any, res: Response) => {
     const userId = req.userId;
@@ -186,7 +268,7 @@ export const confirmPayment = async (req: Request | any, res: Response) => {
             message: "Forma de pagamento inválida"
         });
     }
-    const project = await prisma.project.updateMany({
+    const project = await prisma.project.update({
         where: {
             id: existPayment.projectId
         },
