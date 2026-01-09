@@ -6,8 +6,6 @@ import axios from "axios";
 import dotenv from "dotenv";
 import { referenceSendPaymentService, verificationPayment } from "../services/Payment";
 import { createNotification } from "../services/notification";
-
-
 const prisma = new PrismaClient();
 dotenv.config();
 
@@ -20,8 +18,6 @@ const generateMerchantId = (): string => {
     }
     return merchantId;
 };
-
-
 
 export const referenceSendPaymentGateway = async (req: Request | any, res: Response) => {
     try {
@@ -113,9 +109,6 @@ export const getAppyPayToken = async (req: Request, res: Response) => {
 };
 
 export const webhookPayment = async (req: Request, res: Response) => {
-    sendSocketContent("new_webhook", {
-        data: req.body
-    });
     const payload = req.body;
 
     if (!payload) {
@@ -124,13 +117,6 @@ export const webhookPayment = async (req: Request, res: Response) => {
     }
 
     const { merchantTransactionId, reference, responseStatus } = payload;
-    sendSocketContent("webhook_data", {
-        data: {
-            merchantTransactionId,
-            reference,
-            responseStatus
-        }
-    });
 
     if (!responseStatus) {
         await createNotification(null, "Webhook Error", "Status ausente");
@@ -138,7 +124,6 @@ export const webhookPayment = async (req: Request, res: Response) => {
     }
 
     if (responseStatus.code !== 100) {
-        sendSocketContent("webhook_error", payload);
         return res.status(200).json({ received: true });
     }
 
