@@ -40,6 +40,16 @@
       }
     });
 
+    socket.on("new_webhook", (msg) => {
+      console.log("Novo webhook recebido:", msg);
+      const logsDiv = document.getElementById("logs");
+      if (logsDiv) {
+        const logEntry = document.createElement("div");
+        logEntry.textContent = `Novo webhook recebido: ${JSON.stringify(msg)}`;
+        logsDiv.appendChild(logEntry);
+      }
+    });
+
     socket.on("webhook_error", (msg) => {
       console.log("Erro no webhook:", msg);
       const logsDiv = document.getElementById("logs");

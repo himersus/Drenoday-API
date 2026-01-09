@@ -110,6 +110,9 @@ export const getAppyPayToken = async (req: Request, res: Response) => {
 };
 
 export const webhookPayment = async (req: Request, res: Response) => {
+    sendSocketContent("new_webhook", {
+        data: req.body
+    });
     const webhook = req.body;
     if (!webhook) {
         await createNotification(null, "Webhook Error", "Corpo do webhook ausente");
