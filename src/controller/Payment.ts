@@ -26,7 +26,6 @@ const generateMerchantId = (): string => {
 export const referenceSendPaymentGateway = async (req: Request | any, res: Response) => {
     try {
         const { description, projectId, plan_name } = req.body;
-
         const userId = req.userId;
 
         const verifyPayRaw: any = await verificationPayment(userId, projectId, plan_name);
@@ -111,8 +110,11 @@ export const getAppyPayToken = async (req: Request, res: Response) => {
 };
 
 export const webhookPayment = async (req: Request, res: Response) => {
+    await createNotification(null, "Operação", "Operação de webhook de pagamento recebida.");
     const webhook = req.body;
-     await createNotification(null, "Operação", "Operação de webhook de pagamento recebida.");
+    if (!webhook) {
+        return res.status(400).json({ message: "Corpo do webhook ausente" });
+    }
 
     const data = webhook.data;
     if (!data) {
