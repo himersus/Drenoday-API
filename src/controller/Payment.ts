@@ -58,6 +58,7 @@ export const referenceSendPaymentGateway = async (req: Request | any, res: Respo
                 amount: 0,//verifyPay.amount, // valor do pagamento
                 time_in_day: verifyPay.time_in_day || 0, // tempo em dias do pagamento
                 entity: data.data.entity,
+                ref : data.data.ref,
                 merchant: merchantId,
                 status: 'pending', // status do pagamento
                 type_payment: verifyPay.type_payment, // tipo de pagamento
@@ -153,7 +154,6 @@ export const webhookPayment = async (req: Request, res: Response) => {
         await createNotification(null, "Falha no pagamento", "Pagamento não encontrado");
         return res.status(200).json({ received: true });
     }
-
 
     const userId = existPayment.userId;
 
