@@ -57,6 +57,8 @@ export const referenceSendPaymentGateway = async (req: Request | any, res: Respo
                 plan_name: verifyPay.plan_name, // nome do plano escolhido
                 amount: 0,//verifyPay.amount, // valor do pagamento
                 time_in_day: verifyPay.time_in_day || 0, // tempo em dias do pagamento
+                entity: data.entity,
+                merchant: merchantId,
                 status: 'pending', // status do pagamento
                 type_payment: verifyPay.type_payment, // tipo de pagamento
                 qty_months: 1, // quantidade de meses
