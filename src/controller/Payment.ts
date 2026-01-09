@@ -58,7 +58,7 @@ export const referenceSendPaymentGateway = async (req: Request | any, res: Respo
                 amount: 0,//verifyPay.amount, // valor do pagamento
                 time_in_day: verifyPay.time_in_day || 0, // tempo em dias do pagamento
                 entity: data.data.entity,
-                ref : data.data.referenceNumber,
+                ref: data.data.referenceNumber,
                 merchant: merchantId,
                 status: 'pending', // status do pagamento
                 type_payment: verifyPay.type_payment, // tipo de pagamento
@@ -132,7 +132,6 @@ export const webhookPayment = async (req: Request, res: Response) => {
         }
     });
 
-
     if (!responseStatus) {
         return res.status(400).json({ message: "Status ausente" });
     }
@@ -146,7 +145,10 @@ export const webhookPayment = async (req: Request, res: Response) => {
 
     const existPayment = await prisma.payment.findFirst({
         where: {
-            ref: referenceNumber
+            OR: [
+                { merchant: merchantTransactionId },
+                { ref: referenceNumber }
+            ]
         }
     });
 
