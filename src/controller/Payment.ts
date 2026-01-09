@@ -146,7 +146,7 @@ export const webhookPayment = async (req: Request, res: Response) => {
 
     const existPayment = await prisma.payment.findFirst({
         where: {
-            merchant: merchantTransactionId
+            ref: referenceNumber
         }
     });
 
