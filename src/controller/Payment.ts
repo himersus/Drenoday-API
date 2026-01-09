@@ -115,12 +115,12 @@ export const webhookPayment = async (req: Request, res: Response) => {
     });
     const payload = req.body;
 
-    if (!payload?.data) {
+    if (!payload) {
         await createNotification(null, "Webhook Error", "Payload inválido");
         return res.status(400).json({ message: "Payload inválido" });
     }
 
-    const { merchantTransactionId, reference, responseStatus } = payload.data;
+    const { merchantTransactionId, reference, responseStatus } = payload;
     sendSocketContent("webhook_data", {
         data: {
             merchantTransactionId,
@@ -139,7 +139,7 @@ export const webhookPayment = async (req: Request, res: Response) => {
         return res.status(200).json({ received: true });
     }
 
-    const referenceNumber = reference?.referenceNumber;
+    const referenceNumber = reference.referenceNumber;
 
     const existPayment = await prisma.payment.findFirst({
         where: {
