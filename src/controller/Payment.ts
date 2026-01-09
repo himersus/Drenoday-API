@@ -113,13 +113,8 @@ export const webhookPayment = async (req: Request, res: Response) => {
     sendSocketContent("new_webhook", {
         data: req.body
     });
-    const webhook = req.body;
-    if (!webhook) {
-        await createNotification(null, "Webhook Error", "Corpo do webhook ausente");
-        return res.status(400).json({ message: "Corpo do webhook ausente" });
-    }
+    const { data } = req.body;
 
-    const data = webhook.data;
     if (!data) {
         await createNotification(null, "Webhook Error", "Dados do webhook ausentes");
         return res.status(400).json({ message: "Dados do webhook ausentes" });
