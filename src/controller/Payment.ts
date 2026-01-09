@@ -113,25 +113,33 @@ export const webhookPayment = async (req: Request, res: Response) => {
     sendSocketContent("new_webhook", {
         data: req.body
     });
-    const { data } = JSON.parse(req.body)
+    const payload = req.body;
+
+    if (!payload?.data) {
+        await createNotification(null, "Webhook Error", "Payload inválido");
+        return res.status(400).json({ message: "Payload inválido" });
+    }
+
+    const { merchantTransactionId, reference, responseStatus } = payload.data;
     sendSocketContent("webhook_data", {
-        data: data
+        data: {
+            merchantTransactionId,
+            reference,
+            responseStatus
+        }
     });
 
-    if (!data) {
-        await createNotification(null, "Webhook Error", "Dados do webhook ausentes");
-        return res.status(400).json({ message: "Dados do webhook ausentes" });
-    }
-    if (data.responseStatus.code !== 100) {
-        sendSocketContent("webhook_error", {
-            data: req.body
-        });
-        await createNotification(null, "Falha no pagamento", "Ocorreu uma falha no pagamento.");
-        return res.status(400).json({ message: "Falha no pagamento" });
+
+    if (!responseStatus) {
+        return res.status(400).json({ message: "Status ausente" });
     }
 
-    const merchantTransactionId = data.reference.merchantTransactionId;
-    const referenceNumber = data.reference.referenceNumber;
+    if (responseStatus.code !== 100) {
+        sendSocketContent("webhook_error", payload.data);
+        return res.status(200).json({ received: true });
+    }
+
+    const referenceNumber = reference?.referenceNumber;
 
     const existPayment = await prisma.payment.findFirst({
         where: {
@@ -141,12 +149,10 @@ export const webhookPayment = async (req: Request, res: Response) => {
     });
 
     if (!existPayment) {
-        sendSocketContent("webhook_error", {
-            data: req.body
-        });
-        await createNotification(null, "Falha no pagamento", "Pagamento não encontrado para o webhook recebido.");
-        return res.status(404).json({ message: "Pagamento não encontrado para o webhook recebido" });
+        await createNotification(null, "Falha no pagamento", "Pagamento não encontrado");
+        return res.status(200).json({ received: true });
     }
+
 
     const userId = existPayment.userId;
 
