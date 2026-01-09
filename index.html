@@ -39,6 +39,16 @@
         logsDiv.appendChild(logEntry);
       }
     });
+
+    socket.on("webhook_error", (msg) => {
+      console.log("Erro no webhook:", msg);
+      const logsDiv = document.getElementById("logs");
+      if (logsDiv) {
+        const logEntry = document.createElement("div");
+        logEntry.textContent = `Erro no webhook: ${JSON.stringify(msg)}`;
+        logsDiv.appendChild(logEntry);
+      }
+    });
   </script>
 </body>
 </html>

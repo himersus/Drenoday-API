@@ -110,14 +110,15 @@ export const getAppyPayToken = async (req: Request, res: Response) => {
 };
 
 export const webhookPayment = async (req: Request, res: Response) => {
-    await createNotification(null, "Operação", "Operação de webhook de pagamento recebida.");
     const webhook = req.body;
     if (!webhook) {
+        await createNotification(null, "Webhook Error", "Corpo do webhook ausente");
         return res.status(400).json({ message: "Corpo do webhook ausente" });
     }
 
     const data = webhook.data;
     if (!data) {
+        await createNotification(null, "Webhook Error", "Dados do webhook ausentes");
         return res.status(400).json({ message: "Dados do webhook ausentes" });
     }
     if (data.responseStatus.code !== 100) {
@@ -153,7 +154,7 @@ export const webhookPayment = async (req: Request, res: Response) => {
         return res.status(401).json({ message: "Usuário não autenticado" });
     }
 
-    const existUser = await prisma.user.findUnique({
+    const existUser = await prisma.user.findFirst({
         where: { id: userId }
     });
 
