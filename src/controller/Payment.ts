@@ -133,11 +133,12 @@ export const webhookPayment = async (req: Request, res: Response) => {
     });
 
     if (!responseStatus) {
+        await createNotification(null, "Webhook Error", "Status ausente");
         return res.status(400).json({ message: "Status ausente" });
     }
 
     if (responseStatus.code !== 100) {
-        sendSocketContent("webhook_error", payload.data);
+        sendSocketContent("webhook_error", payload);
         return res.status(200).json({ received: true });
     }
 
@@ -183,7 +184,11 @@ export const webhookPayment = async (req: Request, res: Response) => {
     } else if (payment_form === 'yearly') {
         expirationDate.setFullYear(expirationDate.getFullYear() + 1);
     }
+    else if (payment_form === 'daily') {
+        expirationDate.setDate(expirationDate.getDate() + 1);
+    }
     else {
+        await createNotification(userId, "Falha no pagamento", "Forma de pagamento inválida no webhook recebido.");
         return res.status(400).json({
             message: "Forma de pagamento inválida"
         });
