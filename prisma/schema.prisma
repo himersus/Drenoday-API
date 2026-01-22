@@ -66,6 +66,7 @@ model project {
   run_status   runStatus   @default(stoped)
   start_cmd    String?
   tecnology    tecnology?  @default(docker)
+  default_plan String?
   userId       String
   environments String[]    @default([])
   createdAt    DateTime    @default(now())
@@ -141,7 +142,7 @@ model notification {
   read      Boolean  @default(false)
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
-  User      User    @relation(fields: [userId], references: [id])
+  User      User     @relation(fields: [userId], references: [id])
 }
 
 enum Provider {

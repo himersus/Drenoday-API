@@ -77,7 +77,7 @@ async function repositoryUsesDocker(
 // {{Create projecto}}
 export const createProject = async (req: Request | any, res: Response) => {
     const { name, description,
-        branch, port, repo_url, environments, workspaceId } = req.body;
+        branch, port, repo_url, default_plan, environments, workspaceId } = req.body;
     const userId = req.userId;
 
     if (!validate(userId)) {
@@ -132,6 +132,16 @@ export const createProject = async (req: Request | any, res: Response) => {
             return res.status(400).json({ message: "O nome do projeto é obrigatório" });
         }
 
+        const existPlan = await prisma.plan.findFirst({
+            where: {
+                name: default_plan
+            }
+        });
+
+        if (!existPlan) {
+            return res.status(400).json({ message: "O plano escolhido não está disponível, por favor escolha outro" });
+        }
+
         const domain = await generateUniqueDomain(name);
 
         if (!domain) {
@@ -177,6 +187,7 @@ export const createProject = async (req: Request | any, res: Response) => {
                 workspaceId, // workspaceId
                 branch, // branch do repositório
                 repo_url, // URL do repositório
+                default_plan: existPlan.name,
                 port: `${port}`, // porta onde a aplicação irá rodar
                 userId: existUser.id, // ID do usuário que criou o projeto
                 domain: domain as string, // domínio único gerado
@@ -366,7 +377,7 @@ export const getMyProjects = async (req: Request | any, res: Response) => {
 
 export const updateProject = async (req: Request | any, res: Response) => {
     const { projectId } = req.params;
-    const { name, description, environments } = req.body;
+    const { name, description, default_plan, environments } = req.body;
     const userId = req.userId;
 
     if (!validate(projectId) || !validate(userId)) {
@@ -393,11 +404,24 @@ export const updateProject = async (req: Request | any, res: Response) => {
             return res.status(403).json({ message: "Você não tem acesso a este projeto" });
         }
 
+        if (default_plan) {
+            const existPlan = await prisma.plan.findFirst({
+                where: {
+                    name: default_plan
+                }
+            });
+
+            if (!existPlan) {
+                return res.status(400).json({ message: "O plano escolhido não está disponível, por favor escolha outro" });
+            }
+        }
+
         const updatedProject = await prisma.project.update({
             where: { id: projectId },
             data: {
                 name: name || project.name,
                 description: description || project.description,
+                default_plan: default_plan || project.default_plan,
                 environments: environments || project.environments,
             },
         });
