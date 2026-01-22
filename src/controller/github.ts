@@ -78,17 +78,10 @@ export const getUserRepos = async (req: Request | any, res: Response) => {
 
 export const syncUserWithGitHub = async (req: Request | any, res: Response) => {
     const userId = req.userId;
-    const github_username = req.cookies['github_username'];
-    const github_token = req.cookies['github_token'];
-    const github_user_id = req.cookies['github_user_id'];
+    const { github_username, github_token, github_user_id } = req.body;
     
+
     if (!github_username || !github_token || !github_user_id) {
-        if (!github_token)
-            return res.status(400).json({ message: "Token do GitHub não fornecido" });
-        if (!github_username)
-            return res.status(400).json({ message: "Nome de usuário do GitHub não fornecido" });
-        if (!github_user_id)
-            return res.status(400).json({ message: "ID do usuário do GitHub não fornecido" });
         return res.status(400).json({ message: "Dados do GitHub não fornecidos" });
     }
     if (!userId || !validate(userId)) {
