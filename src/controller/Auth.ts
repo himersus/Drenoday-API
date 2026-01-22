@@ -144,7 +144,7 @@ export const loginGitHub = async (req: Request | any, res: Response) => {
         sameSite: 'lax',
         maxAge: 24 * 60 * 60 * 1000, // 1 dia
     });
-    return res.redirect(`${process.env.FRONTEND_URL}/auth/github?github_username=${user.username}&github_id=${user.id}&github_token=${token}`);
+    return res.redirect(`${process.env.FRONTEND_URL}/auth/github`);
 };
 
 export const loginGoogle = async (req: Request | any, res: Response) => {
