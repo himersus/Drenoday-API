@@ -79,10 +79,11 @@ export const getUserRepos = async (req: Request | any, res: Response) => {
 export const syncUserWithGitHub = async (req: Request | any, res: Response) => {
     const userId = req.userId;
     const { github_username, github_token, github_user_id } = req.cookies;
-
+    console.log("Cookies: ", req.cookies);
     if (!github_username || !github_token || !github_user_id) {
         return res.status(400).json({ message: "Dados do GitHub não fornecidos" });
     }
+    
 
     if (!userId || !validate(userId)) {
         return res.status(401).json({ message: "Usuário não autenticado" });

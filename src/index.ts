@@ -25,18 +25,16 @@ const httpServer = createServer(app);
 // Inicializa Socket.IO
 initSocket(httpServer);
 
-// CONFIGURAR SESSÃO
-app.use(session({ secret: process.env.SESSION_SECRET!, resave: false, saveUninitialized: true }));
-app.use(passport.initialize());
-app.use(passport.session());
-
-app.use(express.json());
-
 app.use(cors({
     origin: 'http://localhost:3000',
     credentials: true
 }));
 app.use(cookieParser());
+app.use(express.json());
+// CONFIGURAR SESSÃO
+app.use(session({ secret: process.env.SESSION_SECRET!, resave: false, saveUninitialized: true }));
+app.use(passport.initialize());
+app.use(passport.session());
 
 app.get('/', (req, res) => {
     res.send('Welcome to drenoday API!');
