@@ -13,6 +13,7 @@ import "./auth/googleAuth";
 import { createServer } from "http";
 import { initSocket } from "./sockets/index";
 import bodyParser from 'body-parser';
+import cookieParser from 'cookie-parser';
 
 const port = process.env.PORT || 3000;
 const app = express();
@@ -35,6 +36,7 @@ app.use(cors({
     origin: 'http://localhost:3000',
     credentials: true
 }));
+app.use(cookieParser());
 
 app.get('/', (req, res) => {
     res.send('Welcome to drenoday API!');

@@ -126,21 +126,21 @@ export const loginGitHub = async (req: Request | any, res: Response) => {
 
     res.cookie('github_token', token, {
         httpOnly: true,
-        secure: true,
+        secure: process.env.NODE_ENV === 'production',
         sameSite: 'lax',
         maxAge: 24 * 60 * 60 * 1000, // 1 dia
     });
 
     res.cookie('github_username', user.username, {
         httpOnly: false,
-        secure: true,
+        secure: process.env.NODE_ENV === 'production',
         sameSite: 'lax',
         maxAge: 24 * 60 * 60 * 1000, // 1 dia
     });
 
     res.cookie('github_user_id', user.id, {
         httpOnly: false,
-        secure: true,
+        secure: process.env.NODE_ENV === 'production',
         sameSite: 'lax',
         maxAge: 24 * 60 * 60 * 1000, // 1 dia
     });
