@@ -144,3 +144,18 @@ export const unsyncUserFromGitHub = async (req: Request | any, res: Response) =>
         return res.status(500).json({ message: "Erro ao desconectar do GitHub" });
     }
 };
+
+export const createCookieGitHub = (req : any, res: any) => {
+    res.cookie('teste', "TEsteeeeee", {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === 'production',
+        sameSite: 'lax',
+        maxAge: 24 * 60 * 60 * 1000, // 1 dia
+    });
+    return res.status(200).json({ message: "Cookie criado com sucesso" });
+}
+
+export const readCookieGitHub = (req : any, res: any) => {
+    const teste = req.cookies['teste'];
+    res.status(200).json({ cookie: teste });
+}

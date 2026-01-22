@@ -93,20 +93,20 @@ export const createProject = async (req: Request | any, res: Response) => {
     }
 
     if (environments && !Array.isArray(environments)) {
-        return res.status(400).json({ message: "Environments deve ser um array de strings" });
+        return res.status(400).json({ message: "Environments deve ser um array de strings : ex: ['port=3000']"});
     }
 
     const portNumber = Number(port);
 
     if (!port || typeof port !== 'string' || !Number.isInteger(portNumber)) {
         return res.status(400).json({
-            message: "Port é obrigatório e deve ser um número valido"
+            message: "Porta é obrigatório e deve ser um número valido"
         });
     }
 
     if (portNumber < 1024 || portNumber > 65535) {
         return res.status(400).json({
-            message: "Port deve estar entre 1024 e 65535"
+            message: "Porta deve estar entre 1024 e 65535"
         });
     }
 
@@ -168,7 +168,7 @@ export const createProject = async (req: Request | any, res: Response) => {
             });
         }
 
-        console.log(`Criando projeto para o usuário ${existUser.username} com o repositório ${repo_url}`);
+       // console.log(`Criando projeto para o usuário ${existUser.username} com o repositório ${repo_url}`);
 
         const project = await prisma.project.create({
             data: {

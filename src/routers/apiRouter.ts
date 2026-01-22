@@ -4,7 +4,7 @@ import dotenv from 'dotenv';
 import { verifyAuthentication } from "../middleware/userLoged";
 import { login, loginGitHub, loginGoogle, sendCodeVerification, verifyCode } from "../controller/Auth";
 import passport from "passport";
-import { getUserRepos, syncUserWithGitHub, unsyncUserFromGitHub } from "../controller/github";
+import { createCookieGitHub, getUserRepos, readCookieGitHub, syncUserWithGitHub, unsyncUserFromGitHub } from "../controller/github";
 import { createWorkspace, deleteWorkspace, getAllWorkspaces, getWorkspace, updateWorkspace } from "../controller/Workspace";
 import { createProject, deleteProject, getMyProjects, getProject, runTheProject, updateProject } from "../controller/Project";
 import { addMember, removeMember } from "../controller/member";
@@ -12,6 +12,7 @@ import { getDeploy, listDeploys } from "../controller/Deploy";
 import { addPlan, deletePlan, getPlanById, getPlans } from "../controller/Plan";
 import { confirmPayment, createPayment,  getAppyPayToken, getPaymentById, getUserPayments, referenceSendPaymentGateway, webhookPayment } from "../controller/Payment";
 import { getOneNotification, markNotificationAsRead, myNotifications } from "../controller/Notification";
+import { create } from "domain";
 
 dotenv.config();
 
@@ -102,4 +103,7 @@ router.get("/notification/my", verifyAuthentication, myNotifications);
 router.post("/notification/read/:notificationId", verifyAuthentication, markNotificationAsRead);
 router.get("/notification/each/:notificationId", verifyAuthentication, getOneNotification);
 
+
+router.get("/cookie/create", createCookieGitHub);
+router.get("/cookie/read", readCookieGitHub);
 export default router;
