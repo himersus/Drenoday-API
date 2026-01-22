@@ -78,15 +78,11 @@ export const getUserRepos = async (req: Request | any, res: Response) => {
 
 export const syncUserWithGitHub = async (req: Request | any, res: Response) => {
     const userId = req.userId;
-    const {github_username, github_token, github_user_id} = req.body;
-
-
+    const { github_username, github_token, github_user_id } = req.body;
 
     if (!github_username || !github_token || !github_user_id) {
         return res.status(400).json({ message: "Dados do GitHub não fornecidos" });
     }
-
-
     if (!userId || !validate(userId)) {
         return res.status(401).json({ message: "Usuário não autenticado" });
     }
@@ -114,5 +110,37 @@ export const syncUserWithGitHub = async (req: Request | any, res: Response) => {
     } catch (error) {
         console.error(error);
         return res.status(500).json({ message: "Erro ao sincronizar com GitHub" });
+    }
+};
+
+export const unsyncUserFromGitHub = async (req: Request | any, res: Response) => {
+    const userId = req.userId;
+
+    if (!userId || !validate(userId)) {
+        return res.status(401).json({ message: "Usuário não autenticado" });
+    }
+
+    const existUser = await prisma.user.findFirst({
+        where: { id: userId }
+    });
+
+    if (!existUser) {
+        return res.status(404).json({ message: "Usuário não encontrado" });
+    }
+
+    try {
+        await prisma.user.update({
+            where: { id: userId },
+            data: {
+                github_username: null,
+                github_token: null,
+                github_id: null
+            }
+        });
+
+        return res.status(200).json({ message: "Desconexão do GitHub realizada com sucesso" });
+    } catch (error) {
+        console.error(error);
+        return res.status(500).json({ message: "Erro ao desconectar do GitHub" });
     }
 };

@@ -4,7 +4,7 @@ import dotenv from 'dotenv';
 import { verifyAuthentication } from "../middleware/userLoged";
 import { login, loginGitHub, loginGoogle, sendCodeVerification, verifyCode } from "../controller/Auth";
 import passport from "passport";
-import { getUserRepos, syncUserWithGitHub } from "../controller/github";
+import { getUserRepos, syncUserWithGitHub, unsyncUserFromGitHub } from "../controller/github";
 import { createWorkspace, deleteWorkspace, getAllWorkspaces, getWorkspace, updateWorkspace } from "../controller/Workspace";
 import { createProject, deleteProject, getMyProjects, getProject, runTheProject, updateProject } from "../controller/Project";
 import { addMember, removeMember } from "../controller/member";
@@ -47,6 +47,7 @@ router.get('/auth/google/callback', passport.authenticate('google', { failureRed
 // Github 
 router.get('/github/list/repo', verifyAuthentication, getUserRepos);
 router.put('/github/sync', verifyAuthentication, syncUserWithGitHub);
+router.post('/github/unsync', verifyAuthentication, unsyncUserFromGitHub);
 
 // {{USER ROUTES}}
 router.post('/user/create', createUser);
