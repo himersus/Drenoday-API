@@ -78,16 +78,8 @@ export const getUserRepos = async (req: Request | any, res: Response) => {
 
 export const syncUserWithGitHub = async (req: Request | any, res: Response) => {
     const userId = req.userId;
-    const cookies = req.cookies;
+    const {github_username, github_token, github_user_id} = req.body;
 
-    if (!req.cookies) {
-        return res.status(400).json({ message: 'Tenta se autenticar novamente' });
-    }
-    console.log("Cookies:", cookies);
-
-    const github_username = cookies?.github_username;
-    const github_token = cookies?.github_token;
-    const github_user_id = cookies?.github_user_id;
 
 
     if (!github_username || !github_token || !github_user_id) {
