@@ -34,7 +34,6 @@ router.get('/auth/github/callback', passport.authenticate('github', { failureRed
 router.get('/auth/google',
   (req, res, next) => {
     const create = req.query.create;
-
     passport.authenticate('google', {
       scope: ['profile', 'email'],
       state: JSON.stringify({ create })

@@ -35,7 +35,7 @@ export const getUserRepos = async (req: Request | any, res: Response) => {
         return res.status(404).json({ message: "Token do GitHub não encontrado, faça login com o github" });
     }
 
-    const bytes = CryptoJS.AES.decrypt(encrypted, process.env.JWT_SECRET!);
+    const bytes = CryptoJS.AES.decrypt(encrypted, process.env.GITHUB_TOKEN_ENCRYPTION_KEY!);
     const token = bytes.toString(CryptoJS.enc.Utf8);
 
     if (!token) {
@@ -95,7 +95,7 @@ export const syncUserWithGitHub = async (req: Request | any, res: Response) => {
         return res.status(404).json({ message: "Usuário não encontrado" });
     }
 
-    const encryptedToken = CryptoJS.AES.encrypt(github_token, process.env.JWT_SECRET!).toString();
+    const encryptedToken = CryptoJS.AES.encrypt(github_token, process.env.GITHUB_TOKEN_ENCRYPTION_KEY!).toString();
 
     try {
         await prisma.user.update({

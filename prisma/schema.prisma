@@ -12,7 +12,7 @@ model User {
   email           String           @unique
   name            String
   username        String           @unique
-  password        String
+  password        String?          @default("")
   confirme_code   String?
   avatar          String?
   roleUser        roleUser         @default(user)
@@ -52,27 +52,28 @@ model Workspace {
 }
 
 model project {
-  id           String      @id @default(uuid())
-  domain       String      @unique
-  name         String
-  branch       String      @default("main")
-  repo_url     String      @default("")
-  description  String?
-  workspaceId  String
-  date_expire  DateTime?
-  port         String      @default("3000")
-  build_cmd    String?
-  clone        cloneStatus @default(cloning)
-  run_status   runStatus   @default(stoped)
-  start_cmd    String?
-  tecnology    tecnology?  @default(docker)
-  default_plan String?
-  userId       String
-  environments String[]    @default([])
-  createdAt    DateTime    @default(now())
-  updatedAt    DateTime    @updatedAt
-  payments     payment[]
-  deploy       deploy[]
+  id                   String       @id @default(uuid())
+  domain               String       @unique
+  name                 String
+  branch               String       @default("main")
+  repo_url             String       @default("")
+  description          String?
+  workspaceId          String
+  date_expire          DateTime?
+  port                 String       @default("3000")
+  build_cmd            String?
+  clone                cloneStatus  @default(cloning)
+  run_status           runStatus    @default(stoped)
+  start_cmd            String?
+  tecnology            tecnology?   @default(docker)
+  default_plan         String?
+  default_type_payment typePayment? @default(monthly)
+  userId               String
+  environments         String[]     @default([])
+  createdAt            DateTime     @default(now())
+  updatedAt            DateTime     @updatedAt
+  payments             payment[]
+  deploy               deploy[]
 
   Workspace Workspace @relation(fields: [workspaceId], references: [id])
   User      User      @relation(fields: [userId], references: [id])

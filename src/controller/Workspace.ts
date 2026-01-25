@@ -59,7 +59,7 @@ export const createWorkspace = async (req: Request | any, res: Response) => {
                 role: "master",
             }
         });
-        res.status(201).json({ ...workspace, username: existUser.username });
+        res.status(201).json({ ...workspace, username: existUser.username, totalProjects: 0, totalMembers: 1 });
     } catch (error) {
         res.status(500).json({ error: "Failed to create workspace" });
     }
@@ -213,7 +213,19 @@ export const updateWorkspace = async (req: Request | any, res: Response) => {
                 name
             }
         });
-        res.status(200).json({ ...workspace, username: existUser.username });
+
+        const totalMembers = await prisma.user_workspace.count({
+            where: {
+                workspaceId: workspaceId
+            }
+        });
+
+        const totalProjects = await prisma.project.count({
+            where: {
+                workspaceId: workspaceId
+            }
+        });
+        res.status(200).json({ ...workspace, username: existUser.username, totalProjects, totalMembers });
     } catch (error) {
         res.status(500).json({ message: "Failed to update workspace" });
     }
