@@ -12,7 +12,6 @@ import "./auth/googleAuth";
 // configurar o socket
 import { createServer } from "http";
 import { initSocket } from "./sockets/index";
-import bodyParser from 'body-parser';
 import cookieParser from 'cookie-parser';
 
 const port = process.env.PORT || 3000;

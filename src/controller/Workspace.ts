@@ -59,7 +59,7 @@ export const createWorkspace = async (req: Request | any, res: Response) => {
                 role: "master",
             }
         });
-        res.status(201).json({...workspace, username: existUser.username});
+        res.status(201).json({ ...workspace, username: existUser.username });
     } catch (error) {
         res.status(500).json({ error: "Failed to create workspace" });
     }
@@ -99,7 +99,18 @@ export const getWorkspace = async (req: Request | any, res: Response) => {
         if (!workspace) {
             return res.status(404).json({ message: "Workspace not found" });
         }
-        res.status(200).json({...workspace, username : existUser.username });
+        const totalProjects = await prisma.project.count({
+            where: {
+                workspaceId: workspaceId
+            }
+        });
+
+        const totalMembers = await prisma.user_workspace.count({
+            where: {
+                workspaceId: workspaceId
+            }
+        });
+        res.status(200).json({ ...workspace, username: existUser.username, totalProjects, totalMembers });
     } catch (error) {
         res.status(500).json({ message: "Failed to retrieve workspace" });
     }
@@ -131,10 +142,23 @@ export const getAllWorkspaces = async (req: Request | any, res: Response) => {
             }
         });
 
-        const workspacesWithUsernames = await Promise.all(allWorkspaces.map(async (workspace) => {  
+        const workspacesWithUsernames = await Promise.all(allWorkspaces.map(async (workspace) => {
+            const totalProjects = await prisma.project.count({
+                where: {
+                    workspaceId: workspace.id
+                }
+            });
+            const totalMembers = await prisma.user_workspace.count({
+                where: {
+                    workspaceId: workspace.id
+                }
+            });
+
             return {
                 ...workspace,
-                username: existUser.username
+                username: existUser.username,
+                totalProjects, 
+                totalMembers
             };
         }));
         res.status(200).json(workspacesWithUsernames);
@@ -189,7 +213,7 @@ export const updateWorkspace = async (req: Request | any, res: Response) => {
                 name
             }
         });
-        res.status(200).json({...workspace, username: existUser.username});
+        res.status(200).json({ ...workspace, username: existUser.username });
     } catch (error) {
         res.status(500).json({ message: "Failed to update workspace" });
     }

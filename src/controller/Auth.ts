@@ -119,6 +119,7 @@ export const verifyCode = async (req: Request, res: Response) => {
 export const loginGitHub = async (req: Request | any, res: Response) => {
     const user: any = req.user;
     const token = (req.user as any).token;
+    const email = user.email;
 
     if (!user) {
         return res.redirect(`${process.env.FRONTEND_URL}/auth/error?message=Usuário não encontrado. Por favor, registre-se primeiro.`);
