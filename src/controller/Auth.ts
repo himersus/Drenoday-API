@@ -119,7 +119,84 @@ export const verifyCode = async (req: Request, res: Response) => {
     }
 }
 
-  const create = state.create || 'true';
+export const loginGitHub = async (req: Request | any, res: Response) => {
+    const user: any = req.user;
+    const token = (req.user as any).token;
+    const email = user.email;
+    const create = user.create || 'false';
+
+    const github_token = token;
+    const github_username = user.username;
+    const github_user_id = user.id;
+
+    if (!github_username || !github_token || !github_user_id) {
+        return res.status(400).json({ message: "Dados do GitHub não fornecidos" });
+    }
+
+    if (!user) {
+        return res.redirect(`${process.env.FRONTEND_URL}/auth/error?message=Usuário não encontrado. Por favor, registre-se primeiro.`);
+    }
+
+    let existUserDB = await prisma.user.findFirst({
+        where: { email },
+    });
+
+    if (!existUserDB && create === 'true') {
+        let possibleUsername = await generateUniqueUsername(github_username, true);
+
+        existUserDB = await prisma.user.create({
+            data: {
+                name: github_username,
+                username: possibleUsername || github_username + Math.floor(1000 + Math.random() * 9000).toString(),
+                email,
+                provider: "github",
+                password: null, // senha aleatória
+                is_active: true,
+                github_username,
+                github_token: CryptoJS.AES.encrypt(github_token, process.env.GITHUB_TOKEN_ENCRYPTION_KEY!).toString(),
+                github_id: github_user_id
+            }
+        });
+    }
+
+    if (!existUserDB) {
+        return res.redirect(`${process.env.FRONTEND_URL}/auth/error?message=Usuário não encontrado. Por favor, registre-se primeiro.`);
+    }
+
+    const encryptedToken = CryptoJS.AES.encrypt(github_token, process.env.JWT_SECRET!).toString();
+
+    try {
+        await prisma.user.update({
+            where: { id: existUserDB.id },
+            data: {
+                github_username,
+                github_token: encryptedToken,
+                github_id: github_user_id
+            }
+        });
+
+    } catch (error) {
+        console.error(error);
+        return res.redirect(`${process.env.FRONTEND_URL}/auth/error?message=Erro ao sincronizar com GitHub`);
+    }
+
+    const payload = {
+        id: existUserDB?.id,
+        is_active: existUserDB?.is_active,
+        username: existUserDB?.username,
+        email: existUserDB?.email,
+        provider: "github"
+    };
+
+    const tokenUser = jwt.sign(payload, process.env.JWT_SECRET as string);
+
+    return res.redirect(`${process.env.FRONTEND_URL}/auth/github?token=${tokenUser}`);
+};
+
+export const loginGoogle = async (req: Request | any, res: Response) => {
+    const user: any = req.user;
+    const state = JSON.parse(req.query.state || '{}');
+    const create = state.create || 'true';
 
     if (!user) {
         return res.redirect(`${process.env.FRONTEND_URL}/auth/error?message=Usuário não encontrado. Por favor, registre-se primeiro.`);
