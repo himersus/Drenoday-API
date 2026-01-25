@@ -67,11 +67,10 @@ export const sendCodeVerification = async (req: Request, res: Response) => {
             where: { email },
             data: { confirme_code: verificationCode },
         });
-
-
+        
         await sendEmail(
             email,
-            "Código de Verificação - GoHost",
+            "Código de Verificação - Drenoday",
             "Código de Verificação",
             verificationCode,
             `Seu código de verificação é: <strong>${verificationCode}</strong>.`
@@ -114,6 +113,44 @@ export const verifyCode = async (req: Request, res: Response) => {
         });
 
         res.status(200).json({ message: "E-mail verificado com sucesso." });
+    } catch (error) {
+        return res.status(500).json({ message: "Falha ao verificar o código." });
+    }
+}
+
+export const loginWithEmail = async (req: Request, res: Response) => {
+    const { email, code } = req.body;
+
+    try {
+        const user = await prisma.user.findUnique({
+            where: { email },
+        });
+
+        if (!user) {
+            return res.status(404).json({ message: "Usuário não encontrado" });
+        }
+
+        const isCodeValid = await bcrypt.compare(code, user.confirme_code || "");
+        if (!isCodeValid) {
+            return res.status(400).json({ message: "Código de verificação inválido" });
+        }
+
+        await prisma.user.update({
+            where: { email },
+            data: { is_active: true, confirme_code: null },
+        });
+
+        const payload = {
+            id: user.id,
+            is_active: user.is_active,
+            username: user.username,
+            email: user.email,
+            provider: user.provider
+        };
+
+        const token = jwt.sign(payload, process.env.JWT_SECRET as string);
+
+        res.status(200).json({ token});
     } catch (error) {
         return res.status(500).json({ message: "Falha ao verificar o código." });
     }

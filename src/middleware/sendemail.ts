@@ -121,7 +121,7 @@ export async function sendEmail(
         <div class="email-container">
           <!-- Cabeçalho -->
           <div class="email-header">
-            <h1>GoHost</h1>
+            <h1>Drenoday</h1>
           </div>
 
           <!-- Conteúdo -->
@@ -132,14 +132,14 @@ export async function sendEmail(
             <div class="code-box">${code}</div>
 
             <p class="email-text"><strong>Por favor, não compartilhe este código com ninguém.</strong></p>
-            <p class="email-text">Obrigado por usar o GoHost!</p>
+            <p class="email-text">Obrigado por usar o Drenoday!</p>
           </div>
 
           <!-- Rodapé -->
           <div class="email-footer">
-            <p>Atenciosamente,<br><strong>Equipe GoHost</strong></p>
+            <p>Atenciosamente,<br><strong>Equipe Drenoday</strong></p>
             <p>Precisa de ajuda? <a href="mailto:${process.env.MAIL_USER}">${process.env.MAIL_USER}</a></p>
-            <p>&copy; 2025 GoHost. Todos os direitos reservados.</p>
+            <p>&copy; 2025 Drenoday. Todos os direitos reservados.</p>
           </div>
         </div>
       </td>
@@ -150,7 +150,7 @@ export async function sendEmail(
   `;
 
   const mailOptions = {
-    from: `"Honor - Sistema de Convites" <${process.env.MAIL_USER}>`,
+    from: `"Drenoday - Sistema de Convites" <${process.env.MAIL_USER}>`,
     to,
     subject,
     html: htmlBody,
