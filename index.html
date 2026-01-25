@@ -1,16 +1,32 @@
 <!DOCTYPE html>
 <html>
+
 <head>
   <title>Teste Socket.IO</title>
   <script src="https://cdn.socket.io/4.8.1/socket.io.min.js"></script>
 </head>
+
 <body>
   <h1>Teste Socket.IO</h1>
   <div id="logs">
     <!-- Logs de deploy aparecerão aqui -->
-    
+
   </div>
   <script>
+
+    const run = async () => {
+      // consumindo api com fetch
+      const urlBase = "http://localhost:3000/api/v1";
+      await fetch(`${urlBase}/auth/github`, {
+        method: "GET",
+        headers: {
+          "Content-Type": "application/json"
+        }
+      })
+    }
+
+    run();
+
     // Conecta ao servidor Socket.IO
     const socket = io("https://drenoday.enor.tech");
 
@@ -71,4 +87,5 @@
     });
   </script>
 </body>
+
 </html>

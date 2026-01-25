@@ -157,6 +157,6 @@ export const createCookieGitHub = (req : any, res: any) => {
 }
 
 export const readCookieGitHub = (req : any, res: any) => {
-    const teste = req.cookies['teste'];
+    const teste = req.cookies['auth_token'];
     res.status(200).json({ cookie: teste });
 }
