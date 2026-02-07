@@ -17,32 +17,33 @@ export const getUserRepos = async (req: Request | any, res: Response) => {
     const name = req.query.name || "";
 
 
-    if (!userId || !validate(userId)) {
-        return res.status(401).json({ message: "Usuário não autenticado" });
-    }
-
-    const existUser = await prisma.user.findUnique({
-        where: { id: userId }
-    });
-
-    if (!existUser) {
-        return res.status(404).json({ message: "Usuário não encontrado" });
-    }
-
-    const encrypted = existUser.github_token;
-
-    if (!encrypted) {
-        return res.status(404).json({ message: "Token do GitHub não encontrado, faça login com o github" });
-    }
-
-    const bytes = CryptoJS.AES.decrypt(encrypted, process.env.GITHUB_TOKEN_ENCRYPTION_KEY!);
-    const token = bytes.toString(CryptoJS.enc.Utf8);
-
-    if (!token) {
-        return res.status(401).json({ message: "Token não fornecido" });
-    }
-
     try {
+
+        if (!userId || !validate(userId)) {
+            return res.status(401).json({ message: "Usuário não autenticado" });
+        }
+
+        const existUser = await prisma.user.findUnique({
+            where: { id: userId }
+        });
+
+        if (!existUser) {
+            return res.status(404).json({ message: "Usuário não encontrado" });
+        }
+
+        const encrypted = existUser.github_token;
+
+        if (!encrypted) {
+            return res.status(404).json({ message: "Token do GitHub não encontrado, faça login com o github" });
+        }
+
+        const bytes = CryptoJS.AES.decrypt(encrypted, process.env.GITHUB_TOKEN_ENCRYPTION_KEY!);
+        const token = bytes.toString(CryptoJS.enc.Utf8);
+
+        if (!token) {
+            return res.status(401).json({ message: "Token não fornecido" });
+        }
+
         const response = await axios.get("https://api.github.com/user/repos",
             {
                 headers: {
@@ -72,32 +73,35 @@ export const getUserRepos = async (req: Request | any, res: Response) => {
         return res.json(response.data);
     } catch (error) {
         console.error(error);
-        return res.status(500).json({ message: "Erro ao buscar repositórios" });
+        return res.status(500).json({
+            message: "Erro ao buscar repositórios",
+            error: error instanceof Error ? error.message : "Erro desconhecido"
+        });
     }
 };
 
 export const syncUserWithGitHub = async (req: Request | any, res: Response) => {
     const userId = req.userId;
     const { github_username, github_token, github_user_id } = req.body;
-    
-
-    if (!github_username || !github_token || !github_user_id) {
-        return res.status(400).json({ message: "Dados do GitHub não fornecidos" });
-    }
-    if (!userId || !validate(userId)) {
-        return res.status(401).json({ message: "Usuário não autenticado" });
-    }
-    const existUser = await prisma.user.findFirst({
-        where: { id: userId }
-    });
-
-    if (!existUser) {
-        return res.status(404).json({ message: "Usuário não encontrado" });
-    }
-
-    const encryptedToken = CryptoJS.AES.encrypt(github_token, process.env.GITHUB_TOKEN_ENCRYPTION_KEY!).toString();
 
     try {
+        if (!github_username || !github_token || !github_user_id) {
+            return res.status(400).json({ message: "Dados do GitHub não fornecidos" });
+        }
+        if (!userId || !validate(userId)) {
+            return res.status(401).json({ message: "Usuário não autenticado" });
+        }
+        const existUser = await prisma.user.findFirst({
+            where: { id: userId }
+        });
+
+        if (!existUser) {
+            return res.status(404).json({ message: "Usuário não encontrado" });
+        }
+
+        const encryptedToken = CryptoJS.AES.encrypt(github_token, process.env.GITHUB_TOKEN_ENCRYPTION_KEY!).toString();
+
+
         await prisma.user.update({
             where: { id: userId },
             data: {
@@ -146,7 +150,7 @@ export const unsyncUserFromGitHub = async (req: Request | any, res: Response) =>
     }
 };
 
-export const createCookieGitHub = (req : any, res: any) => {
+export const createCookieGitHub = (req: any, res: any) => {
     res.cookie('teste', "TEsteeeeee", {
         httpOnly: true,
         secure: process.env.NODE_ENV === 'production',
@@ -156,7 +160,7 @@ export const createCookieGitHub = (req : any, res: any) => {
     return res.status(200).json({ message: "Cookie criado com sucesso" });
 }
 
-export const readCookieGitHub = (req : any, res: any) => {
+export const readCookieGitHub = (req: any, res: any) => {
     const teste = req.cookies['auth_token'];
     res.status(200).json({ cookie: teste });
 }
