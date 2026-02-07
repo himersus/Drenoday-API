@@ -190,7 +190,7 @@ export const loginGitHub = async (req: Request | any, res: Response) => {
                 password: null, // senha aleatória
                 is_active: true,
                 github_username,
-                github_token: CryptoJS.AES.encrypt(github_token, process.env.GITHUB_TOKEN_ENCRYPTION_KEY!).toString(),
+                github_token: github_token,//CryptoJS.AES.encrypt(github_token, process.env.GITHUB_TOKEN_ENCRYPTION_KEY!).toString(),
                 github_id: github_user_id
             }
         });
@@ -225,9 +225,10 @@ export const loginGitHub = async (req: Request | any, res: Response) => {
         provider: "github"
     };
 
+
     const tokenUser = jwt.sign(payload, process.env.JWT_SECRET as string);
 
-    return res.redirect(`${process.env.FRONTEND_URL}/auth/github?github_token=${tokenUser}&github_username=${github_username}&github_user_id=${github_user_id}`);
+    return res.redirect(`${process.env.FRONTEND_URL}/auth/github?github_token=${github_token}&github_username=${github_username}&github_user_id=${github_user_id}`);
 };
 
 export const loginGoogle = async (req: Request | any, res: Response) => {
