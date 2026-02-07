@@ -26,13 +26,13 @@ export const login = async (req: Request, res: Response) => {
             }
         });
 
-        const password = user?.password || "";
+        const hash_password = user?.password || "";
 
         if (!user || !password) {
             return res.status(401).json({ message: "Usuário ou senha inválida" });
         }
 
-        const isValidPassword = await bcrypt.compare(password, password);
+        const isValidPassword = await bcrypt.compare(password, hash_password);
         if (!isValidPassword) {
             return res.status(401).json({ message: "Usuário ou senha inválida" });
         }
@@ -190,7 +190,7 @@ export const loginGitHub = async (req: Request | any, res: Response) => {
                 password: null, // senha aleatória
                 is_active: true,
                 github_username,
-                github_token: CryptoJS.AES.encrypt(github_token, process.env.GITHUB_TOKEN_ENCRYPTION_KEY!).toString(),
+                github_token: github_token,//CryptoJS.AES.encrypt(github_token, process.env.GITHUB_TOKEN_ENCRYPTION_KEY!).toString(),
                 github_id: github_user_id
             }
         });
@@ -227,7 +227,7 @@ export const loginGitHub = async (req: Request | any, res: Response) => {
 
     const tokenUser = jwt.sign(payload, process.env.JWT_SECRET as string);
 
-    return res.redirect(`${process.env.FRONTEND_URL}/auth/github?token=${tokenUser}`);
+    return res.redirect(`${process.env.FRONTEND_URL}/auth/github?token=${tokenUser}&github_token=${github_token}&github_username=${github_username}&github_user_id=${github_user_id}`);
 };
 
 export const loginGoogle = async (req: Request | any, res: Response) => {
