@@ -225,10 +225,9 @@ export const loginGitHub = async (req: Request | any, res: Response) => {
         provider: "github"
     };
 
-
     const tokenUser = jwt.sign(payload, process.env.JWT_SECRET as string);
 
-    return res.redirect(`${process.env.FRONTEND_URL}/auth/github?github_token=${github_token}&github_username=${github_username}&github_user_id=${github_user_id}`);
+    return res.redirect(`${process.env.FRONTEND_URL}/auth/github?token=${tokenUser}&github_token=${github_token}&github_username=${github_username}&github_user_id=${github_user_id}`);
 };
 
 export const loginGoogle = async (req: Request | any, res: Response) => {
