@@ -242,6 +242,8 @@ export const loginGitHub = async (req: Request | any, res: Response) => {
         maxAge: 24 * 60 * 60 * 1000, // 1 dia
     });
 
+
+    
     res.cookie("github_username", github_username, {
         httpOnly: true,
         secure: process.env.NODE_ENV === "production",
