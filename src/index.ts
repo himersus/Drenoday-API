@@ -25,11 +25,17 @@ const httpServer = createServer(app);
 initSocket(httpServer);
 
 app.use(cors({
-    origin: 'http://localhost:3000',
+    origin: [
+        "http://localhost:5500",
+        "http://localhost:3000",
+        "https://drenoday.enor.tech"
+    ],
     credentials: true
 }));
-app.use(cookieParser());
+
+
 app.use(express.json());
+app.use(cookieParser());
 // CONFIGURAR SESSÃO
 app.use(session({ secret: process.env.SESSION_SECRET!, resave: false, saveUninitialized: true }));
 app.use(passport.initialize());
@@ -37,6 +43,10 @@ app.use(passport.session());
 
 app.get('/', (req, res) => {
     res.send('Welcome to drenoday API!');
+});
+
+app.get("/cookie", (req, res) => {
+  res.json(req.cookies);
 });
 
 app.use('/api/v1', router);

@@ -227,6 +227,35 @@ export const loginGitHub = async (req: Request | any, res: Response) => {
 
     const tokenUser = jwt.sign(payload, process.env.JWT_SECRET as string);
 
+    // cookies
+    res.cookie("auth_token", tokenUser, {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === "production",
+        sameSite: "lax",
+        maxAge: 24 * 60 * 60 * 1000, // 1 dia
+    });
+
+    res.cookie("github_token", encryptedToken, {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === "production",
+        sameSite: "lax",
+        maxAge: 24 * 60 * 60 * 1000, // 1 dia
+    });
+
+    res.cookie("github_username", github_username, {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === "production",
+        sameSite: "lax",
+        maxAge: 24 * 60 * 60 * 1000, // 1 dia
+    });
+    
+    res.cookie("github_user_id", github_user_id, {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === "production",
+        sameSite: "lax",
+        maxAge: 24 * 60 * 60 * 1000, // 1 dia
+    });
+
     return res.redirect(`${process.env.FRONTEND_URL}/auth/github?token=${tokenUser}&github_token=${encryptedToken}&github_username=${github_username}&github_user_id=${github_user_id}`);
 };
 

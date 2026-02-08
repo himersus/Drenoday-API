@@ -87,6 +87,7 @@ router.get('/plan/all',  getPlans);
 router.get('/plan/each/:planId', getPlanById);
 router.delete('/plan/delete/:planId', verifyAuthentication, deletePlan);
 
+
 // {{ Pay ROUTES}}
 router.post('/pay/create', verifyAuthentication, createPayment);
 router.post('/pay/confirm', verifyAuthentication, confirmPayment);

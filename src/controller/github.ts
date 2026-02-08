@@ -38,12 +38,8 @@ export const getUserRepos = async (req: Request | any, res: Response) => {
 
         const encrypted = existUser.github_token;
 
-        const bytes = CryptoJS.AES.decrypt(
-            encrypted,
-            process.env.GITHUB_TOKEN_ENCRYPTION_KEY!,
-        );
         const token = CryptoJS.AES.decrypt(encrypted, process.env.GITHUB_TOKEN_ENCRYPTION_KEY!).toString(CryptoJS.enc.Utf8);
-        
+
         if (!token) {
             return res.status(401).json({ message: "Token não fornecido" });
         }
@@ -85,59 +81,59 @@ export const getUserRepos = async (req: Request | any, res: Response) => {
 };
 
 export const syncUserWithGitHub = async (req: Request | any, res: Response) => {
-  const userId = req.userId;
-  const { github_username, github_token, github_user_id } = req.body;
+    const userId = req.userId;
+    const { github_username, github_token, github_user_id } = req.cookies;
 
-  if (!github_username || !github_token || !github_user_id) {
-    return res.status(400).json({ message: "Dados do GitHub não fornecidos" });
-  }
-  if (!userId || !validate(userId)) {
-    return res.status(401).json({ message: "Usuário não autenticado" });
-  }
-  const existUser = await prisma.user.findFirst({
-    where: { id: userId },
-  });
-
-  if (!existUser) {
-    return res.status(404).json({ message: "Usuário não encontrado" });
-  }
-
-  /*const encryptedToken = CryptoJS.AES.encrypt(
-    github_token,
-    process.env.GITHUB_TOKEN_ENCRYPTION_KEY!,
-  ).toString();*/
-
-  try {
-    await prisma.user.update({
-      where: { id: userId },
-      data: {
-        github_username,
-        github_token: github_token,
-        github_id: github_user_id,
-      },
+    if (!github_username || !github_token || !github_user_id) {
+        return res.status(400).json({ message: "Dados do GitHub não fornecidos" });
+    }
+    if (!userId || !validate(userId)) {
+        return res.status(401).json({ message: "Usuário não autenticado" });
+    }
+    const existUser = await prisma.user.findFirst({
+        where: { id: userId },
     });
 
-    return res
-      .status(200)
-      .json({ message: "Sincronização com GitHub realizada com sucesso" });
-  } catch (error ) {
-    console.error(error);
-    return res.status(500).json({ 
-        message: "Erro ao sincronizar com GitHub", 
-        error: error instanceof Error ? error.message : "Erro desconhecido" });
+    if (!existUser) {
+        return res.status(404).json({ message: "Usuário não encontrado" });
+    }
 
-  }
+    /*const encryptedToken = CryptoJS.AES.encrypt(
+      github_token,
+      process.env.GITHUB_TOKEN_ENCRYPTION_KEY!,
+    ).toString();*/
+
+    try {
+        await prisma.user.update({
+            where: { id: userId },
+            data: {
+                github_username,
+                github_token: github_token,
+                github_id: github_user_id,
+            },
+        });
+
+        return res
+            .status(200)
+            .json({ message: "Sincronização com GitHub realizada com sucesso" });
+    } catch (error) {
+        console.error(error);
+        return res.status(500).json({
+            message: "Erro ao sincronizar com GitHub",
+            error: error instanceof Error ? error.message : "Erro desconhecido"
+        });
+    }
 };
 
 export const unsyncUserFromGitHub = async (
-  req: Request | any,
-  res: Response,
+    req: Request | any,
+    res: Response,
 ) => {
-  const userId = req.userId;
+    const userId = req.userId;
 
-  if (!userId || !validate(userId)) {
-    return res.status(401).json({ message: "Usuário não autenticado" });
-  }
+    if (!userId || !validate(userId)) {
+        return res.status(401).json({ message: "Usuário não autenticado" });
+    }
 
     const existUser = await prisma.user.findFirst({
         where: { id: userId },
@@ -183,7 +179,5 @@ export const createCookieGitHub = (req: any, res: any) => {
 };
 
 export const readCookieGitHub = (req: any, res: any) => {
-    const teste = req.cookies["auth_token"];
-    res.status(200).json({ cookie: teste });
-
+   return res.json(req.cookies);
 };
