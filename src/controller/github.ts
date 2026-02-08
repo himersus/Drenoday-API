@@ -42,7 +42,8 @@ export const getUserRepos = async (req: Request | any, res: Response) => {
             encrypted,
             process.env.GITHUB_TOKEN_ENCRYPTION_KEY!,
         );
-        const token = existUser.github_token;
+        const token = CryptoJS.AES.decrypt(encrypted, process.env.GITHUB_TOKEN_ENCRYPTION_KEY!).toString(CryptoJS.enc.Utf8);
+        
         if (!token) {
             return res.status(401).json({ message: "Token não fornecido" });
         }

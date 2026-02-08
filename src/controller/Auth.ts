@@ -190,7 +190,7 @@ export const loginGitHub = async (req: Request | any, res: Response) => {
                 password: null, // senha aleatória
                 is_active: true,
                 github_username,
-                github_token: github_token,//CryptoJS.AES.encrypt(github_token, process.env.GITHUB_TOKEN_ENCRYPTION_KEY!).toString(),
+                github_token: CryptoJS.AES.encrypt(github_token, process.env.GITHUB_TOKEN_ENCRYPTION_KEY!).toString(),
                 github_id: github_user_id
             }
         });
@@ -200,7 +200,7 @@ export const loginGitHub = async (req: Request | any, res: Response) => {
         return res.redirect(`${process.env.FRONTEND_URL}/auth/error?message=Usuário não encontrado. Por favor, registre-se primeiro.`);
     }
 
-    const encryptedToken = CryptoJS.AES.encrypt(github_token, process.env.JWT_SECRET!).toString();
+    const encryptedToken = CryptoJS.AES.encrypt(github_token, process.env.GITHUB_TOKEN_ENCRYPTION_KEY!).toString();
 
     try {
         await prisma.user.update({
@@ -227,7 +227,7 @@ export const loginGitHub = async (req: Request | any, res: Response) => {
 
     const tokenUser = jwt.sign(payload, process.env.JWT_SECRET as string);
 
-    return res.redirect(`${process.env.FRONTEND_URL}/auth/github?token=${tokenUser}&github_token=${github_token}&github_username=${github_username}&github_user_id=${github_user_id}`);
+    return res.redirect(`${process.env.FRONTEND_URL}/auth/github?token=${tokenUser}&github_token=${encryptedToken}&github_username=${github_username}&github_user_id=${github_user_id}`);
 };
 
 export const loginGoogle = async (req: Request | any, res: Response) => {
