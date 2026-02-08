@@ -21,7 +21,7 @@ jobs:
           key: ${{ secrets.VPS_SSH_KEY }}
           port: ${{ secrets.VPS_PORT }}
           script: |
-            cd /root/gohost/drenoday/
+            cd /root/gohost/drenoday
             git pull origin main
             docker compose down
             docker compose up -d --build
