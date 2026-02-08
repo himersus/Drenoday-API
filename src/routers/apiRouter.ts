@@ -40,7 +40,6 @@ router.get('/auth/google',
       state: JSON.stringify({ create })
     })(req, res, next);
   }
-  
 );
 
 router.get('/auth/google/callback', passport.authenticate('google', { failureRedirect: '/auth/google' }), loginGoogle);
