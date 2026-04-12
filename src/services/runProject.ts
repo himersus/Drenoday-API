@@ -70,9 +70,9 @@ services:
       - "traefik.http.routers.${project.domain}.tls.certresolver=myresolver"
       - "traefik.http.services.${project.domain}.loadbalancer.server.port=${project.port}"
     networks:
-      - traefik-network
+      - web
 networks:
-  traefik-network:
+  web:
     external: true
 `;
         // garantir diretório
