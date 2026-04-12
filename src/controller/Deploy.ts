@@ -5,12 +5,13 @@ import CryptoJS from 'crypto-js';
 import { validate } from "uuid";
 import { PrismaClient } from "@prisma/client";
 import dotenv from "dotenv";
+import { q } from "../helper/to_string";
 dotenv.config();
 
 const prisma = new PrismaClient();
 
 export const listDeploys = async (req: Request | any, res: Response) => {
-    const projectId = req.params.projectId;
+    const projectId = q(req.params.projectId);
     const userId = req.userId;
 
     if (!userId || !validate(userId)) {
@@ -57,7 +58,7 @@ export const listDeploys = async (req: Request | any, res: Response) => {
 };
 
 export const getDeploy = async (req: Request | any, res: Response) => {
-    const deployId = req.params.deployId;
+    const deployId = q(req.params.deployId);
     const userId = req.userId;
 
     if (!userId || !validate(userId)) {

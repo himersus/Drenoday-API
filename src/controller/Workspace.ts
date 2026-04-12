@@ -3,6 +3,7 @@ import dotenv from "dotenv";
 dotenv.config();
 import { PrismaClient } from "@prisma/client";
 import { validate } from "uuid";
+import { q } from "../helper/to_string";
 
 
 const prisma = new PrismaClient();
@@ -66,7 +67,7 @@ export const createWorkspace = async (req: Request | any, res: Response) => {
 };
 
 export const getWorkspace = async (req: Request | any, res: Response) => {
-    const { workspaceId } = req.params;
+    const  workspaceId  = q(req.params.workspaceId);
     const userId = req.userId;
 
     if (!validate(workspaceId) || !validate(userId)) {
@@ -168,7 +169,7 @@ export const getAllWorkspaces = async (req: Request | any, res: Response) => {
 }
 
 export const updateWorkspace = async (req: Request | any, res: Response) => {
-    const { workspaceId } = req.params;
+    const workspaceId = q(req.params.workspaceId);
     const userId = req.userId;
     const { name } = req.body;
 
@@ -232,7 +233,7 @@ export const updateWorkspace = async (req: Request | any, res: Response) => {
 };
 
 export const deleteWorkspace = async (req: Request | any, res: Response) => {
-    const { workspaceId } = req.params;
+    const workspaceId = q(req.params.workspaceId);
     const userId = req.userId;
 
     try {

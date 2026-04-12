@@ -6,6 +6,7 @@ import { PrismaClient } from "@prisma/client";
 import { generateUniqueUsername } from "../modify/username";
 import { validate } from "uuid";
 import bcrypt from "bcrypt";
+import { q } from "../helper/to_string";
 
 const prisma = new PrismaClient();
 export const createUser = async (req: Request, res: Response) => {
@@ -46,7 +47,7 @@ export const createUser = async (req: Request, res: Response) => {
 };
 
 export const getUser = async (req: Request, res: Response) => {
-    const { userId } = req.params;
+    const  userId  = q(req.params.userId);
     try {
 
         const user = await prisma.user.findFirst({

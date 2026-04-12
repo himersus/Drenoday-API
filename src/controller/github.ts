@@ -4,16 +4,17 @@ import CryptoJS from "crypto-js";
 import { validate } from "uuid";
 import { PrismaClient } from "@prisma/client";
 import dotenv from "dotenv";
+import { q } from "../helper/to_string";
 dotenv.config();
 
 const prisma = new PrismaClient();
 
 export const getUserRepos = async (req: Request | any, res: Response) => {
     const userId = req.userId;
-    const page = req.params.page || 1;
-    const limit = req.params.limit || 10;
+    const page = q(req.params.page) || 1;
+    const limit = q(req.params.limit) || 10;
     const offset = limit * page - limit;
-    const name = req.query.name || "";
+    const name = q(req.query.name as string) || "";
 
     try {
         if (!userId || !validate(userId)) {

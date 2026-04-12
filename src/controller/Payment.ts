@@ -6,6 +6,7 @@ import axios from "axios";
 import dotenv from "dotenv";
 import { referenceSendPaymentService, verificationPayment } from "../services/Payment";
 import { createNotification } from "../services/notification";
+import { q } from "../helper/to_string";
 const prisma = new PrismaClient();
 dotenv.config();
 
@@ -427,7 +428,7 @@ export const getUserPayments = async (req: Request | any, res: Response) => {
 
 export const getPaymentById = async (req: Request | any, res: Response) => {
     const userId = req.userId;
-    const { paymentId } = req.params;
+    const { paymentId } = q(req.params);
 
     if (!userId || !validate(userId)) {
         return res.status(401).json({ message: "Usuário não autenticado" });

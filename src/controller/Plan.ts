@@ -1,6 +1,7 @@
 import { PrismaClient } from "@prisma/client";
 import { Request, Response } from "express";
 import { validate } from "uuid";
+import { q } from "../helper/to_string";
 
 const prisma = new PrismaClient();
 export async function addPlan(req: Request, res: Response) {
@@ -50,7 +51,7 @@ export async function getPlans(req: Request, res: Response) {
 }
 
 export async function getPlanById(req: Request, res: Response) {
-    const { planId } = req.params;
+    const  planId  = q(req.params.planId);
     try {
         const plan = await prisma.plan.findFirst({
             where: {
@@ -73,7 +74,7 @@ export async function getPlanById(req: Request, res: Response) {
 }
 
 export async function deletePlan(req: Request, res: Response) {
-    const { planId } = req.params;
+    const  planId  = q(req.params.planId);
     try {
         const plan = await prisma.plan.findFirst({
             where: {

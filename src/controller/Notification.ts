@@ -1,6 +1,7 @@
 import { PrismaClient } from "@prisma/client";
 import { Request, Response } from "express";
 import { validate } from "uuid";
+import { q } from "../helper/to_string";
 
 const prisma = new PrismaClient();
 
@@ -50,7 +51,7 @@ export const myNotifications = async (req: Request | any, res: Response) => {
 }
 
 export const markNotificationAsRead = async (req: Request | any, res: Response) => {
-    const { notificationId } = req.params;
+    const { notificationId } = q(req.params);
     const userId = req.userId; // Supondo que o ID do usuário logado esteja disponível em req.userId
 
     if (!validate(notificationId)) {
@@ -89,7 +90,7 @@ export const markNotificationAsRead = async (req: Request | any, res: Response) 
 }
 
 export const getOneNotification = async (req: Request | any, res: Response) => {
-    const { notificationId } = req.params;
+    const { notificationId } = q(req.params);
     const userId = req.userId; // Supondo que o ID do usuário logado esteja disponível em req.userId
 
     if (!validate(notificationId)) {

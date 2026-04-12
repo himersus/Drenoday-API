@@ -15,6 +15,7 @@ import { collectLogs, startLogStream } from "../helper/logs";
 import { parseGithubRepo, getLastCommitFromBranch } from "../helper/github";
 import { stopProject } from "../services/stopProject";
 import { runProject } from "../services/runProject";
+import { q } from "../helper/to_string";
 
 async function repositoryUsesDocker(
     owner: string,
@@ -251,7 +252,7 @@ mkdir -p ${targetPath} \
 };
 
 export const runTheProject = async (req: Request | any, res: Response) => {
-    const { projectId } = req.params;
+    const projectId  = q(req.params.projectId);
     const userId = req.userId;
 
     if (!validate(projectId) || !validate(userId)) {
@@ -273,7 +274,7 @@ export const runTheProject = async (req: Request | any, res: Response) => {
 };
 
 export const stopTheProject = async (req: Request | any, res: Response) => {
-    const { projectId } = req.params;
+    const projectId = q(req.params.projectId);
     const userId = req.userId;
 
     if (!validate(projectId) || !validate(userId)) {
@@ -297,7 +298,7 @@ export const stopTheProject = async (req: Request | any, res: Response) => {
 };
 
 export const getProject = async (req: Request | any, res: Response) => {
-    const { projectId } = req.params;
+    const projectId = q(req.params.projectId);
     const userId = req.userId;
 
     if (!validate(projectId) || !validate(userId)) {
@@ -335,7 +336,7 @@ export const getProject = async (req: Request | any, res: Response) => {
 
 export const getMyProjects = async (req: Request | any, res: Response) => {
     const userId = req.userId; // Supondo que o ID do usuário logado esteja disponível em req.userId
-    const workspaceId = req.params.workspaceId;
+    const workspaceId = q(req.params.workspaceId);
     if (!validate(userId)) {
         return res.status(401).json({ message: "Usuário não autenticado" });
     }
@@ -376,7 +377,7 @@ export const getMyProjects = async (req: Request | any, res: Response) => {
 };
 
 export const updateProject = async (req: Request | any, res: Response) => {
-    const { projectId } = req.params;
+    const projectId = q(req.params.projectId);
     const { name, description, default_plan, environments } = req.body;
     const userId = req.userId;
 
@@ -433,7 +434,7 @@ export const updateProject = async (req: Request | any, res: Response) => {
 };
 
 export const deleteProject = async (req: Request | any, res: Response) => {
-    const { projectId } = req.params;
+    const projectId = q(req.params.projectId);
     const userId = req.userId;
 
     if (!validate(projectId) || !validate(userId)) {
