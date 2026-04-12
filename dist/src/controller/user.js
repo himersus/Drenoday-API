@@ -1,25 +1,26 @@
-
-import dotenv from "dotenv";
-dotenv.config();
-import { Request, Response } from "express";
-import { generateUniqueUsername } from "../modify/username";
-import { validate } from "uuid";
-import bcrypt from "bcrypt";
-import { q } from "../helper/to_string";
-
-import prisma  from "../lib/prisma";
-
-export const createUser = async (req: Request, res: Response) => {
+"use strict";
+var __importDefault = (this && this.__importDefault) || function (mod) {
+    return (mod && mod.__esModule) ? mod : { "default": mod };
+};
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.updateUser = exports.UserLoged = exports.getAllUsers = exports.getUser = exports.createUser = void 0;
+const dotenv_1 = __importDefault(require("dotenv"));
+dotenv_1.default.config();
+const username_1 = require("../modify/username");
+const uuid_1 = require("uuid");
+const bcrypt_1 = __importDefault(require("bcrypt"));
+const to_string_1 = require("../helper/to_string");
+const prisma_1 = __importDefault(require("../lib/prisma"));
+const createUser = async (req, res) => {
     const { email, name, password } = req.body;
-    const username = await generateUniqueUsername(name);
+    const username = await (0, username_1.generateUniqueUsername)(name);
     if (!username || !name) {
         return res.status(400).json({
             message: "O nome fornecido não é válido para gerar um nome de usuário."
         });
     }
-
     try {
-        const existUser = await prisma.user.findFirst({
+        const existUser = await prisma_1.default.user.findFirst({
             where: {
                 OR: [
                     { email },
@@ -27,63 +28,59 @@ export const createUser = async (req: Request, res: Response) => {
                 ]
             },
         });
-
         if (existUser) {
             return res.status(400).json({ message: "Usuário com este email ou username já existe." });
         }
-
-        const user = await prisma.user.create({
+        const user = await prisma_1.default.user.create({
             data: {
                 email,
                 name,
-                password: await bcrypt.hash(password, 10),
-                username: username as string,
+                password: await bcrypt_1.default.hash(password, 10),
+                username: username,
             }
         });
         res.status(201).json(user);
-    } catch (error) {
+    }
+    catch (error) {
         res.status(500).json({ message: "Failed to create user" });
     }
 };
-
-export const getUser = async (req: Request, res: Response) => {
-    const  userId  = q(req.params.userId);
+exports.createUser = createUser;
+const getUser = async (req, res) => {
+    const userId = (0, to_string_1.q)(req.params.userId);
     try {
-
-        const user = await prisma.user.findFirst({
+        const user = await prisma_1.default.user.findFirst({
             where: {
                 OR: [
-                    { id: validate(userId) ? userId : undefined },
+                    { id: (0, uuid_1.validate)(userId) ? userId : undefined },
                     { username: userId },
                     { email: userId }
                 ]
             },
         });
-
         if (!user) {
             return res.status(404).json({ message: "Usuário não encontrado" });
         }
         res.status(200).json(user);
-    } catch (error) {
+    }
+    catch (error) {
         res.status(500).json({ error: "Failed to retrieve user" });
     }
 };
-
-export const getAllUsers = async (req: Request, res: Response) => {
+exports.getUser = getUser;
+const getAllUsers = async (req, res) => {
     const { username } = req.query;
-
     if (username && typeof username !== 'string') {
         return res.status(400).json({ message: "Username inválido" });
     }
-
-    const page = parseInt(req.query.page as string) || 1;
-    const limit = parseInt(req.query.limit as string) || 10;
+    const page = parseInt(req.query.page) || 1;
+    const limit = parseInt(req.query.limit) || 10;
     const skip = (page - 1) * limit;
     try {
-        const users = await prisma.user.findMany({
+        const users = await prisma_1.default.user.findMany({
             where: {
                 username: {
-                    contains: username ? username as string : undefined,
+                    contains: username ? username : undefined,
                     mode: "insensitive"
                 },
             },
@@ -94,49 +91,45 @@ export const getAllUsers = async (req: Request, res: Response) => {
             }
         });
         res.status(200).json(users);
-    } catch (error) {
+    }
+    catch (error) {
         res.status(500).json({ error: "Failed to retrieve users" });
     }
-}
-
-export const UserLoged = async (req: Request | any, res: Response) => {
+};
+exports.getAllUsers = getAllUsers;
+const UserLoged = async (req, res) => {
     const userId = req.userId; // Supondo que o ID do usuário logado esteja disponível em req.userId
-
     try {
-        const user = await prisma.user.findUnique({
+        const user = await prisma_1.default.user.findUnique({
             where: { id: userId },
         });
-
         if (!user) {
             return res.status(404).json({ message: "Usuário não encontrado" });
         }
-
         res.status(200).json(user);
-    } catch (error) {
+    }
+    catch (error) {
         res.status(500).json({ error: "Failed to retrieve logged-in user" });
     }
 };
-
-export const updateUser = async (req: Request | any, res: Response) => {
+exports.UserLoged = UserLoged;
+const updateUser = async (req, res) => {
     const userId = req.userId;
     const { email, name } = req.body;
-
-    const existUser = await prisma.user.findFirst({
+    const existUser = await prisma_1.default.user.findFirst({
         where: {
             OR: [
-                { id: validate(userId) ? userId : undefined },
+                { id: (0, uuid_1.validate)(userId) ? userId : undefined },
                 { username: userId },
                 { email: userId }
             ]
         },
     });
-
     if (!existUser) {
         return res.status(404).json({ message: "Usuário não encontrado" });
     }
-
     try {
-        const user = await prisma.user.update({
+        const user = await prisma_1.default.user.update({
             where: { id: existUser.id },
             data: {
                 email: email || existUser.email,
@@ -144,7 +137,9 @@ export const updateUser = async (req: Request | any, res: Response) => {
             }
         });
         res.status(200).json(user);
-    } catch (error) {
+    }
+    catch (error) {
         res.status(500).json({ error: "Failed to update user" });
     }
 };
+exports.updateUser = updateUser;

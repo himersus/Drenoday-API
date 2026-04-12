@@ -1,10 +1,6 @@
-import axios from "axios";
 import { Request, Response } from "express";
-import CryptoJS from 'crypto-js';
 import { validate } from "uuid";
-import { PrismaClient } from "@prisma/client";
-
-const prisma = new PrismaClient();
+import prisma  from "../lib/prisma";
 
 export const addMember = async (req: Request | any, res: Response) => {
     const { username, workspaceId, role } = req.body;

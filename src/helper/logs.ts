@@ -1,7 +1,6 @@
 
 import { sendSocketContent } from "../sockets/index"
-import { PrismaClient } from '@prisma/client';
-const prisma = new PrismaClient();
+import prisma  from "../lib/prisma";
 import { spawn } from "child_process";
 
 export function collectLogs(deployId: string, projectId: string, logLines: string[]) {

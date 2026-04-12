@@ -1,9 +1,11 @@
 "use strict";
+var __importDefault = (this && this.__importDefault) || function (mod) {
+    return (mod && mod.__esModule) ? mod : { "default": mod };
+};
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.generateUniqueUsername = generateUniqueUsername;
 require("dotenv/config");
-const client_1 = require("@prisma/client");
-const prisma = new client_1.PrismaClient();
+const prisma_1 = __importDefault(require("../lib/prisma"));
 async function generateUniqueUsername(fullName, is_auth20 = false) {
     const names = fullName.trim().toLowerCase().split(/\s+/);
     const firstName = names[0];
@@ -36,7 +38,7 @@ async function generateUniqueUsername(fullName, is_auth20 = false) {
 }
 // Função que verifica se já existe
 async function usernameExists(username) {
-    const user = await prisma.user.findFirst({
+    const user = await prisma_1.default.user.findFirst({
         where: { username },
     });
     return !!user;

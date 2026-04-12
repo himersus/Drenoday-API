@@ -1,9 +1,5 @@
 import 'dotenv/config';
-import { PrismaClient } from '@prisma/client';
-
-const prisma = new PrismaClient();
-
-
+import prisma  from "../lib/prisma";
 
 export async function generateUniqueUsername(fullName: string, is_auth20: boolean = false): Promise<string | any> {
     const names = fullName.trim().toLowerCase().split(/\s+/);

@@ -5,8 +5,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.verifyAuthenticationAdmin = exports.verifyAuthentication = void 0;
 const jsonwebtoken_1 = __importDefault(require("jsonwebtoken"));
-const client_1 = require("@prisma/client");
-const prisma = new client_1.PrismaClient();
+const prisma_1 = __importDefault(require("../lib/prisma"));
 const jwtSecret = process.env.JWT_SECRET;
 const verifyAuthentication = (req, res, next) => {
     const authHeader = req.headers.authorization;
@@ -21,7 +20,7 @@ const verifyAuthentication = (req, res, next) => {
         const decoded = jsonwebtoken_1.default.verify(token, jwtSecret);
         req.userId = decoded.id;
         (async () => {
-            const user = await prisma.user.findFirst({
+            const user = await prisma_1.default.user.findFirst({
                 where: {
                     id: decoded.id,
                 },
@@ -62,7 +61,7 @@ const verifyAuthenticationAdmin = (req, res, next) => {
         const decoded = jsonwebtoken_1.default.verify(token, jwtSecret);
         req.userId = decoded.id;
         (async () => {
-            const user = await prisma.user.findFirst({
+            const user = await prisma_1.default.user.findFirst({
                 where: {
                     id: decoded.id,
                 },

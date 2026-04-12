@@ -1,9 +1,9 @@
-import { PrismaClient, typePayment } from "@prisma/client";
+import { typePayment } from "@prisma/client";
 import { validate } from "uuid";
 import axios from "axios"
 import { getAppyPayToken } from "./generateToken";
 
-const prisma = new PrismaClient();
+import prisma  from "../lib/prisma";
 
 type responseService = {
     message : string,

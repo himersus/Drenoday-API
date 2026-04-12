@@ -34,7 +34,14 @@ app.use((0, cors_1.default)({
 app.use(express_1.default.json());
 app.use((0, cookie_parser_1.default)());
 // CONFIGURAR SESSÃO
-app.use((0, express_session_1.default)({ secret: process.env.SESSION_SECRET, resave: false, saveUninitialized: true }));
+app.use((0, express_session_1.default)({
+    secret: process.env.SESSION_SECRET || "dev-secret",
+    resave: false,
+    saveUninitialized: false,
+    cookie: {
+        secure: false // muda para true quando tiver HTTPS
+    }
+}));
 app.use(passport_1.default.initialize());
 app.use(passport_1.default.session());
 app.get('/', (req, res) => {

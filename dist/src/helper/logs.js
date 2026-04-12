@@ -1,10 +1,12 @@
 "use strict";
+var __importDefault = (this && this.__importDefault) || function (mod) {
+    return (mod && mod.__esModule) ? mod : { "default": mod };
+};
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.collectLogs = collectLogs;
 exports.startLogStream = startLogStream;
 const index_1 = require("../sockets/index");
-const client_1 = require("@prisma/client");
-const prisma = new client_1.PrismaClient();
+const prisma_1 = __importDefault(require("../lib/prisma"));
 const child_process_1 = require("child_process");
 function collectLogs(deployId, projectId, logLines) {
     logLines.map(async (line) => {
@@ -18,7 +20,7 @@ function collectLogs(deployId, projectId, logLines) {
             message: line
         });
         // salvar no banco
-        await prisma.deploy.update({
+        await prisma_1.default.deploy.update({
             where: { id: deployId },
             data: {
                 logs: {

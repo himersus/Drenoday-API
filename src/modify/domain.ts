@@ -1,8 +1,6 @@
 import dotenv from "dotenv";
 dotenv.config();
-import { PrismaClient } from "@prisma/client";
-
-const prisma = new PrismaClient();
+import prisma  from "../lib/prisma";
 
 // funcao que gera nomes aleatorios (a implementar futuramente)
 // ele coloca uma consonante, vogal, consoante, vogal para formar nomes tipo "balu", "nemo", "lilo", etc, com no maxio 5 letras

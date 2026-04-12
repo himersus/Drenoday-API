@@ -1,5 +1,5 @@
 import { exec } from "child_process";
-import { PrismaClient } from "@prisma/client";
+import prisma  from "../lib/prisma";
 import { sendSocketContent } from "../sockets";
 import { collectLogs, startLogStream } from "../helper/logs";
 import fs from "fs";
@@ -11,7 +11,6 @@ type RunProjectResponse = {
     message: string;
 } | void;
 
-const prisma = new PrismaClient();
 
 const generateEnvContent = (projectEnvs: string[]): string => {
     let envContent = "";

@@ -1,11 +1,13 @@
 "use strict";
+var __importDefault = (this && this.__importDefault) || function (mod) {
+    return (mod && mod.__esModule) ? mod : { "default": mod };
+};
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.stopProject = stopProject;
 const child_process_1 = require("child_process");
-const client_1 = require("@prisma/client");
-const prisma = new client_1.PrismaClient();
+const prisma_1 = __importDefault(require("../lib/prisma"));
 async function stopProject(projectId, userId) {
-    const project = await prisma.project.findFirst({
+    const project = await prisma_1.default.project.findFirst({
         where: { id: projectId },
     });
     if (!project) {
@@ -20,7 +22,7 @@ async function stopProject(projectId, userId) {
             message: "Você não tem permissão para parar este projeto"
         };
     }
-    const existUser = await prisma.user.findFirst({
+    const existUser = await prisma_1.default.user.findFirst({
         where: { id: userId },
     });
     if (!existUser) {

@@ -4,11 +4,10 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.referenceSendPaymentService = exports.verificationPayment = void 0;
-const client_1 = require("@prisma/client");
 const uuid_1 = require("uuid");
 const axios_1 = __importDefault(require("axios"));
 const generateToken_1 = require("./generateToken");
-const prisma = new client_1.PrismaClient();
+const prisma_1 = __importDefault(require("../lib/prisma"));
 const verificationPayment = async (userId, projectId, plan_name) => {
     if (!userId || !(0, uuid_1.validate)(userId)) {
         return {
@@ -16,7 +15,7 @@ const verificationPayment = async (userId, projectId, plan_name) => {
             code: 401
         };
     }
-    const existUser = await prisma.user.findUnique({
+    const existUser = await prisma_1.default.user.findUnique({
         where: { id: userId }
     });
     if (!existUser) {
@@ -31,7 +30,7 @@ const verificationPayment = async (userId, projectId, plan_name) => {
             code: 400
         };
     }
-    const existProject = await prisma.project.findUnique({
+    const existProject = await prisma_1.default.project.findUnique({
         where: { id: projectId }
     });
     if (!existProject) {
@@ -46,7 +45,7 @@ const verificationPayment = async (userId, projectId, plan_name) => {
             code: 400
         };
     }
-    const existPlan = await prisma.plan.findUnique({
+    const existPlan = await prisma_1.default.plan.findUnique({
         where: { name: plan_name }
     });
     if (!existPlan) {

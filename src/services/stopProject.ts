@@ -1,12 +1,12 @@
 import { exec } from "child_process";
-import { PrismaClient } from "@prisma/client";
+import prisma  from "../lib/prisma";
 
 type StopProjectResponse = {
     statusCode: number;
     message: string;
 } | void;
 
-const prisma = new PrismaClient();
+
 
 export async function stopProject(projectId: string, userId: string):  Promise<StopProjectResponse> {
     const project = await prisma.project.findFirst({

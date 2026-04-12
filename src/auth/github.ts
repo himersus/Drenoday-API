@@ -1,9 +1,7 @@
 import passport from "passport";
 import { Strategy as GitHubStrategy } from "passport-github2";
-import { PrismaClient } from '@prisma/client';
 import { Request } from "express";
 
-const prisma = new PrismaClient();
 
 passport.use(new GitHubStrategy({
     clientID: process.env.GITHUB_CLIENT_ID!,
@@ -29,4 +27,3 @@ passport.serializeUser((user: any, done: any) => done(null, user));
 passport.deserializeUser((user: any, done: any) => done(null, user));
 
 export default passport;
-

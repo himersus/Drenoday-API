@@ -1,28 +1,31 @@
-import prisma  from "../lib/prisma";
-import { Request, Response } from "express";
-import { validate } from "uuid";
-import { q } from "../helper/to_string";
-
-export async function addPlan(req: Request, res: Response) {
+"use strict";
+var __importDefault = (this && this.__importDefault) || function (mod) {
+    return (mod && mod.__esModule) ? mod : { "default": mod };
+};
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.addPlan = addPlan;
+exports.getPlans = getPlans;
+exports.getPlanById = getPlanById;
+exports.deletePlan = deletePlan;
+const prisma_1 = __importDefault(require("../lib/prisma"));
+const uuid_1 = require("uuid");
+const to_string_1 = require("../helper/to_string");
+async function addPlan(req, res) {
     const { name, description, price, duration, max_projects } = req.body;
-
     if (!name || !description || !duration) {
         return res.status(400).json({ message: "Todos os campos são obrigatórios" });
     }
-
     if (price === undefined || price === null || isNaN(price)) {
         return res.status(400).json({ message: "Preço inválido" });
     }
     try {
-        const existPlan = await prisma.plan.findFirst({
+        const existPlan = await prisma_1.default.plan.findFirst({
             where: { name },
         });
-
         if (existPlan) {
             return res.status(409).json({ message: "Já existe um plano com este nome" });
         }
-
-        const plan = await prisma.plan.create({
+        const plan = await prisma_1.default.plan.create({
             data: {
                 name,
                 description,
@@ -32,70 +35,65 @@ export async function addPlan(req: Request, res: Response) {
             }
         });
         return res.status(201).json(plan);
-    } catch (error) {
+    }
+    catch (error) {
         console.error(error);
         return res.status(500).json({ message: "Erro ao criar plano" });
     }
-
 }
-
-export async function getPlans(req: Request, res: Response) {
+async function getPlans(req, res) {
     try {
-        const plans = await prisma.plan.findMany();
+        const plans = await prisma_1.default.plan.findMany();
         return res.status(200).json(plans);
-    } catch (error) {
+    }
+    catch (error) {
         console.error(error);
         return res.status(500).json({ message: "Erro ao buscar planos" });
     }
 }
-
-export async function getPlanById(req: Request, res: Response) {
-    const  planId  = q(req.params.planId);
+async function getPlanById(req, res) {
+    const planId = (0, to_string_1.q)(req.params.planId);
     try {
-        const plan = await prisma.plan.findFirst({
+        const plan = await prisma_1.default.plan.findFirst({
             where: {
                 OR: [
-                    { id: validate(planId) ? planId : undefined },
-                    { name: validate(planId) ? undefined : planId }
+                    { id: (0, uuid_1.validate)(planId) ? planId : undefined },
+                    { name: (0, uuid_1.validate)(planId) ? undefined : planId }
                 ]
             },
         });
-
         if (!plan) {
             return res.status(404).json({ message: "Plano não encontrado" });
         }
-
         return res.status(200).json(plan);
-    } catch (error) {
+    }
+    catch (error) {
         console.error(error);
         return res.status(500).json({ message: "Erro ao buscar plano" });
     }
 }
-
-export async function deletePlan(req: Request, res: Response) {
-    const  planId  = q(req.params.planId);
+async function deletePlan(req, res) {
+    const planId = (0, to_string_1.q)(req.params.planId);
     try {
-        const plan = await prisma.plan.findFirst({
+        const plan = await prisma_1.default.plan.findFirst({
             where: {
                 OR: [
-                    { id: validate(planId) ? planId : undefined },
-                    { name: validate(planId) ? undefined : planId }
+                    { id: (0, uuid_1.validate)(planId) ? planId : undefined },
+                    { name: (0, uuid_1.validate)(planId) ? undefined : planId }
                 ]
             },
         });
-
         if (!plan) {
             return res.status(404).json({ message: "Plano não encontrado" });
         }
-
-        await prisma.plan.delete({
+        await prisma_1.default.plan.delete({
             where: {
                 id: plan.id
             }
         });
-
         return res.status(200).json({ message: "Plano deletado com sucesso" });
-    } catch (error) {
+    }
+    catch (error) {
         console.error(error);
         return res.status(500).json({ message: "Erro ao deletar plano" });
     }

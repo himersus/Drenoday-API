@@ -2,12 +2,10 @@ import axios from "axios";
 import { Request, Response } from "express";
 import CryptoJS from "crypto-js";
 import { validate } from "uuid";
-import { PrismaClient } from "@prisma/client";
+import prisma  from "../lib/prisma";
 import dotenv from "dotenv";
 import { q } from "../helper/to_string";
 dotenv.config();
-
-const prisma = new PrismaClient();
 
 export const getUserRepos = async (req: Request | any, res: Response) => {
     const userId = req.userId;

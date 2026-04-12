@@ -7,21 +7,21 @@ exports.readCookieGitHub = exports.createCookieGitHub = exports.unsyncUserFromGi
 const axios_1 = __importDefault(require("axios"));
 const crypto_js_1 = __importDefault(require("crypto-js"));
 const uuid_1 = require("uuid");
-const client_1 = require("@prisma/client");
+const prisma_1 = __importDefault(require("../lib/prisma"));
 const dotenv_1 = __importDefault(require("dotenv"));
+const to_string_1 = require("../helper/to_string");
 dotenv_1.default.config();
-const prisma = new client_1.PrismaClient();
 const getUserRepos = async (req, res) => {
     const userId = req.userId;
-    const page = req.params.page || 1;
-    const limit = req.params.limit || 10;
+    const page = (0, to_string_1.q)(req.params.page) || 1;
+    const limit = (0, to_string_1.q)(req.params.limit) || 10;
     const offset = limit * page - limit;
-    const name = req.query.name || "";
+    const name = (0, to_string_1.q)(req.query.name) || "";
     try {
         if (!userId || !(0, uuid_1.validate)(userId)) {
             return res.status(401).json({ message: "Usuário não autenticado" });
         }
-        const existUser = await prisma.user.findFirst({
+        const existUser = await prisma_1.default.user.findFirst({
             where: { id: userId },
         });
         if (!existUser) {
@@ -80,7 +80,7 @@ const syncUserWithGitHub = async (req, res) => {
     if (!userId || !(0, uuid_1.validate)(userId)) {
         return res.status(401).json({ message: "Usuário não autenticado" });
     }
-    const existUser = await prisma.user.findFirst({
+    const existUser = await prisma_1.default.user.findFirst({
         where: { id: userId },
     });
     if (!existUser) {
@@ -91,7 +91,7 @@ const syncUserWithGitHub = async (req, res) => {
       process.env.GITHUB_TOKEN_ENCRYPTION_KEY!,
     ).toString();*/
     try {
-        await prisma.user.update({
+        await prisma_1.default.user.update({
             where: { id: userId },
             data: {
                 github_username,
@@ -117,7 +117,7 @@ const unsyncUserFromGitHub = async (req, res) => {
     if (!userId || !(0, uuid_1.validate)(userId)) {
         return res.status(401).json({ message: "Usuário não autenticado" });
     }
-    const existUser = await prisma.user.findFirst({
+    const existUser = await prisma_1.default.user.findFirst({
         where: { id: userId },
     });
     if (!existUser) {
@@ -129,7 +129,7 @@ const unsyncUserFromGitHub = async (req, res) => {
             .json({ message: "Usuário já não está sincronizado com GitHub" });
     }
     try {
-        await prisma.user.update({
+        await prisma_1.default.user.update({
             where: { id: userId },
             data: {
                 github_username: null,

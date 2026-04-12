@@ -1,19 +1,21 @@
 "use strict";
+var __importDefault = (this && this.__importDefault) || function (mod) {
+    return (mod && mod.__esModule) ? mod : { "default": mod };
+};
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.createNotification = void 0;
-const client_1 = require("@prisma/client");
-const prisma = new client_1.PrismaClient();
+const prisma_1 = __importDefault(require("../lib/prisma"));
 const createNotification = async (userId, title, message) => {
     try {
         if (!userId) {
-            const AdminUsers = await prisma.user.findMany({
+            const AdminUsers = await prisma_1.default.user.findMany({
                 where: {
                     roleUser: 'admin'
                 }
             });
             await Promise.all([
                 AdminUsers.map(async (admin) => {
-                    await prisma.notification.create({
+                    await prisma_1.default.notification.create({
                         data: {
                             userId: admin.id,
                             title: title,
@@ -25,7 +27,7 @@ const createNotification = async (userId, title, message) => {
             ]);
             return;
         }
-        await prisma.notification.create({
+        await prisma_1.default.notification.create({
             data: {
                 userId: userId,
                 title: title,

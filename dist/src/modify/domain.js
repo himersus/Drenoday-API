@@ -6,8 +6,7 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.generateUniqueDomain = void 0;
 const dotenv_1 = __importDefault(require("dotenv"));
 dotenv_1.default.config();
-const client_1 = require("@prisma/client");
-const prisma = new client_1.PrismaClient();
+const prisma_1 = __importDefault(require("../lib/prisma"));
 // funcao que gera nomes aleatorios (a implementar futuramente)
 // ele coloca uma consonante, vogal, consoante, vogal para formar nomes tipo "balu", "nemo", "lilo", etc, com no maxio 5 letras
 const generateRandomNames = () => {
@@ -47,7 +46,7 @@ const generateUniqueDomain = async (name) => {
 };
 exports.generateUniqueDomain = generateUniqueDomain;
 async function domainExists(domain) {
-    const project = await prisma.project.findFirst({
+    const project = await prisma_1.default.project.findFirst({
         where: { domain },
     });
     return !!project;

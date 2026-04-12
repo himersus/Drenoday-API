@@ -10,7 +10,7 @@ import { createProject, deleteProject, getMyProjects, getProject, runTheProject,
 import { addMember, removeMember } from "../controller/member";
 import { getDeploy, listDeploys } from "../controller/deploy";
 import { addPlan, deletePlan, getPlanById, getPlans } from "../controller/plan";
-import { confirmPayment, createPayment,  getAppyPayToken, getPaymentById, getUserPayments, referenceSendPaymentGateway, webhookPayment } from "../controller/payment";
+import { confirmPayment, createPayment, getUserPayments, getPaymentById, referenceSendPaymentGateway, webhookPayment } from "../controller/payment";
 import { getOneNotification, markNotificationAsRead, myNotifications } from "../controller/notification";
 
 dotenv.config();
@@ -29,6 +29,7 @@ router.get('/auth/github',
         scope: ['read:user', 'user:email', 'repo']
     })
 );
+
 router.get('/auth/github/callback', passport.authenticate('github', { failureRedirect: '/auth/github' }), loginGitHub);
 
 // {{GOOGLE AUTH ROUTES}}

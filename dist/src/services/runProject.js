@@ -5,13 +5,12 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.runProject = runProject;
 const child_process_1 = require("child_process");
-const client_1 = require("@prisma/client");
+const prisma_1 = __importDefault(require("../lib/prisma"));
 const sockets_1 = require("../sockets");
 const logs_1 = require("../helper/logs");
 const fs_1 = __importDefault(require("fs"));
 const path_1 = __importDefault(require("path"));
 const github_1 = require("../helper/github");
-const prisma = new client_1.PrismaClient();
 const generateEnvContent = (projectEnvs) => {
     let envContent = "";
     projectEnvs.forEach((envVar) => {
@@ -20,7 +19,7 @@ const generateEnvContent = (projectEnvs) => {
     return envContent;
 };
 async function runProject(projectId, userId) {
-    const project = await prisma.project.findFirst({
+    const project = await prisma_1.default.project.findFirst({
         where: { id: projectId },
     });
     if (!project) {
@@ -30,7 +29,7 @@ async function runProject(projectId, userId) {
     if (!project.date_expire || project.date_expire < now) {
         return { statusCode: 403, message: "O plano associado a este projeto expirou. Por favor, renove o plano para continuar." };
     }
-    const existUser = await prisma.user.findFirst({
+    const existUser = await prisma_1.default.user.findFirst({
         where: { id: userId },
     });
     if (!existUser) {
@@ -51,18 +50,18 @@ async function runProject(projectId, userId) {
 services:
   ${project.domain}:
     build: .
-    container_name: ${project.domain}
+    container_name: ${project.domain}-api
     restart: always
     labels:
       - "traefik.enable=true"
       - "traefik.http.routers.${project.domain}.rule=Host(\`${project.domain}.enor.tech\`)"
       - "traefik.http.routers.${project.domain}.entrypoints=websecure"
-      - "traefik.http.routers.${project.domain}.tls.certresolver=myresolver"
+      - "traefik.http.routers.${project.domain}.tls.certresolver=le"
       - "traefik.http.services.${project.domain}.loadbalancer.server.port=${project.port}"
     networks:
-      - traefik-network
+      - web
 networks:
-  traefik-network:
+  web:
     external: true
 `;
     // garantir diretório
@@ -70,7 +69,7 @@ networks:
     // criar docker-compose
     fs_1.default.writeFileSync(path_1.default.join(targetPath, "docker-compose.yml"), createComposeTreakfik);
     const lastCommit = await (0, github_1.getLastCommitFromBranch)(project.repo_url, project.branch, existUser.github_token);
-    const buildDeploy = await prisma.deploy.create({
+    const buildDeploy = await prisma_1.default.deploy.create({
         data: {
             projectId: projectId,
             commit_id: lastCommit.sha || "unknown",
@@ -88,7 +87,7 @@ networks:
     });
     // verificar se existeo dockerfile no targetPath para continuar
     if (!fs_1.default.existsSync(path_1.default.join(targetPath, "Dockerfile"))) {
-        await prisma.deploy.update({
+        await prisma_1.default.deploy.update({
             where: { id: buildDeploy.id },
             data: {
                 status: "failed",
@@ -112,7 +111,7 @@ networks:
     (0, child_process_1.exec)("git pull && docker-compose down && docker-compose up -d --build", { cwd: targetPath }, async (error, stdout, stderr) => {
         if (error) {
             console.error("[docker error]", stderr);
-            await prisma.deploy.update({
+            await prisma_1.default.deploy.update({
                 where: { id: buildDeploy.id },
                 data: {
                     status: "failed",
@@ -136,7 +135,7 @@ networks:
             message: logSplit[logSplit.length - 2] || "Build do deploy concluído"
         });
         (0, logs_1.collectLogs)(buildDeploy.id, projectId, logSplit);
-        await prisma.deploy.update({
+        await prisma_1.default.deploy.update({
             where: { id: buildDeploy.id },
             data: {
                 status: "running",
