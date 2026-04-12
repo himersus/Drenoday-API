@@ -1,6 +1,9 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.deletePlan = exports.getPlanById = exports.getPlans = exports.addPlan = void 0;
+exports.addPlan = addPlan;
+exports.getPlans = getPlans;
+exports.getPlanById = getPlanById;
+exports.deletePlan = deletePlan;
 const client_1 = require("@prisma/client");
 const uuid_1 = require("uuid");
 const prisma = new client_1.PrismaClient();
@@ -35,7 +38,6 @@ async function addPlan(req, res) {
         return res.status(500).json({ message: "Erro ao criar plano" });
     }
 }
-exports.addPlan = addPlan;
 async function getPlans(req, res) {
     try {
         const plans = await prisma.plan.findMany();
@@ -46,7 +48,6 @@ async function getPlans(req, res) {
         return res.status(500).json({ message: "Erro ao buscar planos" });
     }
 }
-exports.getPlans = getPlans;
 async function getPlanById(req, res) {
     const { planId } = req.params;
     try {
@@ -68,7 +69,6 @@ async function getPlanById(req, res) {
         return res.status(500).json({ message: "Erro ao buscar plano" });
     }
 }
-exports.getPlanById = getPlanById;
 async function deletePlan(req, res) {
     const { planId } = req.params;
     try {
@@ -95,4 +95,3 @@ async function deletePlan(req, res) {
         return res.status(500).json({ message: "Erro ao deletar plano" });
     }
 }
-exports.deletePlan = deletePlan;

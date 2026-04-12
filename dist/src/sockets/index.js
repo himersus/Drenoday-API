@@ -7,7 +7,7 @@ let io;
 const initSocket = (server) => {
     io = new socket_io_1.Server(server, {
         cors: {
-            origin: "*",
+            origin: "*", // ou coloque seu front-end
             methods: ["GET", "POST", "PUT", "DELETE"]
         }
     });

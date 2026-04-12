@@ -16,7 +16,7 @@ require("./auth/googleAuth");
 const http_1 = require("http");
 const index_1 = require("./sockets/index");
 const cookie_parser_1 = __importDefault(require("cookie-parser"));
-const port = process.env.PORT || 3000;
+const port = Number(process.env.PORT) || 3000;
 const app = (0, express_1.default)();
 dotenv_1.default.config();
 // Cria servidor HTTP a partir do Express
@@ -44,6 +44,6 @@ app.get("/cookie", (req, res) => {
     res.json(req.cookies);
 });
 app.use('/api/v1', apiRouter_1.default);
-httpServer.listen(port, () => {
-    console.log(`Server is running on http://localhost:${port}`);
+httpServer.listen(port, "0.0.0.0", () => {
+    console.log(`Server is running on http://0.0.0.0:${port}`);
 });

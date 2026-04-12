@@ -1,6 +1,7 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.startLogStream = exports.collectLogs = void 0;
+exports.collectLogs = collectLogs;
+exports.startLogStream = startLogStream;
 const index_1 = require("../sockets/index");
 const client_1 = require("@prisma/client");
 const prisma = new client_1.PrismaClient();
@@ -27,7 +28,6 @@ function collectLogs(deployId, projectId, logLines) {
         });
     });
 }
-exports.collectLogs = collectLogs;
 function startLogStream(deployId, projectId, containerName) {
     if (!containerName || !deployId) {
         console.error("Container name is required to start log stream.");
@@ -50,4 +50,3 @@ function startLogStream(deployId, projectId, containerName) {
         console.log(`[logs] stream finalizado para ${containerName}`);
     });
 }
-exports.startLogStream = startLogStream;

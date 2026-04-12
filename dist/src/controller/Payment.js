@@ -46,17 +46,17 @@ const referenceSendPaymentGateway = async (req, res) => {
         }
         const createPayment = await prisma.payment.create({
             data: {
-                userId: userId,
-                planId: verifyPay.plan_id,
-                plan_name: verifyPay.plan_name,
-                amount: 0,
-                time_in_day: verifyPay.time_in_day || 0,
+                userId: userId, // ID do usuário que realizou o pagamento
+                planId: verifyPay.plan_id, // ID do plano escolhido
+                plan_name: verifyPay.plan_name, // nome do plano escolhido
+                amount: 0, //verifyPay.amount, // valor do pagamento
+                time_in_day: verifyPay.time_in_day || 0, // tempo em dias do pagamento
                 entity: data.data.entity,
                 ref: data.data.referenceNumber,
                 merchant: merchantId,
-                status: 'pending',
-                type_payment: verifyPay.type_payment,
-                qty_months: 1,
+                status: 'pending', // status do pagamento
+                type_payment: verifyPay.type_payment, // tipo de pagamento
+                qty_months: 1, // quantidade de meses
                 projectId: projectId // ID do projeto associado ao pagamento
             }
         });
@@ -316,15 +316,15 @@ const createPayment = async (req, res) => {
         }
         const payment = await prisma.payment.create({
             data: {
-                userId: existUser.id,
-                planId: existPlan.id,
-                plan_name: existPlan.name,
-                amount: amount,
-                proof_payment: proof_payment,
-                time_in_day: time_in_day || 0,
-                status: 'pending',
-                type_payment: payment_form_str,
-                qty_months: 1,
+                userId: existUser.id, // ID do usuário que realizou o pagamento
+                planId: existPlan.id, // ID do plano escolhido
+                plan_name: existPlan.name, // nome do plano escolhido
+                amount: amount, // valor do pagamento
+                proof_payment: proof_payment, // comprovante de pagamento
+                time_in_day: time_in_day || 0, // tempo em dias do pagamento
+                status: 'pending', // status do pagamento
+                type_payment: payment_form_str, // tipo de pagamento
+                qty_months: 1, // quantidade de meses
                 projectId: existProject.id // ID do projeto associado ao pagamento
             }
         });

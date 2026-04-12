@@ -3,7 +3,8 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.getLastCommitFromBranch = exports.parseGithubRepo = void 0;
+exports.parseGithubRepo = parseGithubRepo;
+exports.getLastCommitFromBranch = getLastCommitFromBranch;
 const crypto_js_1 = __importDefault(require("crypto-js"));
 function parseGithubRepo(url) {
     const clean = url
@@ -17,7 +18,6 @@ function parseGithubRepo(url) {
         repo: clean[4]
     };
 }
-exports.parseGithubRepo = parseGithubRepo;
 async function getLastCommitFromBranch(repoUrl, branch, github_token) {
     const parsed = parseGithubRepo(repoUrl);
     if (!parsed) {
@@ -51,4 +51,3 @@ async function getLastCommitFromBranch(repoUrl, branch, github_token) {
         url: commit.html_url
     };
 }
-exports.getLastCommitFromBranch = getLastCommitFromBranch;

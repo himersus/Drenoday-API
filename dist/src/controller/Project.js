@@ -143,15 +143,15 @@ const createProject = async (req, res) => {
         // console.log(`Criando projeto para o usuário ${existUser.username} com o repositório ${repo_url}`);
         const project = await prisma.project.create({
             data: {
-                name,
-                description,
-                workspaceId,
-                branch,
-                repo_url,
+                name, // nome do projeto
+                description, // descrição do projeto
+                workspaceId, // workspaceId
+                branch, // branch do repositório
+                repo_url, // URL do repositório
                 default_plan: existPlan.name,
-                port: `${port}`,
-                userId: existUser.id,
-                domain: domain,
+                port: `${port}`, // porta onde a aplicação irá rodar
+                userId: existUser.id, // ID do usuário que criou o projeto
+                domain: domain, // domínio único gerado
                 environments: environments || [], // variáveis de ambiente
             }
         });

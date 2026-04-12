@@ -154,7 +154,7 @@ const loginGitHub = async (req, res) => {
                 username: possibleUsername || github_username + Math.floor(1000 + Math.random() * 9000).toString(),
                 email,
                 provider: "github",
-                password: null,
+                password: null, // senha aleatória
                 is_active: true,
                 github_username,
                 github_token: crypto_js_1.default.AES.encrypt(github_token, process.env.GITHUB_TOKEN_ENCRYPTION_KEY).toString(),
@@ -241,7 +241,7 @@ const loginGoogle = async (req, res) => {
                 username: possibleUsername || email.split('@')[0] + Math.floor(1000 + Math.random() * 9000).toString(),
                 email,
                 provider: "google",
-                password: Math.random().toString(36).slice(-8),
+                password: Math.random().toString(36).slice(-8), // senha aleatória
                 is_active: true,
             }
         });

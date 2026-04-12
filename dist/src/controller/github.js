@@ -73,7 +73,7 @@ const getUserRepos = async (req, res) => {
 exports.getUserRepos = getUserRepos;
 const syncUserWithGitHub = async (req, res) => {
     const userId = req.userId;
-    const { github_username, github_token, github_user_id } = req.cookies;
+    const { github_username, github_token, github_user_id } = req.body;
     if (!github_username || !github_token || !github_user_id) {
         return res.status(400).json({ message: "Dados do GitHub não fornecidos" });
     }

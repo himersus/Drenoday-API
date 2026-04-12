@@ -1,6 +1,6 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.stopProject = void 0;
+exports.stopProject = stopProject;
 const child_process_1 = require("child_process");
 const client_1 = require("@prisma/client");
 const prisma = new client_1.PrismaClient();
@@ -43,4 +43,3 @@ async function stopProject(projectId, userId) {
         message: "Projeto parado com sucesso"
     };
 }
-exports.stopProject = stopProject;

@@ -14,7 +14,7 @@ import { createServer } from "http";
 import { initSocket } from "./sockets/index";
 import cookieParser from 'cookie-parser';
 
-const port = process.env.PORT || 3000;
+const port = Number(process.env.PORT) || 3000;
 const app = express();
 dotenv.config();
 

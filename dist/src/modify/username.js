@@ -1,6 +1,6 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.generateUniqueUsername = void 0;
+exports.generateUniqueUsername = generateUniqueUsername;
 require("dotenv/config");
 const client_1 = require("@prisma/client");
 const prisma = new client_1.PrismaClient();
@@ -34,7 +34,6 @@ async function generateUniqueUsername(fullName, is_auth20 = false) {
     }
     username = `${baseUsername}-${randomNumber}`;
 }
-exports.generateUniqueUsername = generateUniqueUsername;
 // Função que verifica se já existe
 async function usernameExists(username) {
     const user = await prisma.user.findFirst({

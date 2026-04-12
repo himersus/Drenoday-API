@@ -3,7 +3,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.runProject = void 0;
+exports.runProject = runProject;
 const child_process_1 = require("child_process");
 const client_1 = require("@prisma/client");
 const sockets_1 = require("../sockets");
@@ -153,4 +153,3 @@ networks:
     });
     return { statusCode: 200, message: "Deploy iniciado" };
 }
-exports.runProject = runProject;

@@ -9,7 +9,7 @@
   "scripts": {
     "dev": "nodemon",
     "build": "tsc",
-    "start": "tsx watch src/index.ts"
+    "start": "node dist/src/index.js"
   },
   "dependencies": {
     "@prisma/client": "6.16.2",
@@ -49,6 +49,7 @@
   },
   "devDependencies": {
     "@types/cookie-parser": "^1.4.10",
+    "@types/ws": "^8.18.1",
     "depcheck": "^1.4.7",
     "ts-node": "^10.9.2",
     "ts-node-dev": "^2.0.0",
