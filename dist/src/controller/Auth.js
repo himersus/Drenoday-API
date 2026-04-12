@@ -55,13 +55,13 @@ const sendCodeVerification = async (req, res) => {
         const verificationCode = Math.floor(100000 + Math.random() * 900000).toString();
         await prisma.user.update({
             where: { email },
-            data: { confirme_code: verificationCode },
+            data: { confirm_code: verificationCode },
         });
         await (0, sendemail_1.sendEmail)(email, "Código de Verificação - Drenoday", "Código de Verificação", verificationCode, `Seu código de verificação é: <strong>${verificationCode}</strong>.`);
         await prisma.user.update({
             where: { email },
             data: {
-                confirme_code: await bcrypt_1.default.hash(verificationCode, 10)
+                confirm_code: await bcrypt_1.default.hash(verificationCode, 10)
             },
         });
         res.status(200).json({
@@ -82,13 +82,13 @@ const verifyCode = async (req, res) => {
         if (!user) {
             return res.status(404).json({ message: "Usuário não encontrado" });
         }
-        const isCodeValid = await bcrypt_1.default.compare(code, user.confirme_code || "");
+        const isCodeValid = await bcrypt_1.default.compare(code, user.confirm_code || "");
         if (!isCodeValid) {
             return res.status(400).json({ message: "Código de verificação inválido" });
         }
         await prisma.user.update({
             where: { email },
-            data: { is_active: true, confirme_code: null },
+            data: { is_active: true, confirm_code: null },
         });
         res.status(200).json({ message: "E-mail verificado com sucesso." });
     }
@@ -106,13 +106,13 @@ const loginWithEmail = async (req, res) => {
         if (!user) {
             return res.status(404).json({ message: "Usuário não encontrado" });
         }
-        const isCodeValid = await bcrypt_1.default.compare(code, user.confirme_code || "");
+        const isCodeValid = await bcrypt_1.default.compare(code, user.confirm_code || "");
         if (!isCodeValid) {
             return res.status(400).json({ message: "Código de verificação inválido" });
         }
         await prisma.user.update({
             where: { email },
-            data: { is_active: true, confirme_code: null },
+            data: { is_active: true, confirm_code: null },
         });
         const payload = {
             id: user.id,

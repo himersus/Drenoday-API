@@ -65,7 +65,7 @@ export const sendCodeVerification = async (req: Request, res: Response) => {
 
         await prisma.user.update({
             where: { email },
-            data: { confirme_code: verificationCode },
+            data: { confirm_code: verificationCode },
         });
         
         await sendEmail(
@@ -79,7 +79,7 @@ export const sendCodeVerification = async (req: Request, res: Response) => {
         await prisma.user.update({
             where: { email },
             data: {
-                confirme_code: await bcrypt.hash(verificationCode, 10)
+                confirm_code: await bcrypt.hash(verificationCode, 10)
             },
         });
         res.status(200).json({
@@ -102,14 +102,14 @@ export const verifyCode = async (req: Request, res: Response) => {
             return res.status(404).json({ message: "Usuário não encontrado" });
         }
 
-        const isCodeValid = await bcrypt.compare(code, user.confirme_code || "");
+        const isCodeValid = await bcrypt.compare(code, user.confirm_code || "");
         if (!isCodeValid) {
             return res.status(400).json({ message: "Código de verificação inválido" });
         }
 
         await prisma.user.update({
             where: { email },
-            data: { is_active: true, confirme_code: null },
+            data: { is_active: true, confirm_code: null },
         });
 
         res.status(200).json({ message: "E-mail verificado com sucesso." });
@@ -130,14 +130,14 @@ export const loginWithEmail = async (req: Request, res: Response) => {
             return res.status(404).json({ message: "Usuário não encontrado" });
         }
 
-        const isCodeValid = await bcrypt.compare(code, user.confirme_code || "");
+        const isCodeValid = await bcrypt.compare(code, user.confirm_code || "");
         if (!isCodeValid) {
             return res.status(400).json({ message: "Código de verificação inválido" });
         }
 
         await prisma.user.update({
             where: { email },
-            data: { is_active: true, confirme_code: null },
+            data: { is_active: true, confirm_code: null },
         });
 
         const payload = {
