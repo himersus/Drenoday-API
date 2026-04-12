@@ -17,9 +17,9 @@ RUN yarn install
 
 RUN yarn prisma generate
 
-RUN yarn build
-
 COPY . .
+
+RUN yarn build
 
 EXPOSE 3000
 CMD ["yarn", "start"]
