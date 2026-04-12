@@ -1,17 +1,17 @@
 import express from "express";
-import { createUser, getAllUsers, getUser, updateUser, UserLoged } from "../controller/User";
+import { createUser, getAllUsers, getUser, updateUser, UserLoged } from "../controller/user";
 import dotenv from 'dotenv';
 import { verifyAuthentication } from "../middleware/userLoged";
-import { login, loginGitHub, loginGoogle, loginWithEmail, sendCodeVerification, verifyCode } from "../controller/Auth";
+import { login, loginGitHub, loginGoogle, loginWithEmail, sendCodeVerification, verifyCode } from "../controller/auth";
 import passport from "passport";
 import { createCookieGitHub, getUserRepos, readCookieGitHub, syncUserWithGitHub, unsyncUserFromGitHub } from "../controller/github";
-import { createWorkspace, deleteWorkspace, getAllWorkspaces, getWorkspace, updateWorkspace } from "../controller/Workspace";
-import { createProject, deleteProject, getMyProjects, getProject, runTheProject, updateProject } from "../controller/Project";
+import { createWorkspace, deleteWorkspace, getAllWorkspaces, getWorkspace, updateWorkspace } from "../controller/workspace";
+import { createProject, deleteProject, getMyProjects, getProject, runTheProject, updateProject } from "../controller/project";
 import { addMember, removeMember } from "../controller/member";
-import { getDeploy, listDeploys } from "../controller/Deploy";
-import { addPlan, deletePlan, getPlanById, getPlans } from "../controller/Plan";
-import { confirmPayment, createPayment,  getAppyPayToken, getPaymentById, getUserPayments, referenceSendPaymentGateway, webhookPayment } from "../controller/Payment";
-import { getOneNotification, markNotificationAsRead, myNotifications } from "../controller/Notification";
+import { getDeploy, listDeploys } from "../controller/deploy";
+import { addPlan, deletePlan, getPlanById, getPlans } from "../controller/plan";
+import { confirmPayment, createPayment,  getAppyPayToken, getPaymentById, getUserPayments, referenceSendPaymentGateway, webhookPayment } from "../controller/payment";
+import { getOneNotification, markNotificationAsRead, myNotifications } from "../controller/notification";
 
 dotenv.config();
 

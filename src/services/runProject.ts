@@ -61,13 +61,13 @@ export async function runProject(projectId: string, userId: string):  Promise<Ru
 services:
   ${project.domain}:
     build: .
-    container_name: ${project.domain}
+    container_name: ${project.domain}-api
     restart: always
     labels:
       - "traefik.enable=true"
       - "traefik.http.routers.${project.domain}.rule=Host(\`${project.domain}.enor.tech\`)"
       - "traefik.http.routers.${project.domain}.entrypoints=websecure"
-      - "traefik.http.routers.${project.domain}.tls.certresolver=myresolver"
+      - "traefik.http.routers.${project.domain}.tls.certresolver=le"
       - "traefik.http.services.${project.domain}.loadbalancer.server.port=${project.port}"
     networks:
       - web
