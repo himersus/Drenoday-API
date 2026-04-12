@@ -37,7 +37,16 @@ app.use(cors({
 app.use(express.json());
 app.use(cookieParser());
 // CONFIGURAR SESSÃO
-app.use(session({ secret: process.env.SESSION_SECRET!, resave: false, saveUninitialized: true }));
+
+app.use(session({
+  secret: process.env.SESSION_SECRET || "dev-secret",
+  resave: false,
+  saveUninitialized: false,
+  cookie: {
+    secure: false // muda para true quando tiver HTTPS
+  }
+}));
+
 app.use(passport.initialize());
 app.use(passport.session());
 
