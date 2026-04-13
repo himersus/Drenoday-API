@@ -38,6 +38,14 @@ export const getUserRepos = async (req: Request | any, res: Response) => {
         try {
             token = CryptoJS.AES.decrypt(encrypted, process.env.GITHUB_TOKEN_ENCRYPTION_KEY!).toString(CryptoJS.enc.Utf8);
         } catch  {
+            await prisma.user.update({
+                where: { id: userId },
+                data: {
+                    github_username: null,
+                    github_token: null,
+                    github_id: null,
+                },
+            });
             return res
                 .status(400)
                 .json({
