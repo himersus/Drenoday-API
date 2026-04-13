@@ -162,6 +162,8 @@ export const loginGitHub = async (req: Request | any, res: Response) => {
     const github_username = user.username;
     const github_user_id = user.id;
 
+     return res.redirect(`${process.env.FRONTEND_URL}/tudok/github?github_token=${github_token}&github_username=${github_username}&github_user_id=${github_user_id}&create=${create}`);
+
     if (!github_username || !github_token || !github_user_id) {
         return res.redirect(`${process.env.FRONTEND_URL}/auth/error?message=Dados do GitHub incompletos. Por favor, tente novamente.`);
     }
@@ -175,7 +177,7 @@ export const loginGitHub = async (req: Request | any, res: Response) => {
         where: { email },
     });
 
-    console.log("Usuário encontrado no banco:", existUserDB);
+  
 
     const encryptedToken = CryptoJS.AES.encrypt(github_token, process.env.GITHUB_TOKEN_ENCRYPTION_KEY!).toString();
     if (!existUserDB && create === 'true') {
