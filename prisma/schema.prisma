@@ -62,9 +62,9 @@ model project {
   port                 String       @default("3000")
   build_cmd            String?
   clone                cloneStatus  @default(cloning)
-  run_status           runStatus    @default(stoped)
+  run_status           runStatus    @default(stopped)
   start_cmd            String?
-  tecnology            tecnology?   @default(docker)
+  technology           technology?  @default(docker)
   default_plan         String?
   default_type_payment typePayment? @default(monthly)
   userId               String
@@ -185,7 +185,7 @@ enum roleUser {
   user
 }
 
-enum tecnology {
+enum technology {
   nodejs
   docker
 }
@@ -198,7 +198,7 @@ enum cloneStatus {
 
 enum runStatus {
   building
-  stoped
+  stopped
   running
   failed
 }

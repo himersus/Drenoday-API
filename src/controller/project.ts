@@ -73,24 +73,13 @@ async function repositoryUsesDocker(
 // {{Create projecto}}
 export const createProject = async (req: Request | any, res: Response) => {
     const { name, description,
-        branch, port, repo_url, default_plan, environments, workspaceId } = req.body;
+        branch, port, repo_url, environments, workspaceId } = req.body;
     const userId = req.userId;
 
-    if (!validate(userId)) {
+    if (!validate(userId) || !userId) {
         return res.status(401).json({ message: "Usuário não autenticado" });
     }
 
-    if (!repo_url || typeof repo_url !== 'string') {
-        return res.status(400).json({ message: "O Repo URL deve ser uma string" });
-    }
-
-    if (!branch || typeof branch !== 'string') {
-        return res.status(400).json({ message: "Branch é obrigatório e deve ser uma string" });
-    }
-
-    if (environments && !Array.isArray(environments)) {
-        return res.status(400).json({ message: "Environments deve ser um array de strings : ex: ['port=3000']"});
-    }
 
     const portNumber = Number(port);
 
@@ -128,7 +117,7 @@ export const createProject = async (req: Request | any, res: Response) => {
             return res.status(400).json({ message: "O nome do projeto é obrigatório" });
         }
 
-        const existPlan = await prisma.plan.findFirst({
+        /*const existPlan = await prisma.plan.findFirst({
             where: {
                 name: default_plan
             }
@@ -136,7 +125,7 @@ export const createProject = async (req: Request | any, res: Response) => {
 
         if (!existPlan) {
             return res.status(400).json({ message: "O plano escolhido não está disponível, por favor escolha outro" });
-        }
+        }*/
 
         const domain = await generateUniqueDomain(name);
 
@@ -183,7 +172,7 @@ export const createProject = async (req: Request | any, res: Response) => {
                 workspaceId, // workspaceId
                 branch, // branch do repositório
                 repo_url, // URL do repositório
-                default_plan: existPlan.name,
+                default_plan: "default",
                 port: `${port}`, // porta onde a aplicação irá rodar
                 userId: existUser.id, // ID do usuário que criou o projeto
                 domain: domain as string, // domínio único gerado
@@ -373,7 +362,7 @@ export const getMyProjects = async (req: Request | any, res: Response) => {
 
 export const updateProject = async (req: Request | any, res: Response) => {
     const projectId = q(req.params.projectId);
-    const { name, description, default_plan, environments } = req.body;
+    const { name, description, environments } = req.body;
     const userId = req.userId;
 
     if (!validate(projectId) || !validate(userId)) {
@@ -400,7 +389,7 @@ export const updateProject = async (req: Request | any, res: Response) => {
             return res.status(403).json({ message: "Você não tem acesso a este projeto" });
         }
 
-        if (default_plan) {
+        /*if (default_plan) {
             const existPlan = await prisma.plan.findFirst({
                 where: {
                     name: default_plan
@@ -410,15 +399,17 @@ export const updateProject = async (req: Request | any, res: Response) => {
             if (!existPlan) {
                 return res.status(400).json({ message: "O plano escolhido não está disponível, por favor escolha outro" });
             }
-        }
+        }*/
 
         const updatedProject = await prisma.project.update({
             where: { id: projectId },
             data: {
                 name: name || project.name,
                 description: description || project.description,
-                default_plan: default_plan || project.default_plan,
+                default_plan: "default",
                 environments: environments || project.environments,
+                //port: port || project.port, // carece de logica para validar se a porta é diferente e se é válida, caso seja diferente da porta atual, tem de verificar se a nova porta está disponível
+                // branch: branch || project.branch, // carece de lógica para verificar se a branch é diferente e se existe no repositório
             },
         });
 

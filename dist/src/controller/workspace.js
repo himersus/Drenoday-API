@@ -48,7 +48,7 @@ const createWorkspace = async (req, res) => {
                 name,
             }
         });
-        const userWorkspace = await prisma_1.default.user_workspace.create({
+        await prisma_1.default.user_workspace.create({
             data: {
                 userId: existUser.id,
                 workspaceId: workspace.id,

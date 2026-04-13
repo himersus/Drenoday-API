@@ -5,6 +5,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.addPlan = addPlan;
 exports.getPlans = getPlans;
+exports.updatePlan = updatePlan;
 exports.getPlanById = getPlanById;
 exports.deletePlan = deletePlan;
 const prisma_1 = __importDefault(require("../lib/prisma"));
@@ -49,6 +50,43 @@ async function getPlans(req, res) {
     catch (error) {
         console.error(error);
         return res.status(500).json({ message: "Erro ao buscar planos" });
+    }
+}
+async function updatePlan(req, res) {
+    const planId = (0, to_string_1.q)(req.params.planId);
+    const { name, description, price, duration, max_projects } = req.body;
+    if (!(0, uuid_1.validate)(planId)) {
+        return res.status(400).json({ message: "ID do plano inválido" });
+    }
+    try {
+        const plan = await prisma_1.default.plan.findFirst({
+            where: {
+                OR: [
+                    { id: (0, uuid_1.validate)(planId) ? planId : undefined },
+                    { name: (0, uuid_1.validate)(planId) ? undefined : planId }
+                ]
+            },
+        });
+        if (!plan) {
+            return res.status(404).json({ message: "Plano não encontrado" });
+        }
+        await prisma_1.default.plan.update({
+            where: {
+                id: plan.id
+            },
+            data: {
+                name: name || plan.name,
+                description: description || plan.description,
+                price: price !== undefined && price !== null && !isNaN(price) ? price : plan.price,
+                duration: duration || plan.duration,
+                max_projects: max_projects && max_projects > 0 ? max_projects : plan.max_projects
+            },
+        });
+        return res.status(200).json({ message: "Plano atualizado com sucesso" });
+    }
+    catch (error) {
+        console.error(error);
+        return res.status(500).json({ message: "Erro ao atualizar plano" });
     }
 }
 async function getPlanById(req, res) {

@@ -9,21 +9,24 @@ import { createWorkspace, deleteWorkspace, getAllWorkspaces, getWorkspace, updat
 import { createProject, deleteProject, getMyProjects, getProject, runTheProject, updateProject } from "../controller/project";
 import { addMember, removeMember } from "../controller/member";
 import { getDeploy, listDeploys } from "../controller/deploy";
-import { addPlan, deletePlan, getPlanById, getPlans } from "../controller/plan";
+import { addPlan, updatePlan, deletePlan, getPlanById, getPlans } from "../controller/plan";
 import { confirmPayment, createPayment, getUserPayments, getPaymentById, referenceSendPaymentGateway, webhookPayment } from "../controller/payment";
 import { getOneNotification, markNotificationAsRead, myNotifications } from "../controller/notification";
 import { validate }  from "../middleware/validate";
-import * as schemas from "../schemas/user";
+import * as schemasUser from "../schemas/user";
+import * as schemasWorkspace from "../schemas/workspace";
+import * as schemasProject from "../schemas/project";
+import * as schemasPlan from "../schemas/plan";
 
 dotenv.config();
 
 const router = express.Router();
 
 // {{AUTH ROUTES}}
-router.post('/auth/login', validate(schemas.loginUserSchema), login);
-router.post('/auth/email', validate(schemas.sendCodeVerificationSchema), loginWithEmail);
-router.post('/auth/send-code-verification', validate(schemas.sendCodeVerificationSchema), sendCodeVerification);
-router.post('/auth/verify-code', validate(schemas.verifyCodeSchema), verifyCode);
+router.post('/auth/login', validate(schemasUser.loginUserSchema), login);
+router.post('/auth/email', validate(schemasUser.sendCodeVerificationSchema), loginWithEmail);
+router.post('/auth/send-code-verification', validate(schemasUser.sendCodeVerificationSchema), sendCodeVerification);
+router.post('/auth/verify-code', validate(schemasUser.verifyCodeSchema), verifyCode);
 
 // {{GITHUB AUTH ROUTES}}
 router.get('/auth/github',
@@ -53,31 +56,30 @@ router.put('/github/sync', verifyAuthentication, syncUserWithGitHub);
 router.post('/github/unsync', verifyAuthentication, unsyncUserFromGitHub);
 
 // {{USER ROUTES}}
-router.post('/user/create', validate(schemas.createUserSchema), createUser);
+router.post('/user/create', validate(schemasUser.createUserSchema), createUser);
 router.get('/user/me', verifyAuthentication, UserLoged);
 router.get('/user/all', verifyAuthentication, getAllUsers);
 router.get('/user/each/:userId', verifyAuthentication, getUser);
-router.put('/user/update', validate(schemas.updateUserSchema), updateUser);
+router.put('/user/update', validate(schemasUser.updateUserSchema), updateUser);
 
 // {{Create Workspace ROUTE}}
-router.post('/workspace/create', verifyAuthentication, createWorkspace);
+router.post('/workspace/create', validate(schemasWorkspace.createWorkspaceSchema), verifyAuthentication, createWorkspace);
 router.get('/workspace/each/:workspaceId', verifyAuthentication, getWorkspace);
 router.get('/workspace/all', verifyAuthentication, getAllWorkspaces);
-router.put('/workspace/update/:workspaceId', verifyAuthentication, updateWorkspace);
+router.put('/workspace/update/:workspaceId', validate(schemasWorkspace.updateWorkspaceSchema), verifyAuthentication, updateWorkspace);
 router.delete('/workspace/delete/:workspaceId', verifyAuthentication, deleteWorkspace);
 
-
 // {{ Member ROUTES}}
-router.post('/workspace/member/add', verifyAuthentication, addMember);
-router.delete('/workspace/member/remove', verifyAuthentication, removeMember);
+router.post('/workspace/member/add', validate(schemasWorkspace.addMemberSchema), verifyAuthentication, addMember);
+router.delete('/workspace/member/remove', validate(schemasWorkspace.removeMemberSchema), verifyAuthentication, removeMember);
 
 // {{ Project ROUTES}}
-router.post('/project/create', verifyAuthentication, createProject);
+router.post('/project/create', validate(schemasProject.createProjectSchema), verifyAuthentication, createProject);
 router.post('/project/run/:projectId', verifyAuthentication, runTheProject);
 router.get('/project/each/:projectId', verifyAuthentication, getProject);
 router.get('/project/my/:workspaceId', verifyAuthentication, getMyProjects);
 
-router.put('/project/update/:projectId', verifyAuthentication, updateProject);
+router.put('/project/update/:projectId', validate(schemasProject.updateProjectSchema), verifyAuthentication, updateProject);
 router.delete('/project/delete/:projectId', verifyAuthentication, deleteProject);
 
 // {{ Deploy ROUTES}}
@@ -85,11 +87,11 @@ router.get('/deploy/all/:projectId', verifyAuthentication, listDeploys);
 router.get('/deploy/each/:deployId', verifyAuthentication, getDeploy);
 
 // {{ Plan ROUTES}}
-router.post('/plan/create', verifyAuthentication, addPlan);
+router.post('/plan/create', validate(schemasPlan.createPlanSchema), verifyAuthentication, addPlan);
+router.put('/plan/update/:planId', validate(schemasPlan.updatePlanSchema), verifyAuthentication, updatePlan);
 router.get('/plan/all',  getPlans);
 router.get('/plan/each/:planId', getPlanById);
 router.delete('/plan/delete/:planId', verifyAuthentication, deletePlan);
-
 
 // {{ Pay ROUTES}}
 router.post('/pay/create', verifyAuthentication, createPayment);

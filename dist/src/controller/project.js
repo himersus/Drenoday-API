@@ -58,19 +58,10 @@ async function repositoryUsesDocker(owner, repo, githubToken) {
 }
 // {{Create projecto}}
 const createProject = async (req, res) => {
-    const { name, description, branch, port, repo_url, default_plan, environments, workspaceId } = req.body;
+    const { name, description, branch, port, repo_url, environments, workspaceId } = req.body;
     const userId = req.userId;
-    if (!(0, uuid_1.validate)(userId)) {
+    if (!(0, uuid_1.validate)(userId) || !userId) {
         return res.status(401).json({ message: "Usuário não autenticado" });
-    }
-    if (!repo_url || typeof repo_url !== 'string') {
-        return res.status(400).json({ message: "O Repo URL deve ser uma string" });
-    }
-    if (!branch || typeof branch !== 'string') {
-        return res.status(400).json({ message: "Branch é obrigatório e deve ser uma string" });
-    }
-    if (environments && !Array.isArray(environments)) {
-        return res.status(400).json({ message: "Environments deve ser um array de strings : ex: ['port=3000']" });
     }
     const portNumber = Number(port);
     if (!port || typeof port !== 'string' || !Number.isInteger(portNumber)) {
@@ -102,14 +93,15 @@ const createProject = async (req, res) => {
         if (!name) {
             return res.status(400).json({ message: "O nome do projeto é obrigatório" });
         }
-        const existPlan = await prisma_1.default.plan.findFirst({
+        /*const existPlan = await prisma.plan.findFirst({
             where: {
                 name: default_plan
             }
         });
+
         if (!existPlan) {
             return res.status(400).json({ message: "O plano escolhido não está disponível, por favor escolha outro" });
-        }
+        }*/
         const domain = await (0, domain_1.generateUniqueDomain)(name);
         if (!domain) {
             return res.status(500).json({ message: "Não foi possível gerar um domínio único" });
@@ -148,7 +140,7 @@ const createProject = async (req, res) => {
                 workspaceId, // workspaceId
                 branch, // branch do repositório
                 repo_url, // URL do repositório
-                default_plan: existPlan.name,
+                default_plan: "default",
                 port: `${port}`, // porta onde a aplicação irá rodar
                 userId: existUser.id, // ID do usuário que criou o projeto
                 domain: domain, // domínio único gerado
@@ -320,7 +312,7 @@ const getMyProjects = async (req, res) => {
 exports.getMyProjects = getMyProjects;
 const updateProject = async (req, res) => {
     const projectId = (0, to_string_1.q)(req.params.projectId);
-    const { name, description, default_plan, environments } = req.body;
+    const { name, description, environments } = req.body;
     const userId = req.userId;
     if (!(0, uuid_1.validate)(projectId) || !(0, uuid_1.validate)(userId)) {
         return res.status(400).json({ message: "ID inválido" });
@@ -341,23 +333,26 @@ const updateProject = async (req, res) => {
         if (!userWorkspace || userWorkspace.role !== 'master') {
             return res.status(403).json({ message: "Você não tem acesso a este projeto" });
         }
-        if (default_plan) {
-            const existPlan = await prisma_1.default.plan.findFirst({
+        /*if (default_plan) {
+            const existPlan = await prisma.plan.findFirst({
                 where: {
                     name: default_plan
                 }
             });
+
             if (!existPlan) {
                 return res.status(400).json({ message: "O plano escolhido não está disponível, por favor escolha outro" });
             }
-        }
+        }*/
         const updatedProject = await prisma_1.default.project.update({
             where: { id: projectId },
             data: {
                 name: name || project.name,
                 description: description || project.description,
-                default_plan: default_plan || project.default_plan,
+                default_plan: "default",
                 environments: environments || project.environments,
+                //port: port || project.port, // carece de logica para validar se a porta é diferente e se é válida, caso seja diferente da porta atual, tem de verificar se a nova porta está disponível
+                // branch: branch || project.branch, // carece de lógica para verificar se a branch é diferente e se existe no repositório
             },
         });
         res.status(200).json(updatedProject);

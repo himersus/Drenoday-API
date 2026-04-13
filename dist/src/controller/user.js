@@ -13,6 +13,9 @@ const to_string_1 = require("../helper/to_string");
 const prisma_1 = __importDefault(require("../lib/prisma"));
 const createUser = async (req, res) => {
     const { email, name, password } = req.body;
+    if (!email || !name || !password) {
+        return res.status(400).json({ message: "Email, nome e senha são obrigatórios" });
+    }
     const username = await (0, username_1.generateUniqueUsername)(name);
     if (!username || !name) {
         return res.status(400).json({

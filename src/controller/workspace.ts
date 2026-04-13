@@ -51,7 +51,7 @@ export const createWorkspace = async (req: Request | any, res: Response) => {
             }
         });
 
-        const userWorkspace = await prisma.user_workspace.create({
+        await prisma.user_workspace.create({
             data: {
                 userId: existUser.id,
                 workspaceId: workspace.id,
