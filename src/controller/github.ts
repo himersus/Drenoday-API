@@ -3,9 +3,7 @@ import { Request, Response } from "express";
 import CryptoJS from "crypto-js";
 import { validate } from "uuid";
 import prisma  from "../lib/prisma";
-import dotenv from "dotenv";
 import { q } from "../helper/to_string";
-dotenv.config();
 
 export const getUserRepos = async (req: Request | any, res: Response) => {
     const userId = req.userId;

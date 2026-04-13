@@ -1,13 +1,13 @@
 
 import 'dotenv/config';
 import express from "express";
-import dotenv from 'dotenv';
 import router from "./routers/apiRouter";
-import session from "express-session";
 import passport from "passport";
 import cors from "cors";
+import "dotenv/config";
 import "./auth/github";
 import "./auth/googleAuth";
+
 
 // configurar o socket
 import { createServer } from "http";
@@ -16,7 +16,6 @@ import cookieParser from 'cookie-parser';
 
 const port = Number(process.env.PORT) || 3000;
 const app = express();
-dotenv.config();
 
 // Cria servidor HTTP a partir do Express
 const httpServer = createServer(app);
@@ -33,22 +32,12 @@ app.use(cors({
     credentials: true
 }));
 
-
 app.use(express.json());
 app.use(cookieParser());
 // CONFIGURAR SESSÃO
 
-app.use(session({
-  secret: process.env.SESSION_SECRET || "dev-secret",
-  resave: false,
-  saveUninitialized: false,
-  cookie: {
-    secure: false // muda para true quando tiver HTTPS
-  }
-}));
 
 app.use(passport.initialize());
-app.use(passport.session());
 
 app.get('/', (req, res) => {
     res.send('Welcome to drenoday API!');

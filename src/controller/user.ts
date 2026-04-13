@@ -1,6 +1,4 @@
 
-import dotenv from "dotenv";
-dotenv.config();
 import { Request, Response } from "express";
 import { generateUniqueUsername } from "../modify/username";
 import { validate } from "uuid";

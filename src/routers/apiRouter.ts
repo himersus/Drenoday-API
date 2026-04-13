@@ -1,6 +1,5 @@
 import express from "express";
 import { createUser, getAllUsers, getUser, updateUser, UserLoged } from "../controller/user";
-import dotenv from 'dotenv';
 import { verifyAuthentication } from "../middleware/userAuth";
 import { login, loginGitHub, loginGoogle, loginWithEmail, sendCodeVerification, verifyCode } from "../controller/auth";
 import passport from "passport";
@@ -18,7 +17,6 @@ import * as schemasWorkspace from "../schemas/workspace";
 import * as schemasProject from "../schemas/project";
 import * as schemasPlan from "../schemas/plan";
 
-dotenv.config();
 
 const router = express.Router();
 
@@ -31,7 +29,8 @@ router.post('/auth/verify-code', validate(schemasUser.verifyCodeSchema), verifyC
 // {{GITHUB AUTH ROUTES}}
 router.get('/auth/github',
     passport.authenticate('github', {
-        scope: ['read:user', 'user:email', 'repo']
+        scope: ['read:user', 'user:email', 'repo'],
+        session: false
     })
 );
 
@@ -43,7 +42,8 @@ router.get('/auth/google',
     const create = req.query.create;
     passport.authenticate('google', {
       scope: ['profile', 'email'],
-      state: JSON.stringify({ create })
+      state: JSON.stringify({ create }),
+      session: false
     })(req, res, next);
   }
 );

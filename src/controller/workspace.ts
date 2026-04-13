@@ -1,6 +1,4 @@
 import { Request, Response } from "express";
-import dotenv from "dotenv";
-dotenv.config();
 import { validate } from "uuid";
 import { q } from "../helper/to_string";
 import prisma  from "../lib/prisma";

@@ -1,5 +1,3 @@
-import dotenv from "dotenv";
-dotenv.config();
 import prisma  from "../lib/prisma";
 
 // funcao que gera nomes aleatorios (a implementar futuramente)

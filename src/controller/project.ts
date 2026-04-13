@@ -1,6 +1,4 @@
 import { Request, Response } from "express";
-import dotenv from "dotenv";
-dotenv.config();
 import { validate } from "uuid";
 import { generateUniqueDomain } from "../modify/domain";
 import { exec } from "child_process";

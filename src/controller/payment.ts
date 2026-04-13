@@ -3,12 +3,10 @@ import { validate } from "uuid";
 import { PaymentStatus, typePayment } from "@prisma/client";
 import { sendSocketContent } from "../sockets";
 import axios from "axios";
-import dotenv from "dotenv";
 import { referenceSendPaymentService, verificationPayment } from "../services/Payment";
 import { createNotification } from "../services/notification";
 import { q } from "../helper/to_string";
 import prisma  from "../lib/prisma";
-dotenv.config();
 
 const generateMerchantId = (): string => {
     // no maximo 15 digitos, deve conter pelomenos um caracter e todos devem ser alfanumericos
