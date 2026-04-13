@@ -34,7 +34,7 @@ router.get('/auth/github',
     })
 );
 
-router.get('/auth/github/callback', passport.authenticate('github', { failureRedirect: '/auth/github' }), loginGitHub);
+router.get('/auth/github/callback', passport.authenticate('github', { failureRedirect: '/auth/github', session: false }), loginGitHub);
 
 // {{GOOGLE AUTH ROUTES}}
 router.get('/auth/google',
@@ -48,7 +48,7 @@ router.get('/auth/google',
   }
 );
 
-router.get('/auth/google/callback', passport.authenticate('google', { failureRedirect: '/auth/google' }), loginGoogle);
+router.get('/auth/google/callback', passport.authenticate('google', { failureRedirect: '/auth/google', session: false }), loginGoogle);
 
 // Github 
 router.get('/github/list/repo', verifyAuthentication, getUserRepos);
