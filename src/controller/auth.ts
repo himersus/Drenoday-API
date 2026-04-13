@@ -163,17 +163,21 @@ export const loginGitHub = async (req: Request | any, res: Response) => {
     const github_user_id = user.id;
 
     if (!github_username || !github_token || !github_user_id) {
-        return res.status(400).json({ message: "Dados do GitHub não fornecidos" });
+        return res.redirect(`${process.env.FRONTEND_URL}/auth/error?message=Dados do GitHub incompletos. Por favor, tente novamente.`);
     }
 
     if (!user) {
         return res.redirect(`${process.env.FRONTEND_URL}/auth/error?message=Usuário não encontrado. Por favor, registre-se primeiro.`);
     }
 
+
     let existUserDB = await prisma.user.findFirst({
         where: { email },
     });
 
+    console.log("Usuário encontrado no banco:", existUserDB);
+
+    const encryptedToken = CryptoJS.AES.encrypt(github_token, process.env.GITHUB_TOKEN_ENCRYPTION_KEY!).toString();
     if (!existUserDB && create === 'true') {
         let possibleUsername = await generateUniqueUsername(github_username, true);
 
@@ -186,7 +190,7 @@ export const loginGitHub = async (req: Request | any, res: Response) => {
                 password: null, // senha aleatória
                 is_active: true,
                 github_username,
-                github_token: CryptoJS.AES.encrypt(github_token, process.env.GITHUB_TOKEN_ENCRYPTION_KEY!).toString(),
+                github_token: encryptedToken,
                 github_id: github_user_id
             }
         });
@@ -196,7 +200,6 @@ export const loginGitHub = async (req: Request | any, res: Response) => {
         return res.redirect(`${process.env.FRONTEND_URL}/auth/error?message=Usuário não encontrado. Por favor, registre-se primeiro.`);
     }
 
-    const encryptedToken = CryptoJS.AES.encrypt(github_token, process.env.GITHUB_TOKEN_ENCRYPTION_KEY!).toString();
 
     try {
         await prisma.user.update({

@@ -52,3 +52,7 @@ app.use('/api/v1', router);
 httpServer.listen(port, "0.0.0.0", () => {
   console.log(`Server is running on http://0.0.0.0:${port}`);
 });
+
+/*httpServer.listen(port, () => {
+    console.log(`Server is running on port ${port}`);
+});*/
