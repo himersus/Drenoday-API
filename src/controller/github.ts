@@ -33,10 +33,17 @@ export const getUserRepos = async (req: Request | any, res: Response) => {
                 });
         }
 
-        const encrypted = existUser.github_token;
-
-        const token = CryptoJS.AES.decrypt(encrypted, process.env.GITHUB_TOKEN_ENCRYPTION_KEY!).toString(CryptoJS.enc.Utf8);
-
+        const encrypted = existUser.github_token; 
+        let token = null; 
+        try {
+            token = CryptoJS.AES.decrypt(encrypted, process.env.GITHUB_TOKEN_ENCRYPTION_KEY!).toString(CryptoJS.enc.Utf8);
+        } catch  {
+            return res
+                .status(400)
+                .json({
+                    message: "Erro na sincronização com GitHub, por favor, sincronize novamente",
+                });
+        }
         if (!token) {
             return res.status(401).json({ message: "Token não fornecido" });
         }
