@@ -177,6 +177,10 @@ export const loginGitHub = async (req: Request | any, res: Response) => {
         where: { email },
     });
 
+    if (!existUserDB && create === 'false') {
+        return res.redirect(`${process.env.FRONTEND_URL}/auth/error?message=Usuário não encontrado. Por favor, registre-se primeiro.&create=${create}`);
+    }
+
   
 
     const encryptedToken = CryptoJS.AES.encrypt(github_token, process.env.GITHUB_TOKEN_ENCRYPTION_KEY!).toString();
