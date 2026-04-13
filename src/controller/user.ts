@@ -11,6 +11,11 @@ import prisma  from "../lib/prisma";
 
 export const createUser = async (req: Request, res: Response) => {
     const { email, name, password } = req.body;
+
+
+    if (!email || !name || !password) {
+        return res.status(400).json({ message: "Email, nome e senha são obrigatórios" });
+    }
     const username = await generateUniqueUsername(name);
     if (!username || !name) {
         return res.status(400).json({

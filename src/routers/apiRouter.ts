@@ -1,7 +1,7 @@
 import express from "express";
 import { createUser, getAllUsers, getUser, updateUser, UserLoged } from "../controller/user";
 import dotenv from 'dotenv';
-import { verifyAuthentication } from "../middleware/userLoged";
+import { verifyAuthentication } from "../middleware/userAuth";
 import { login, loginGitHub, loginGoogle, loginWithEmail, sendCodeVerification, verifyCode } from "../controller/auth";
 import passport from "passport";
 import { createCookieGitHub, getUserRepos, readCookieGitHub, syncUserWithGitHub, unsyncUserFromGitHub } from "../controller/github";
@@ -12,16 +12,18 @@ import { getDeploy, listDeploys } from "../controller/deploy";
 import { addPlan, deletePlan, getPlanById, getPlans } from "../controller/plan";
 import { confirmPayment, createPayment, getUserPayments, getPaymentById, referenceSendPaymentGateway, webhookPayment } from "../controller/payment";
 import { getOneNotification, markNotificationAsRead, myNotifications } from "../controller/notification";
+import { validate }  from "../middleware/validate";
+import * as schemas from "../schemas/user";
 
 dotenv.config();
 
 const router = express.Router();
 
 // {{AUTH ROUTES}}
-router.post('/auth/login', login);
-router.post('/auth/email', loginWithEmail);
-router.post('/auth/send-code-verification', sendCodeVerification);
-router.post('/auth/verify-code', verifyCode);
+router.post('/auth/login', validate(schemas.loginUserSchema), login);
+router.post('/auth/email', validate(schemas.sendCodeVerificationSchema), loginWithEmail);
+router.post('/auth/send-code-verification', validate(schemas.sendCodeVerificationSchema), sendCodeVerification);
+router.post('/auth/verify-code', validate(schemas.verifyCodeSchema), verifyCode);
 
 // {{GITHUB AUTH ROUTES}}
 router.get('/auth/github',
@@ -51,11 +53,11 @@ router.put('/github/sync', verifyAuthentication, syncUserWithGitHub);
 router.post('/github/unsync', verifyAuthentication, unsyncUserFromGitHub);
 
 // {{USER ROUTES}}
-router.post('/user/create', createUser);
+router.post('/user/create', validate(schemas.createUserSchema), createUser);
 router.get('/user/me', verifyAuthentication, UserLoged);
 router.get('/user/all', verifyAuthentication, getAllUsers);
 router.get('/user/each/:userId', verifyAuthentication, getUser);
-router.put('/user/update', verifyAuthentication, updateUser);
+router.put('/user/update', validate(schemas.updateUserSchema), updateUser);
 
 // {{Create Workspace ROUTE}}
 router.post('/workspace/create', verifyAuthentication, createWorkspace);
