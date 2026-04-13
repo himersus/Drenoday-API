@@ -171,111 +171,116 @@ export const loginGitHub = async (req: Request | any, res: Response) => {
   const github_username = user.username;
   const github_user_id = user.id;
 
+  if (!github_username || !github_token || !github_user_id) {
+    return res.redirect(
+      `${process.env.FRONTEND_URL}/auth/error?message=Dados do GitHub incompletos. Por favor, tente novamente.`,
+    );
+  }
+
+  if (!user) {
+    return res.redirect(
+      `${process.env.FRONTEND_URL}/auth/error?message=Usuário não encontrado. Por favor, registre-se primeiro.`,
+    );
+  }
+
+  let existUserDB = await prisma.user.findFirst({
+    where: { email },
+  });
+
+  if (!existUserDB && create === "false") {
+    return res.redirect(
+      `${process.env.FRONTEND_URL}/auth/error?message=Usuário não encontrado. Por favor, registre-se primeiro.&create=${create}`,
+    );
+  }
+
+  const encryptedToken = CryptoJS.AES.encrypt(
+    github_token,
+    process.env.GITHUB_TOKEN_ENCRYPTION_KEY!,
+  ).toString();
+  if (!existUserDB && create === "true") {
+    let possibleUsername = await generateUniqueUsername(github_username, true);
+
+    existUserDB = await prisma.user.create({
+      data: {
+        name: github_username,
+        username:
+          possibleUsername ||
+          github_username + Math.floor(1000 + Math.random() * 9000).toString(),
+        email,
+        provider: "github",
+        password: null, // senha aleatória
+        is_active: true,
+        github_username,
+        github_token: encryptedToken,
+        github_id: github_user_id,
+      },
+    });
+  }
+
+  if (!existUserDB) {
+    return res.redirect(
+      `${process.env.FRONTEND_URL}/auth/error?message=Usuário não encontrado. Por favor, registre-se primeiro.`,
+    );
+  }
+
+  try {
+    await prisma.user.update({
+      where: { id: existUserDB.id },
+      data: {
+        github_username,
+        github_token: encryptedToken,
+        github_id: github_user_id,
+      },
+    });
+  } catch (error) {
+    console.error(error);
+    return res.redirect(
+      `${process.env.FRONTEND_URL}/auth/error?message=Erro ao sincronizar com GitHub`,
+    );
+  }
+
+  const payload = {
+    id: existUserDB?.id,
+    is_active: existUserDB?.is_active,
+    username: existUserDB?.username,
+    email: existUserDB?.email,
+    provider: "github",
+  };
+
+  const tokenUser = jwt.sign(payload, process.env.JWT_SECRET as string);
+
+  // cookies
+  res.cookie("auth_token", tokenUser, {
+    httpOnly: true,
+    secure: process.env.NODE_ENV === "production",
+    sameSite: "lax",
+    maxAge: 24 * 60 * 60 * 1000, // 1 dia
+  });
+
+  res.cookie("github_token", encryptedToken, {
+    httpOnly: true,
+    secure: process.env.NODE_ENV === "production",
+    sameSite: "lax",
+    maxAge: 24 * 60 * 60 * 1000, // 1 dia
+  });
+
+  res.cookie("github_username", github_username, {
+    httpOnly: true,
+    secure: process.env.NODE_ENV === "production",
+    sameSite: "lax",
+    maxAge: 24 * 60 * 60 * 1000, // 1 dia
+  });
+
+  res.cookie("github_user_id", github_user_id, {
+    httpOnly: true,
+    secure: process.env.NODE_ENV === "production",
+    sameSite: "lax",
+    maxAge: 24 * 60 * 60 * 1000, // 1 dia
+  });
+
   return res.redirect(
-    `${process.env.FRONTEND_URL}/tudok/github?github_token=${github_token}&github_username=${github_username}&github_user_id=${github_user_id}&create=${create}`,
+    `${process.env.FRONTEND_URL}/auth/github?token=${tokenUser}&github_token=${encryptedToken}&github_username=${github_username}&github_user_id=${github_user_id}`,
   );
-
-  /* if (!github_username || !github_token || !github_user_id) {
-        return res.redirect(`${process.env.FRONTEND_URL}/auth/error?message=Dados do GitHub incompletos. Por favor, tente novamente.`);
-    }
-
-    if (!user) {
-        return res.redirect(`${process.env.FRONTEND_URL}/auth/error?message=Usuário não encontrado. Por favor, registre-se primeiro.`);
-    }
-
-
-    let existUserDB = await prisma.user.findFirst({
-        where: { email },
-    });
-
-    if (!existUserDB && create === 'false') {
-        return res.redirect(`${process.env.FRONTEND_URL}/auth/error?message=Usuário não encontrado. Por favor, registre-se primeiro.&create=${create}`);
-    }
-
-  
-
-    const encryptedToken = CryptoJS.AES.encrypt(github_token, process.env.GITHUB_TOKEN_ENCRYPTION_KEY!).toString();
-    if (!existUserDB && create === 'true') {
-        let possibleUsername = await generateUniqueUsername(github_username, true);
-
-        existUserDB = await prisma.user.create({
-            data: {
-                name: github_username,
-                username: possibleUsername || github_username + Math.floor(1000 + Math.random() * 9000).toString(),
-                email,
-                provider: "github",
-                password: null, // senha aleatória
-                is_active: true,
-                github_username,
-                github_token: encryptedToken,
-                github_id: github_user_id
-            }
-        });
-    }
-
-    if (!existUserDB) {
-        return res.redirect(`${process.env.FRONTEND_URL}/auth/error?message=Usuário não encontrado. Por favor, registre-se primeiro.`);
-    }
-
-
-    try {
-        await prisma.user.update({
-            where: { id: existUserDB.id },
-            data: {
-                github_username,
-                github_token: encryptedToken,
-                github_id: github_user_id
-            }
-        });
-
-    } catch (error) {
-        console.error(error);
-        return res.redirect(`${process.env.FRONTEND_URL}/auth/error?message=Erro ao sincronizar com GitHub`);
-    }
-
-    const payload = {
-        id: existUserDB?.id,
-        is_active: existUserDB?.is_active,
-        username: existUserDB?.username,
-        email: existUserDB?.email,
-        provider: "github"
-    };
-
-    const tokenUser = jwt.sign(payload, process.env.JWT_SECRET as string);
-
-    // cookies
-    res.cookie("auth_token", tokenUser, {
-        httpOnly: true,
-        secure: process.env.NODE_ENV === "production",
-        sameSite: "lax",
-        maxAge: 24 * 60 * 60 * 1000, // 1 dia
-    });
-
-    res.cookie("github_token", encryptedToken, {
-        httpOnly: true,
-        secure: process.env.NODE_ENV === "production",
-        sameSite: "lax",
-        maxAge: 24 * 60 * 60 * 1000, // 1 dia
-    });
-
-
-    
-    res.cookie("github_username", github_username, {
-        httpOnly: true,
-        secure: process.env.NODE_ENV === "production",
-        sameSite: "lax",
-        maxAge: 24 * 60 * 60 * 1000, // 1 dia
-    });
-    
-    res.cookie("github_user_id", github_user_id, {
-        httpOnly: true,
-        secure: process.env.NODE_ENV === "production",
-        sameSite: "lax",
-        maxAge: 24 * 60 * 60 * 1000, // 1 dia
-    });
-
-    return res.redirect(`${process.env.FRONTEND_URL}/auth/github?token=${tokenUser}&github_token=${encryptedToken}&github_username=${github_username}&github_user_id=${github_user_id}`);
-*/
 };
 
 export const loginGoogle = async (req: Request | any, res: Response) => {
