@@ -1,4 +1,5 @@
 import CryptoJS from "crypto-js";
+import { decryptToken } from "./crypt";
 
 export function parseGithubRepo(url: string) {
     const clean = url
@@ -34,8 +35,7 @@ export async function getLastCommitFromBranch(
 
     const encrypted = github_token;
 
-    const bytes = CryptoJS.AES.decrypt(encrypted, process.env.GITHUB_TOKEN_ENCRYPTION_KEY!);
-    const token = bytes.toString(CryptoJS.enc.Utf8);
+    const token = decryptToken(encrypted);
     
     if (token) {
         headers.Authorization = `Bearer ${token}`;

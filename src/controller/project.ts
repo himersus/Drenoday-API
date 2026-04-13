@@ -8,6 +8,7 @@ import { stopProject } from "../services/stopProject";
 import { runProject } from "../services/runProject";
 import { q } from "../helper/to_string";
 import prisma  from "../lib/prisma";
+import { decryptToken } from "../helper/crypt";
 
 
 async function repositoryUsesDocker(
@@ -134,8 +135,7 @@ export const createProject = async (req: Request | any, res: Response) => {
 
         const encrypted = existUser.github_token;
 
-        const bytes = CryptoJS.AES.decrypt(encrypted, process.env.GITHUB_TOKEN_ENCRYPTION_KEY!);
-        const token = bytes.toString(CryptoJS.enc.Utf8);
+        const token = decryptToken(encrypted);
 
         if (!token) {
             return res.status(500).json({

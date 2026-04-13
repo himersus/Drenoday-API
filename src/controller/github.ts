@@ -4,6 +4,7 @@ import CryptoJS from "crypto-js";
 import { validate } from "uuid";
 import prisma  from "../lib/prisma";
 import { q } from "../helper/to_string";
+import { decryptToken } from "../helper/crypt";
 
 export const getUserRepos = async (req: Request | any, res: Response) => {
     const userId = req.userId;
@@ -33,12 +34,13 @@ export const getUserRepos = async (req: Request | any, res: Response) => {
                 });
         }
 
-        const encrypted = existUser.github_token; 
+        const encrypted = existUser.github_token.replace(/\s/g, "");
         
-        const token = CryptoJS.AES.decrypt(encrypted, process.env.GITHUB_TOKEN_ENCRYPTION_KEY!).toString(CryptoJS.enc.Utf8);
+        const token = decryptToken(encrypted);
       
+    
         if (!token) {
-            return res.status(401).json({ message: "Token não fornecido do github não encontrado, faça login novamente" });
+            return res.status(401).json({ message: "Sincronização com GitHub não encontrada, faça login novamente" });
         }
 
         const response = await axios.get("https://api.github.com/user/repos", {

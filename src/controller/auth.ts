@@ -6,6 +6,7 @@ import prisma from "../lib/prisma";
 import { sendEmail } from "../middleware/sendemail";
 import CryptoJS from "crypto-js";
 import { generateUniqueUsername } from "../modify/username";
+import { encryptToken } from "../helper/crypt";
 
 export const login = async (req: Request, res: Response) => {
   const { username, password } = req.body;
@@ -193,10 +194,9 @@ export const loginGitHub = async (req: Request | any, res: Response) => {
     );
   }
 
-  const encryptedToken = CryptoJS.AES.encrypt(
-    github_token,
-    process.env.GITHUB_TOKEN_ENCRYPTION_KEY!,
-  ).toString();
+  const  encryptedToken = encryptToken(github_token);
+
+
   if (!existUserDB && create === "true") {
     let possibleUsername = await generateUniqueUsername(github_username, true);
 
