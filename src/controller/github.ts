@@ -34,26 +34,11 @@ export const getUserRepos = async (req: Request | any, res: Response) => {
         }
 
         const encrypted = existUser.github_token; 
-        let token = null; 
-        try {
-            token = CryptoJS.AES.decrypt(encrypted, process.env.GITHUB_TOKEN_ENCRYPTION_KEY!).toString(CryptoJS.enc.Utf8);
-        } catch  {
-            await prisma.user.update({
-                where: { id: userId },
-                data: {
-                    github_username: null,
-                    github_token: null,
-                    github_id: null,
-                },
-            });
-            return res
-                .status(400)
-                .json({
-                    message: "Erro na sincronização com GitHub, por favor, sincronize novamente",
-                });
-        }
+        
+        const token = CryptoJS.AES.decrypt(encrypted, process.env.GITHUB_TOKEN_ENCRYPTION_KEY!).toString(CryptoJS.enc.Utf8);
+      
         if (!token) {
-            return res.status(401).json({ message: "Token não fornecido" });
+            return res.status(401).json({ message: "Token não fornecido do github não encontrado, faça login novamente" });
         }
 
         const response = await axios.get("https://api.github.com/user/repos", {
@@ -85,10 +70,11 @@ export const getUserRepos = async (req: Request | any, res: Response) => {
         return res.json(response.data);
     } catch (error) {
         console.error(error);
-        return res.status(500).json({
-            message: "Erro ao buscar repositórios",
-            error: error instanceof Error ? error.message : "Erro desconhecido"
-        });
+        return res
+            .status(400)
+            .json({
+                message: "Erro na sincronização com GitHub, por favor, sincronize novamente",
+            });
     }
 };
 
