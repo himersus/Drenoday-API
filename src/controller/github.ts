@@ -149,6 +149,7 @@ export const syncUserWithGitHub = async (req: Request | any, res: Response) => {
 export const getUserRepoByName = async (req: Request | any, res: Response) => {
   const userId = req.userId;
   const repo = q(req.params.repo); // nome do repo
+  const owner = q(req.params.owner); // dono do repo (opcional, se não fornecer, busca em todos os repositórios do usuário)
 
   try {
     if (!userId || !validate(userId)) {
@@ -178,11 +179,8 @@ export const getUserRepoByName = async (req: Request | any, res: Response) => {
       });
     }
 
-    console.log("USERNAME:", existUser.github_username);
-    console.log("REPO:", repo);
-
     const response = await axios.get(
-      `https://api.github.com/repos/${existUser.github_username}/${repo}`,
+      `https://api.github.com/repos/${owner}/${repo}`,
       {
         headers: {
           Authorization: `token ${token}`,

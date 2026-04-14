@@ -52,7 +52,8 @@ router.get('/auth/google/callback', passport.authenticate('google', { failureRed
 
 // Github 
 router.get('/github/list/repo', verifyAuthentication, getUserRepos);
-router.get('/github/list/repo/:repo', verifyAuthentication, getUserRepoByName);
+router.get('/github/list/repo/:name', verifyAuthentication, getUserRepos);
+router.get('/github/list/repo/:owner/:repo', verifyAuthentication, getUserRepoByName);
 router.put('/github/sync', verifyAuthentication, syncUserWithGitHub);
 router.post('/github/unsync', verifyAuthentication, unsyncUserFromGitHub);
 
