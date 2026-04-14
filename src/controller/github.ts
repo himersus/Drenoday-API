@@ -170,7 +170,7 @@ export const getUserRepoByName = async (req: Request | any, res: Response) => {
       });
     }
 
-    const encrypted = existUser.github_token.replace(/\s/g, "");
+    const encrypted = existUser.github_token;
     const token = decryptToken(encrypted);
 
     if (!token) {
@@ -178,6 +178,8 @@ export const getUserRepoByName = async (req: Request | any, res: Response) => {
         message: "Token inválido, faça login novamente",
       });
     }
+
+    console.log(`Buscando repositório ${owner}/${repo} para usuário ${existUser.github_username}`);
 
     const response = await axios.get(
       `https://api.github.com/repos/${owner}/${repo}`,
