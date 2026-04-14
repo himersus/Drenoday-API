@@ -18,10 +18,10 @@ function getLastPage(linkHeader?: string): number | null {
 
 export const getUserRepos = async (req: Request | any, res: Response) => {
   const userId = req.userId;
-  const page = q(req.params.page) || 1;
-  const limit = q(req.params.limit) || 10;
-  const offset = limit * page - limit;
-  const name = q(req.query.name as string) || "";
+  const page = Number(req.query.page) || 1;
+  const limit = Math.min(Number(req.query.per_page) || 10, 100);
+  const name = (req.query.name as string)?.toLowerCase() || "";
+
 
   try {
     if (!userId || !validate(userId)) {
@@ -142,6 +142,65 @@ export const syncUserWithGitHub = async (req: Request | any, res: Response) => {
     return res.status(500).json({
       message: "Erro ao sincronizar com GitHub",
       error: error instanceof Error ? error.message : "Erro desconhecido",
+    });
+  }
+};
+
+export const getUserRepoByName = async (req: Request | any, res: Response) => {
+  const userId = req.userId;
+  const repo = q(req.params.repo); // nome do repo
+
+  try {
+    if (!userId || !validate(userId)) {
+      return res.status(401).json({ message: "Usuário não autenticado" });
+    }
+
+    const existUser = await prisma.user.findFirst({
+      where: { id: userId },
+    });
+
+    if (!existUser) {
+      return res.status(404).json({ message: "Usuário não encontrado" });
+    }
+
+    if (!existUser.github_token || !existUser.github_username) {
+      return res.status(404).json({
+        message: "Usuário não sincronizado com GitHub",
+      });
+    }
+
+    const encrypted = existUser.github_token.replace(/\s/g, "");
+    const token = decryptToken(encrypted);
+
+    if (!token) {
+      return res.status(401).json({
+        message: "Token inválido, faça login novamente",
+      });
+    }
+
+    console.log("USERNAME:", existUser.github_username);
+    console.log("REPO:", repo);
+
+    const response = await axios.get(
+      `https://api.github.com/repos/${existUser.github_username}/${repo}`,
+      {
+        headers: {
+          Authorization: `token ${token}`,
+          Accept: "application/vnd.github+json",
+        },
+      },
+    );
+
+    return res.json(response.data);
+  } catch (error: any) {
+    console.error(error?.response?.data || error.message);
+
+    if (error.response?.status === 404) {
+      return res.status(404).json({ message: "Repositório não encontrado" });
+    }
+
+    return res.status(500).json({
+      message: "Erro ao buscar repositório",
     });
   }
 };

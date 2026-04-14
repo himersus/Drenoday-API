@@ -3,7 +3,7 @@ import { createUser, getAllUsers, getUser, updateUser, UserLoged } from "../cont
 import { verifyAuthentication } from "../middleware/userAuth";
 import { login, loginGitHub, loginGoogle, loginWithEmail, sendCodeVerification, verifyCode } from "../controller/auth";
 import passport from "passport";
-import { createCookieGitHub, getUserRepos, readCookieGitHub, syncUserWithGitHub, unsyncUserFromGitHub } from "../controller/github";
+import { createCookieGitHub, getUserRepoByName, getUserRepos, readCookieGitHub, syncUserWithGitHub, unsyncUserFromGitHub } from "../controller/github";
 import { createWorkspace, deleteWorkspace, getAllWorkspaces, getWorkspace, updateWorkspace } from "../controller/workspace";
 import { createProject, deleteProject, getMyProjects, getProject, runTheProject, updateProject } from "../controller/project";
 import { addMember, removeMember } from "../controller/member";
@@ -52,6 +52,7 @@ router.get('/auth/google/callback', passport.authenticate('google', { failureRed
 
 // Github 
 router.get('/github/list/repo', verifyAuthentication, getUserRepos);
+router.get('/github/list/repo/:repo', verifyAuthentication, getUserRepoByName);
 router.put('/github/sync', verifyAuthentication, syncUserWithGitHub);
 router.post('/github/unsync', verifyAuthentication, unsyncUserFromGitHub);
 
