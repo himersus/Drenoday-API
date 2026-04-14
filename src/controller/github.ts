@@ -179,8 +179,6 @@ export const getUserRepoByName = async (req: Request | any, res: Response) => {
       });
     }
 
-    console.log(`Buscando repositório ${owner}/${repo} para usuário ${existUser.github_username}`);
-
     const response = await axios.get(
       `https://api.github.com/repos/${owner}/${repo}`,
       {
