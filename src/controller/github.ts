@@ -2,182 +2,207 @@ import axios from "axios";
 import { Request, Response } from "express";
 import CryptoJS from "crypto-js";
 import { validate } from "uuid";
-import prisma  from "../lib/prisma";
+import prisma from "../lib/prisma";
 import { q } from "../helper/to_string";
 import { decryptToken } from "../helper/crypt";
 
+function getLastPage(linkHeader?: string): number | null {
+  if (!linkHeader) return null;
+
+  const match = linkHeader.match(/page=(\d+)&per_page=\d+>; rel="last"/);
+
+  if (!match) return null;
+
+  return parseInt(match[1], 10);
+}
+
 export const getUserRepos = async (req: Request | any, res: Response) => {
-    const userId = req.userId;
-    const page = q(req.params.page) || 1;
-    const limit = q(req.params.limit) || 10;
-    const offset = limit * page - limit;
-    const name = q(req.query.name as string) || "";
+  const userId = req.userId;
+  const page = q(req.params.page) || 1;
+  const limit = q(req.params.limit) || 10;
+  const offset = limit * page - limit;
+  const name = q(req.query.name as string) || "";
 
-    try {
-        if (!userId || !validate(userId)) {
-            return res.status(401).json({ message: "Usuário não autenticado" });
-        }
-
-        const existUser = await prisma.user.findFirst({
-            where: { id: userId },
-        });
-
-        if (!existUser) {
-            return res.status(404).json({ message: "Usuário não encontrado" });
-        }
-
-        if (!existUser.github_token || !existUser.github_username || !existUser.github_id) {
-            return res
-                .status(404)
-                .json({
-                    message: "Usuário não sincronizado com GitHub, faça login com o github",
-                });
-        }
-
-        const encrypted = existUser.github_token.replace(/\s/g, "");
-        
-        const token = decryptToken(encrypted);
-      
-    
-        if (!token) {
-            return res.status(401).json({ message: "Sincronização com GitHub não encontrada, faça login novamente" });
-        }
-
-        const response = await axios.get("https://api.github.com/user/repos", {
-            headers: {
-                Authorization: `token ${token}`,
-                Accept: "application/vnd.github+json",
-            },
-            params: {
-                affiliation: "owner,collaborator,organization_member",
-                sort: "updated",
-                direction: "desc",
-                page,
-                per_page: limit,
-            },
-        });
-
-        if (response.status !== 200) {
-            return res
-                .status(response.status)
-                .json({ message: "Erro ao buscar repositórios" });
-        }
-
-        if (name) {
-            response.data = response.data.filter((repo: any) =>
-                repo.name.toLowerCase().includes((name as string).toLowerCase()),
-            );
-        }
-
-        return res.json(response.data);
-    } catch (error) {
-        console.error(error);
-        return res
-            .status(400)
-            .json({
-                message: "Erro na sincronização com GitHub, por favor, sincronize novamente",
-            });
-    }
-};
-
-export const syncUserWithGitHub = async (req: Request | any, res: Response) => {
-    const userId = req.userId;
-    const { github_username, github_token, github_user_id } = req.body;
-
-    if (!github_username || !github_token || !github_user_id) {
-        return res.status(400).json({ message: "Dados do GitHub não fornecidos" });
-    }
+  try {
     if (!userId || !validate(userId)) {
-        return res.status(401).json({ message: "Usuário não autenticado" });
+      return res.status(401).json({ message: "Usuário não autenticado" });
     }
+
     const existUser = await prisma.user.findFirst({
-        where: { id: userId },
+      where: { id: userId },
     });
 
     if (!existUser) {
-        return res.status(404).json({ message: "Usuário não encontrado" });
+      return res.status(404).json({ message: "Usuário não encontrado" });
     }
 
-    /*const encryptedToken = CryptoJS.AES.encrypt(
+    if (
+      !existUser.github_token ||
+      !existUser.github_username ||
+      !existUser.github_id
+    ) {
+      return res.status(404).json({
+        message: "Usuário não sincronizado com GitHub, faça login com o github",
+      });
+    }
+
+    const encrypted = existUser.github_token.replace(/\s/g, "");
+
+    const token = decryptToken(encrypted);
+
+    if (!token) {
+      return res.status(401).json({
+        message:
+          "Sincronização com GitHub não encontrada, faça login novamente",
+      });
+    }
+
+    const response = await axios.get("https://api.github.com/user/repos", {
+      headers: {
+        Authorization: `token ${token}`,
+        Accept: "application/vnd.github+json",
+      },
+      params: {
+        affiliation: "owner,collaborator,organization_member",
+        sort: "updated",
+        direction: "desc",
+        page,
+        per_page: limit,
+      },
+    });
+
+    if (response.status !== 200) {
+      return res
+        .status(response.status)
+        .json({ message: "Erro ao buscar repositórios" });
+    }
+
+    if (name) {
+      response.data = response.data.filter((repo: any) =>
+        repo.name.toLowerCase().includes((name as string).toLowerCase()),
+      );
+    }
+
+    const totalPages = getLastPage(response.headers.link);
+
+    return res.json({
+      data: response.data,
+      meta: {
+        page,
+        per_page: limit,
+        total_pages: totalPages,
+      },
+    });
+  } catch (error) {
+    return res.status(400).json({
+      message:
+        "Erro na sincronização com GitHub, por favor, sincronize novamente",
+    });
+  }
+};
+
+export const syncUserWithGitHub = async (req: Request | any, res: Response) => {
+  const userId = req.userId;
+  const { github_username, github_token, github_user_id } = req.body;
+
+  if (!github_username || !github_token || !github_user_id) {
+    return res.status(400).json({ message: "Dados do GitHub não fornecidos" });
+  }
+  if (!userId || !validate(userId)) {
+    return res.status(401).json({ message: "Usuário não autenticado" });
+  }
+  const existUser = await prisma.user.findFirst({
+    where: { id: userId },
+  });
+
+  if (!existUser) {
+    return res.status(404).json({ message: "Usuário não encontrado" });
+  }
+
+  /*const encryptedToken = CryptoJS.AES.encrypt(
       github_token,
       process.env.GITHUB_TOKEN_ENCRYPTION_KEY!,
     ).toString();*/
 
-    try {
-        await prisma.user.update({
-            where: { id: userId },
-            data: {
-                github_username,
-                github_token: github_token,
-                github_id: github_user_id,
-            },
-        });
+  try {
+    await prisma.user.update({
+      where: { id: userId },
+      data: {
+        github_username,
+        github_token: github_token,
+        github_id: github_user_id,
+      },
+    });
 
-        return res
-            .status(200)
-            .json({ message: "Sincronização com GitHub realizada com sucesso" });
-    } catch (error) {
-        console.error(error);
-        return res.status(500).json({
-            message: "Erro ao sincronizar com GitHub",
-            error: error instanceof Error ? error.message : "Erro desconhecido"
-        });
-    }
+    return res
+      .status(200)
+      .json({ message: "Sincronização com GitHub realizada com sucesso" });
+  } catch (error) {
+    console.error(error);
+    return res.status(500).json({
+      message: "Erro ao sincronizar com GitHub",
+      error: error instanceof Error ? error.message : "Erro desconhecido",
+    });
+  }
 };
 
 export const unsyncUserFromGitHub = async (
-    req: Request | any,
-    res: Response,
+  req: Request | any,
+  res: Response,
 ) => {
-    const userId = req.userId;
+  const userId = req.userId;
 
-    if (!userId || !validate(userId)) {
-        return res.status(401).json({ message: "Usuário não autenticado" });
-    }
+  if (!userId || !validate(userId)) {
+    return res.status(401).json({ message: "Usuário não autenticado" });
+  }
 
-    const existUser = await prisma.user.findFirst({
-        where: { id: userId },
+  const existUser = await prisma.user.findFirst({
+    where: { id: userId },
+  });
+
+  if (!existUser) {
+    return res.status(404).json({ message: "Usuário não encontrado" });
+  }
+
+  if (
+    !existUser.github_token &&
+    !existUser.github_username &&
+    !existUser.github_id
+  ) {
+    return res
+      .status(400)
+      .json({ message: "Usuário já não está sincronizado com GitHub" });
+  }
+
+  try {
+    await prisma.user.update({
+      where: { id: userId },
+      data: {
+        github_username: null,
+        github_token: null,
+        github_id: null,
+      },
     });
 
-    if (!existUser) {
-        return res.status(404).json({ message: "Usuário não encontrado" });
-    }
-
-    if (!existUser.github_token && !existUser.github_username && !existUser.github_id) {
-        return res
-            .status(400)
-            .json({ message: "Usuário já não está sincronizado com GitHub" });
-    }
-
-    try {
-        await prisma.user.update({
-            where: { id: userId },
-            data: {
-                github_username: null,
-                github_token: null,
-                github_id: null,
-            },
-        });
-
-        return res
-            .status(200)
-            .json({ message: "Desconexão do GitHub realizada com sucesso" });
-    } catch (error) {
-        console.error(error);
-        return res.status(500).json({ message: "Erro ao desconectar do GitHub" });
-    }
+    return res
+      .status(200)
+      .json({ message: "Desconexão do GitHub realizada com sucesso" });
+  } catch (error) {
+    console.error(error);
+    return res.status(500).json({ message: "Erro ao desconectar do GitHub" });
+  }
 };
 
 export const createCookieGitHub = (req: any, res: any) => {
-    res.cookie("teste", "TEsteeeeee", {
-        httpOnly: true,
-        secure: process.env.NODE_ENV === "production",
-        sameSite: "lax",
-        maxAge: 24 * 60 * 60 * 1000, // 1 dia
-    });
-    return res.status(200).json({ message: "Cookie criado com sucesso" });
+  res.cookie("teste", "TEsteeeeee", {
+    httpOnly: true,
+    secure: process.env.NODE_ENV === "production",
+    sameSite: "lax",
+    maxAge: 24 * 60 * 60 * 1000, // 1 dia
+  });
+  return res.status(200).json({ message: "Cookie criado com sucesso" });
 };
 
 export const readCookieGitHub = (req: any, res: any) => {
-   return res.json(req.cookies);
+  return res.json(req.cookies);
 };
