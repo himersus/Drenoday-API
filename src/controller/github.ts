@@ -203,6 +203,63 @@ export const getUserRepoByName = async (req: Request | any, res: Response) => {
   }
 };
 
+export const getUserBranchesByName = async (req: Request | any, res: Response) => {
+  const userId = req.userId;
+  const repo = q(req.params.repo); // nome do repo
+  const owner = q(req.params.owner); // dono do repo (opcional, se não fornecer, busca em todos os repositórios do usuário)
+
+  try {
+    if (!userId || !validate(userId)) {
+      return res.status(401).json({ message: "Usuário não autenticado" });
+    }
+
+    const existUser = await prisma.user.findFirst({
+      where: { id: userId },
+    });
+
+    if (!existUser) {
+      return res.status(404).json({ message: "Usuário não encontrado" });
+    }
+
+    if (!existUser.github_token || !existUser.github_username) {
+      return res.status(404).json({
+        message: "Usuário não sincronizado com GitHub",
+      });
+    }
+
+    const encrypted = existUser.github_token;
+    const token = decryptToken(encrypted);
+
+    if (!token) {
+      return res.status(401).json({
+        message: "Token inválido, faça login novamente",
+      });
+    }
+
+    const response = await axios.get(
+      `https://api.github.com/repos/${owner}/${repo}/branches`,
+      {
+        headers: {
+          Authorization: `token ${token}`,
+          Accept: "application/vnd.github+json",
+        },
+      },
+    );
+
+    return res.json(response.data);
+  } catch (error: any) {
+    console.error(error?.response?.data || error.message);
+
+    if (error.response?.status === 404) {
+      return res.status(404).json({ message: "Repositório não encontrado" });
+    }
+
+    return res.status(500).json({
+      message: "Erro ao buscar repositório",
+    });
+  }
+};
+
 export const unsyncUserFromGitHub = async (
   req: Request | any,
   res: Response,

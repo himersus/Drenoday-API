@@ -3,7 +3,7 @@ import { createUser, getAllUsers, getUser, updateUser, UserLoged } from "../cont
 import { verifyAuthentication } from "../middleware/userAuth";
 import { login, loginGitHub, loginGoogle, loginWithEmail, sendCodeVerification, verifyCode } from "../controller/auth";
 import passport from "passport";
-import { createCookieGitHub, getUserRepoByName, getUserRepos, readCookieGitHub, syncUserWithGitHub, unsyncUserFromGitHub } from "../controller/github";
+import { createCookieGitHub, getUserBranchesByName, getUserRepoByName, getUserRepos, readCookieGitHub, syncUserWithGitHub, unsyncUserFromGitHub } from "../controller/github";
 import { createWorkspace, deleteWorkspace, getAllWorkspaces, getWorkspace, updateWorkspace } from "../controller/workspace";
 import { createProject, deleteProject, getMyProjects, getProject, runTheProject, updateProject } from "../controller/project";
 import { addMember, removeMember } from "../controller/member";
@@ -54,6 +54,7 @@ router.get('/auth/google/callback', passport.authenticate('google', { failureRed
 router.get('/github/list/repo', verifyAuthentication, getUserRepos);
 router.get('/github/list/repo/:name', verifyAuthentication, getUserRepos);
 router.get('/github/list/repo/:owner/:repo', verifyAuthentication, getUserRepoByName);
+router.get('/github/list/branches/:owner/:repo', verifyAuthentication, getUserBranchesByName);
 router.put('/github/sync', verifyAuthentication, syncUserWithGitHub);
 router.post('/github/unsync', verifyAuthentication, unsyncUserFromGitHub);
 
