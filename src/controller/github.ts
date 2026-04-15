@@ -205,8 +205,11 @@ export const getUserRepoByName = async (req: Request | any, res: Response) => {
 
 export const getUserBranchesByName = async (req: Request | any, res: Response) => {
   const userId = req.userId;
-  const repo = q(req.params.repo); // nome do repo
-  const owner = q(req.params.owner); // dono do repo (opcional, se não fornecer, busca em todos os repositórios do usuário)
+  const repo = q(req.params.repo);
+  const owner = q(req.params.owner);
+
+  const page = Number(req.query.page) || 1;
+  const per_page = Math.min(Number(req.query.per_page) || 10, 100);
 
   try {
     if (!userId || !validate(userId)) {
@@ -227,8 +230,7 @@ export const getUserBranchesByName = async (req: Request | any, res: Response) =
       });
     }
 
-    const encrypted = existUser.github_token;
-    const token = decryptToken(encrypted);
+    const token = decryptToken(existUser.github_token);
 
     if (!token) {
       return res.status(401).json({
@@ -243,10 +245,25 @@ export const getUserBranchesByName = async (req: Request | any, res: Response) =
           Authorization: `token ${token}`,
           Accept: "application/vnd.github+json",
         },
-      },
+        params: {
+          page,
+          per_page,
+        },
+      }
     );
 
-    return res.json(response.data);
+    // extrair total de páginas do header Link
+    const totalPages = getLastPage(response.headers.link);
+
+    return res.json({
+      data: response.data,
+      meta: {
+        page,
+        per_page,
+        total_pages: totalPages,
+      },
+    });
+
   } catch (error: any) {
     console.error(error?.response?.data || error.message);
 
@@ -255,7 +272,7 @@ export const getUserBranchesByName = async (req: Request | any, res: Response) =
     }
 
     return res.status(500).json({
-      message: "Erro ao buscar repositório",
+      message: "Erro ao buscar branches",
     });
   }
 };
