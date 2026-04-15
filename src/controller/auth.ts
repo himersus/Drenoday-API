@@ -37,7 +37,9 @@ export const login = async (req: Request, res: Response) => {
       provider: user.provider,
     };
 
-    const token = jwt.sign(payload, process.env.JWT_SECRET as string);
+    const token = jwt.sign(payload, process.env.JWT_SECRET as string, {
+      expiresIn: "1d",
+    });
 
     res.status(200).json({ token });
   } catch (error: any) {
@@ -154,7 +156,9 @@ export const loginWithEmail = async (req: Request, res: Response) => {
       provider: user.provider,
     };
 
-    const token = jwt.sign(payload, process.env.JWT_SECRET as string);
+    const token = jwt.sign(payload, process.env.JWT_SECRET as string, {
+      expiresIn: "1d",
+    });
 
     res.status(200).json({ token });
   } catch (error) {
@@ -247,7 +251,9 @@ export const loginGitHub = async (req: Request | any, res: Response) => {
     provider: "github",
   };
 
-  const tokenUser = jwt.sign(payload, process.env.JWT_SECRET as string);
+  const tokenUser = jwt.sign(payload, process.env.JWT_SECRET as string, {
+    expiresIn: "1d",
+  });
 
   // cookies
   res.cookie("auth_token", tokenUser, {
@@ -336,7 +342,9 @@ export const loginGoogle = async (req: Request | any, res: Response) => {
     provider: "google",
   };
 
-  const token = jwt.sign(payload, process.env.JWT_SECRET as string);
+  const token = jwt.sign(payload, process.env.JWT_SECRET as string, {
+    expiresIn: "1d",
+  });
   return res.redirect(
     `${process.env.FRONTEND_URL}/auth/success?token=${token}`,
   );
