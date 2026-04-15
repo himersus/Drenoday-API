@@ -205,11 +205,13 @@ export const getUserRepoByName = async (req: Request | any, res: Response) => {
 
 export const getUserBranchesByName = async (req: Request | any, res: Response) => {
   const userId = req.userId;
+
   const repo = q(req.params.repo);
   const owner = q(req.params.owner);
 
   const page = Number(req.query.page) || 1;
-  const per_page = Math.min(Number(req.query.per_page) || 10, 100);
+  const limit = Math.min(Number(req.query.per_page) || 10, 100);
+  const name = (req.query.name as string)?.toLowerCase() || "";
 
   try {
     if (!userId || !validate(userId)) {
@@ -238,6 +240,7 @@ export const getUserBranchesByName = async (req: Request | any, res: Response) =
       });
     }
 
+    // 🔹 request com paginação nativa do GitHub
     const response = await axios.get(
       `https://api.github.com/repos/${owner}/${repo}/branches`,
       {
@@ -247,23 +250,37 @@ export const getUserBranchesByName = async (req: Request | any, res: Response) =
         },
         params: {
           page,
-          per_page,
+          per_page: limit,
         },
       }
     );
 
-    // extrair total de páginas do header Link
+    if (response.status !== 200) {
+      return res.status(response.status).json({
+        message: "Erro ao buscar branches",
+      });
+    }
+
+    let branches = response.data;
+
+    // 🔹 filtro por nome (search)
+    if (name) {
+      branches = branches.filter((branch: any) =>
+        branch.name.toLowerCase().includes(name)
+      );
+    }
+
+    // 🔹 total de páginas (pegando do header link)
     const totalPages = getLastPage(response.headers.link);
 
     return res.json({
-      data: response.data,
+      data: branches,
       meta: {
         page,
-        per_page,
+        per_page: limit,
         total_pages: totalPages,
       },
     });
-
   } catch (error: any) {
     console.error(error?.response?.data || error.message);
 
