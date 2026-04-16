@@ -96,7 +96,8 @@ networks:
                 commit_msg: lastCommit.message || "unknown",
                 commit_author: lastCommit.author || "unknown",
                 commit_email: lastCommit.email || "unknown",
-                commit_date: lastCommit.date || new Date()
+                commit_date: lastCommit.date || new Date(),
+                commit_branch: project.branch,
             }
         });
         sendSocketContent("deploy_logs", {

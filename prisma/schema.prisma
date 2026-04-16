@@ -88,6 +88,7 @@ model deploy {
   commit_author String?
   commit_email  String?
   commit_date   DateTime?
+  commit_branch String?
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
