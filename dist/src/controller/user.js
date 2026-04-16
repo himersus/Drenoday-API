@@ -4,8 +4,6 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.updateUser = exports.UserLoged = exports.getAllUsers = exports.getUser = exports.createUser = void 0;
-const dotenv_1 = __importDefault(require("dotenv"));
-dotenv_1.default.config();
 const username_1 = require("../modify/username");
 const uuid_1 = require("uuid");
 const bcrypt_1 = __importDefault(require("bcrypt"));

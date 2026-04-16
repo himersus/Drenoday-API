@@ -3,20 +3,25 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.readCookieGitHub = exports.createCookieGitHub = exports.unsyncUserFromGitHub = exports.syncUserWithGitHub = exports.getUserRepos = void 0;
+exports.readCookieGitHub = exports.createCookieGitHub = exports.unsyncUserFromGitHub = exports.getUserBranchesByName = exports.getUserRepoByName = exports.syncUserWithGitHub = exports.getUserRepos = void 0;
 const axios_1 = __importDefault(require("axios"));
-const crypto_js_1 = __importDefault(require("crypto-js"));
 const uuid_1 = require("uuid");
 const prisma_1 = __importDefault(require("../lib/prisma"));
-const dotenv_1 = __importDefault(require("dotenv"));
 const to_string_1 = require("../helper/to_string");
-dotenv_1.default.config();
+const crypt_1 = require("../helper/crypt");
+function getLastPage(linkHeader) {
+    if (!linkHeader)
+        return null;
+    const match = linkHeader.match(/page=(\d+)&per_page=\d+>; rel="last"/);
+    if (!match)
+        return null;
+    return parseInt(match[1], 10);
+}
 const getUserRepos = async (req, res) => {
     const userId = req.userId;
-    const page = (0, to_string_1.q)(req.params.page) || 1;
-    const limit = (0, to_string_1.q)(req.params.limit) || 10;
-    const offset = limit * page - limit;
-    const name = (0, to_string_1.q)(req.query.name) || "";
+    const page = Number(req.query.page) || 1;
+    const limit = Math.min(Number(req.query.per_page) || 10, 100);
+    const name = req.query.name?.toLowerCase() || "";
     try {
         if (!userId || !(0, uuid_1.validate)(userId)) {
             return res.status(401).json({ message: "Usuário não autenticado" });
@@ -27,17 +32,19 @@ const getUserRepos = async (req, res) => {
         if (!existUser) {
             return res.status(404).json({ message: "Usuário não encontrado" });
         }
-        if (!existUser.github_token || !existUser.github_username || !existUser.github_id) {
-            return res
-                .status(404)
-                .json({
+        if (!existUser.github_token ||
+            !existUser.github_username ||
+            !existUser.github_id) {
+            return res.status(404).json({
                 message: "Usuário não sincronizado com GitHub, faça login com o github",
             });
         }
-        const encrypted = existUser.github_token;
-        const token = crypto_js_1.default.AES.decrypt(encrypted, process.env.GITHUB_TOKEN_ENCRYPTION_KEY).toString(crypto_js_1.default.enc.Utf8);
+        const encrypted = existUser.github_token.replace(/\s/g, "");
+        const token = (0, crypt_1.decryptToken)(encrypted);
         if (!token) {
-            return res.status(401).json({ message: "Token não fornecido" });
+            return res.status(401).json({
+                message: "Sincronização com GitHub não encontrada, faça login novamente",
+            });
         }
         const response = await axios_1.default.get("https://api.github.com/user/repos", {
             headers: {
@@ -60,13 +67,19 @@ const getUserRepos = async (req, res) => {
         if (name) {
             response.data = response.data.filter((repo) => repo.name.toLowerCase().includes(name.toLowerCase()));
         }
-        return res.json(response.data);
+        const totalPages = getLastPage(response.headers.link);
+        return res.json({
+            data: response.data,
+            meta: {
+                page,
+                per_page: limit,
+                total_pages: totalPages,
+            },
+        });
     }
     catch (error) {
-        console.error(error);
-        return res.status(500).json({
-            message: "Erro ao buscar repositórios",
-            error: error instanceof Error ? error.message : "Erro desconhecido"
+        return res.status(400).json({
+            message: "Erro na sincronização com GitHub, por favor, sincronize novamente",
         });
     }
 };
@@ -87,9 +100,9 @@ const syncUserWithGitHub = async (req, res) => {
         return res.status(404).json({ message: "Usuário não encontrado" });
     }
     /*const encryptedToken = CryptoJS.AES.encrypt(
-      github_token,
-      process.env.GITHUB_TOKEN_ENCRYPTION_KEY!,
-    ).toString();*/
+        github_token,
+        process.env.GITHUB_TOKEN_ENCRYPTION_KEY!,
+      ).toString();*/
     try {
         await prisma_1.default.user.update({
             where: { id: userId },
@@ -107,11 +120,127 @@ const syncUserWithGitHub = async (req, res) => {
         console.error(error);
         return res.status(500).json({
             message: "Erro ao sincronizar com GitHub",
-            error: error instanceof Error ? error.message : "Erro desconhecido"
+            error: error instanceof Error ? error.message : "Erro desconhecido",
         });
     }
 };
 exports.syncUserWithGitHub = syncUserWithGitHub;
+const getUserRepoByName = async (req, res) => {
+    const userId = req.userId;
+    const repo = (0, to_string_1.q)(req.params.repo); // nome do repo
+    const owner = (0, to_string_1.q)(req.params.owner); // dono do repo (opcional, se não fornecer, busca em todos os repositórios do usuário)
+    try {
+        if (!userId || !(0, uuid_1.validate)(userId)) {
+            return res.status(401).json({ message: "Usuário não autenticado" });
+        }
+        const existUser = await prisma_1.default.user.findFirst({
+            where: { id: userId },
+        });
+        if (!existUser) {
+            return res.status(404).json({ message: "Usuário não encontrado" });
+        }
+        if (!existUser.github_token || !existUser.github_username) {
+            return res.status(404).json({
+                message: "Usuário não sincronizado com GitHub",
+            });
+        }
+        const encrypted = existUser.github_token;
+        const token = (0, crypt_1.decryptToken)(encrypted);
+        if (!token) {
+            return res.status(401).json({
+                message: "Token inválido, faça login novamente",
+            });
+        }
+        const response = await axios_1.default.get(`https://api.github.com/repos/${owner}/${repo}`, {
+            headers: {
+                Authorization: `token ${token}`,
+                Accept: "application/vnd.github+json",
+            },
+        });
+        return res.json(response.data);
+    }
+    catch (error) {
+        console.error(error?.response?.data || error.message);
+        if (error.response?.status === 404) {
+            return res.status(404).json({ message: "Repositório não encontrado" });
+        }
+        return res.status(500).json({
+            message: "Erro ao buscar repositório",
+        });
+    }
+};
+exports.getUserRepoByName = getUserRepoByName;
+const getUserBranchesByName = async (req, res) => {
+    const userId = req.userId;
+    const repo = (0, to_string_1.q)(req.params.repo);
+    const owner = (0, to_string_1.q)(req.params.owner);
+    const page = Number(req.query.page) || 1;
+    const limit = Math.min(Number(req.query.per_page) || 10, 100);
+    const name = req.query.name?.toLowerCase() || "";
+    try {
+        if (!userId || !(0, uuid_1.validate)(userId)) {
+            return res.status(401).json({ message: "Usuário não autenticado" });
+        }
+        const existUser = await prisma_1.default.user.findFirst({
+            where: { id: userId },
+        });
+        if (!existUser) {
+            return res.status(404).json({ message: "Usuário não encontrado" });
+        }
+        if (!existUser.github_token || !existUser.github_username) {
+            return res.status(404).json({
+                message: "Usuário não sincronizado com GitHub",
+            });
+        }
+        const token = (0, crypt_1.decryptToken)(existUser.github_token);
+        if (!token) {
+            return res.status(401).json({
+                message: "Token inválido, faça login novamente",
+            });
+        }
+        // 🔹 request com paginação nativa do GitHub
+        const response = await axios_1.default.get(`https://api.github.com/repos/${owner}/${repo}/branches`, {
+            headers: {
+                Authorization: `token ${token}`,
+                Accept: "application/vnd.github+json",
+            },
+            params: {
+                page,
+                per_page: limit,
+            },
+        });
+        if (response.status !== 200) {
+            return res.status(response.status).json({
+                message: "Erro ao buscar branches",
+            });
+        }
+        let branches = response.data;
+        // 🔹 filtro por nome (search)
+        if (name) {
+            branches = branches.filter((branch) => branch.name.toLowerCase().includes(name));
+        }
+        // 🔹 total de páginas (pegando do header link)
+        const totalPages = getLastPage(response.headers.link);
+        return res.json({
+            data: branches,
+            meta: {
+                page,
+                per_page: limit,
+                total_pages: totalPages,
+            },
+        });
+    }
+    catch (error) {
+        console.error(error?.response?.data || error.message);
+        if (error.response?.status === 404) {
+            return res.status(404).json({ message: "Repositório não encontrado" });
+        }
+        return res.status(500).json({
+            message: "Erro ao buscar branches",
+        });
+    }
+};
+exports.getUserBranchesByName = getUserBranchesByName;
 const unsyncUserFromGitHub = async (req, res) => {
     const userId = req.userId;
     if (!userId || !(0, uuid_1.validate)(userId)) {
@@ -123,7 +252,9 @@ const unsyncUserFromGitHub = async (req, res) => {
     if (!existUser) {
         return res.status(404).json({ message: "Usuário não encontrado" });
     }
-    if (!existUser.github_token && !existUser.github_username && !existUser.github_id) {
+    if (!existUser.github_token &&
+        !existUser.github_username &&
+        !existUser.github_id) {
         return res
             .status(400)
             .json({ message: "Usuário já não está sincronizado com GitHub" });

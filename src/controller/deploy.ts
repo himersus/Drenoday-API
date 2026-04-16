@@ -29,12 +29,12 @@ export const listDeploys = async (req: Request | any, res: Response) => {
         return res.status(404).json({ message: "Projeto não encontrado" });
     }
 
-    const userWorkspace = await prisma.user_workspace.findFirst({
+    /*const userWorkspace = await prisma.user_workspace.findFirst({
         where: {
             userId,
             workspaceId: exitProject.workspaceId,
         }
-    });
+    });*/
 
     /*if (!userWorkspace) {
         return res.status(403).json({ message: "Você não tem acesso a este projeto" });
@@ -87,7 +87,7 @@ export const getDeploy = async (req: Request | any, res: Response) => {
     const userWorkspace = await prisma.user_workspace.findFirst({
         where: {
             userId,
-            workspaceId: exitProject.workspaceId,
+            ProjectId: exitProject.id,
         }
     });
 

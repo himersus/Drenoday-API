@@ -4,7 +4,6 @@ import { verifyAuthentication } from "../middleware/userAuth";
 import { login, loginGitHub, loginGoogle, loginWithEmail, sendCodeVerification, verifyCode } from "../controller/auth";
 import passport from "passport";
 import { createCookieGitHub, getUserBranchesByName, getUserRepoByName, getUserRepos, readCookieGitHub, syncUserWithGitHub, unsyncUserFromGitHub } from "../controller/github";
-import { createWorkspace, deleteWorkspace, getAllWorkspaces, getWorkspace, updateWorkspace } from "../controller/workspace";
 import { createProject, deleteProject, getMyProjects, getProject, runTheProject, updateProject } from "../controller/project";
 import { addMember, removeMember } from "../controller/member";
 import { getDeploy, listDeploys } from "../controller/deploy";
@@ -66,11 +65,11 @@ router.get('/user/each/:userId', verifyAuthentication, getUser);
 router.put('/user/update', validate(schemasUser.updateUserSchema), updateUser);
 
 // {{Create Workspace ROUTE}}
-router.post('/workspace/create', validate(schemasWorkspace.createWorkspaceSchema), verifyAuthentication, createWorkspace);
-router.get('/workspace/each/:workspaceId', verifyAuthentication, getWorkspace);
-router.get('/workspace/all', verifyAuthentication, getAllWorkspaces);
-router.put('/workspace/update/:workspaceId', validate(schemasWorkspace.updateWorkspaceSchema), verifyAuthentication, updateWorkspace);
-router.delete('/workspace/delete/:workspaceId', verifyAuthentication, deleteWorkspace);
+//router.post('/workspace/create', validate(schemasWorkspace.createWorkspaceSchema), verifyAuthentication, createWorkspace);
+//router.get('/workspace/each/:workspaceId', verifyAuthentication, getWorkspace);
+//router.get('/workspace/all', verifyAuthentication, getAllWorkspaces);
+//router.put('/workspace/update/:workspaceId', validate(schemasWorkspace.updateWorkspaceSchema), verifyAuthentication, updateWorkspace);
+//router.delete('/workspace/delete/:workspaceId', verifyAuthentication, deleteWorkspace);
 
 // {{ Member ROUTES}}
 router.post('/workspace/member/add', validate(schemasWorkspace.addMemberSchema), verifyAuthentication, addMember);
@@ -80,7 +79,7 @@ router.delete('/workspace/member/remove', validate(schemasWorkspace.removeMember
 router.post('/project/create', validate(schemasProject.createProjectSchema), verifyAuthentication, createProject);
 router.post('/project/run/:projectId', verifyAuthentication, runTheProject);
 router.get('/project/each/:projectId', verifyAuthentication, getProject);
-router.get('/project/my/:workspaceId', verifyAuthentication, getMyProjects);
+router.get('/project/my', verifyAuthentication, getMyProjects);
 
 router.put('/project/update/:projectId', validate(schemasProject.updateProjectSchema), verifyAuthentication, updateProject);
 router.delete('/project/delete/:projectId', verifyAuthentication, deleteProject);

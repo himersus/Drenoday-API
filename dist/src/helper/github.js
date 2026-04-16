@@ -1,11 +1,8 @@
 "use strict";
-var __importDefault = (this && this.__importDefault) || function (mod) {
-    return (mod && mod.__esModule) ? mod : { "default": mod };
-};
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.parseGithubRepo = parseGithubRepo;
 exports.getLastCommitFromBranch = getLastCommitFromBranch;
-const crypto_js_1 = __importDefault(require("crypto-js"));
+const crypt_1 = require("./crypt");
 function parseGithubRepo(url) {
     const clean = url
         .replace(/\.git$/, "")
@@ -29,8 +26,7 @@ async function getLastCommitFromBranch(repoUrl, branch, github_token) {
         "User-Agent": "drenoday"
     };
     const encrypted = github_token;
-    const bytes = crypto_js_1.default.AES.decrypt(encrypted, process.env.GITHUB_TOKEN_ENCRYPTION_KEY);
-    const token = bytes.toString(crypto_js_1.default.enc.Utf8);
+    const token = (0, crypt_1.decryptToken)(encrypted);
     if (token) {
         headers.Authorization = `Bearer ${token}`;
     }

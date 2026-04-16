@@ -4,17 +4,15 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.deleteProject = exports.updateProject = exports.getMyProjects = exports.getProject = exports.stopTheProject = exports.runTheProject = exports.createProject = void 0;
-const dotenv_1 = __importDefault(require("dotenv"));
-dotenv_1.default.config();
 const uuid_1 = require("uuid");
 const domain_1 = require("../modify/domain");
 const child_process_1 = require("child_process");
-const crypto_js_1 = __importDefault(require("crypto-js"));
 const github_1 = require("../helper/github");
 const stopProject_1 = require("../services/stopProject");
 const runProject_1 = require("../services/runProject");
 const to_string_1 = require("../helper/to_string");
 const prisma_1 = __importDefault(require("../lib/prisma"));
+const crypt_1 = require("../helper/crypt");
 async function repositoryUsesDocker(owner, repo, githubToken) {
     const headers = {
         'Authorization': `Bearer ${githubToken}`,
@@ -58,7 +56,7 @@ async function repositoryUsesDocker(owner, repo, githubToken) {
 }
 // {{Create projecto}}
 const createProject = async (req, res) => {
-    const { name, description, branch, port, repo_url, environments, workspaceId } = req.body;
+    const { name, description, branch, port, repo_url, environments } = req.body;
     const userId = req.userId;
     if (!(0, uuid_1.validate)(userId) || !userId) {
         return res.status(401).json({ message: "Usuário não autenticado" });
@@ -107,8 +105,7 @@ const createProject = async (req, res) => {
             return res.status(500).json({ message: "Não foi possível gerar um domínio único" });
         }
         const encrypted = existUser.github_token;
-        const bytes = crypto_js_1.default.AES.decrypt(encrypted, process.env.GITHUB_TOKEN_ENCRYPTION_KEY);
-        const token = bytes.toString(crypto_js_1.default.enc.Utf8);
+        const token = (0, crypt_1.decryptToken)(encrypted);
         if (!token) {
             return res.status(500).json({
                 message: "Erro ao descriptografar token do GitHub"
@@ -137,7 +134,6 @@ const createProject = async (req, res) => {
             data: {
                 name, // nome do projeto
                 description, // descrição do projeto
-                workspaceId, // workspaceId
                 branch, // branch do repositório
                 repo_url, // URL do repositório
                 default_plan: "default",
@@ -255,7 +251,7 @@ const getProject = async (req, res) => {
         const userWorkspace = await prisma_1.default.user_workspace.findFirst({
             where: {
                 userId,
-                workspaceId: project.workspaceId
+                ProjectId: project.id
             }
         });
         let paid = false;
@@ -275,17 +271,12 @@ const getProject = async (req, res) => {
 exports.getProject = getProject;
 const getMyProjects = async (req, res) => {
     const userId = req.userId; // Supondo que o ID do usuário logado esteja disponível em req.userId
-    const workspaceId = (0, to_string_1.q)(req.params.workspaceId);
     if (!(0, uuid_1.validate)(userId)) {
         return res.status(401).json({ message: "Usuário não autenticado" });
     }
-    if (!(0, uuid_1.validate)(workspaceId)) {
-        return res.status(400).json({ message: "ID do workspace inválido" });
-    }
     const userWorkspace = await prisma_1.default.user_workspace.findFirst({
         where: {
-            userId,
-            workspaceId
+            userId
         }
     });
     if (!userWorkspace) {
@@ -293,7 +284,7 @@ const getMyProjects = async (req, res) => {
     }
     try {
         const projects = await prisma_1.default.project.findMany({
-            where: { userId, workspaceId },
+            where: { userId },
         });
         const projectsWithPaymentStatus = projects.map(project => {
             let paid = false;
@@ -327,7 +318,7 @@ const updateProject = async (req, res) => {
         const userWorkspace = await prisma_1.default.user_workspace.findFirst({
             where: {
                 userId,
-                workspaceId: project.workspaceId,
+                ProjectId: project.id,
             }
         });
         if (!userWorkspace || userWorkspace.role !== 'master') {
@@ -378,7 +369,7 @@ const deleteProject = async (req, res) => {
         const userWorkspace = await prisma_1.default.user_workspace.findFirst({
             where: {
                 userId,
-                workspaceId: project.workspaceId
+                ProjectId: project.id
             }
         });
         if (!userWorkspace || userWorkspace.role !== 'master') {

@@ -72,7 +72,7 @@ async function repositoryUsesDocker(
 // {{Create projecto}}
 export const createProject = async (req: Request | any, res: Response) => {
     const { name, description,
-        branch, port, repo_url, environments, workspaceId } = req.body;
+        branch, port, repo_url, environments } = req.body;
     const userId = req.userId;
 
     if (!validate(userId) || !userId) {
@@ -167,7 +167,6 @@ export const createProject = async (req: Request | any, res: Response) => {
             data: {
                 name, // nome do projeto
                 description, // descrição do projeto
-                workspaceId, // workspaceId
                 branch, // branch do repositório
                 repo_url, // URL do repositório
                 default_plan: "default",
@@ -298,7 +297,7 @@ export const getProject = async (req: Request | any, res: Response) => {
         const userWorkspace = await prisma.user_workspace.findFirst({
             where: {
                 userId,
-                workspaceId: project.workspaceId
+                ProjectId: project.id
             }
         });
 
@@ -318,19 +317,14 @@ export const getProject = async (req: Request | any, res: Response) => {
 
 export const getMyProjects = async (req: Request | any, res: Response) => {
     const userId = req.userId; // Supondo que o ID do usuário logado esteja disponível em req.userId
-    const workspaceId = q(req.params.workspaceId);
     if (!validate(userId)) {
         return res.status(401).json({ message: "Usuário não autenticado" });
     }
 
-    if (!validate(workspaceId)) {
-        return res.status(400).json({ message: "ID do workspace inválido" });
-    }
 
     const userWorkspace = await prisma.user_workspace.findFirst({
         where: {
-            userId,
-            workspaceId
+            userId
         }
     });
 
@@ -340,7 +334,7 @@ export const getMyProjects = async (req: Request | any, res: Response) => {
 
     try {
         const projects = await prisma.project.findMany({
-            where: { userId, workspaceId },
+            where: { userId },
         });
 
         const projectsWithPaymentStatus = projects.map(project => {
@@ -379,7 +373,7 @@ export const updateProject = async (req: Request | any, res: Response) => {
         const userWorkspace = await prisma.user_workspace.findFirst({
             where: {
                 userId,
-                workspaceId: project.workspaceId,
+                ProjectId: project.id,
             }
         });
 
@@ -437,7 +431,7 @@ export const deleteProject = async (req: Request | any, res: Response) => {
         const userWorkspace = await prisma.user_workspace.findFirst({
             where: {
                 userId,
-                workspaceId: project.workspaceId
+                ProjectId: project.id
             }
         });
 

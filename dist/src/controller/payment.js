@@ -7,12 +7,10 @@ exports.getPaymentById = exports.getUserPayments = exports.createPayment = expor
 const uuid_1 = require("uuid");
 const sockets_1 = require("../sockets");
 const axios_1 = __importDefault(require("axios"));
-const dotenv_1 = __importDefault(require("dotenv"));
 const Payment_1 = require("../services/Payment");
 const notification_1 = require("../services/notification");
 const to_string_1 = require("../helper/to_string");
 const prisma_1 = __importDefault(require("../lib/prisma"));
-dotenv_1.default.config();
 const generateMerchantId = () => {
     // no maximo 15 digitos, deve conter pelomenos um caracter e todos devem ser alfanumericos
     const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';

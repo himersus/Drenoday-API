@@ -5,11 +5,10 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 Object.defineProperty(exports, "__esModule", { value: true });
 require("dotenv/config");
 const express_1 = __importDefault(require("express"));
-const dotenv_1 = __importDefault(require("dotenv"));
 const apiRouter_1 = __importDefault(require("./routers/apiRouter"));
-const express_session_1 = __importDefault(require("express-session"));
 const passport_1 = __importDefault(require("passport"));
 const cors_1 = __importDefault(require("cors"));
+require("dotenv/config");
 require("./auth/github");
 require("./auth/googleAuth");
 // configurar o socket
@@ -18,7 +17,6 @@ const index_1 = require("./sockets/index");
 const cookie_parser_1 = __importDefault(require("cookie-parser"));
 const port = Number(process.env.PORT) || 3000;
 const app = (0, express_1.default)();
-dotenv_1.default.config();
 // Cria servidor HTTP a partir do Express
 const httpServer = (0, http_1.createServer)(app);
 // Inicializa Socket.IO
@@ -34,16 +32,7 @@ app.use((0, cors_1.default)({
 app.use(express_1.default.json());
 app.use((0, cookie_parser_1.default)());
 // CONFIGURAR SESSÃO
-app.use((0, express_session_1.default)({
-    secret: process.env.SESSION_SECRET || "dev-secret",
-    resave: false,
-    saveUninitialized: false,
-    cookie: {
-        secure: false // muda para true quando tiver HTTPS
-    }
-}));
 app.use(passport_1.default.initialize());
-app.use(passport_1.default.session());
 app.get('/', (req, res) => {
     res.send('Welcome to drenoday API!');
 });
@@ -54,3 +43,6 @@ app.use('/api/v1', apiRouter_1.default);
 httpServer.listen(port, "0.0.0.0", () => {
     console.log(`Server is running on http://0.0.0.0:${port}`);
 });
+/*httpServer.listen(port, () => {
+    console.log(`Server is running on port ${port}`);
+});*/ 

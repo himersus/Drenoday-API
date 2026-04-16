@@ -7,7 +7,7 @@ exports.removeMember = exports.addMember = void 0;
 const uuid_1 = require("uuid");
 const prisma_1 = __importDefault(require("../lib/prisma"));
 const addMember = async (req, res) => {
-    const { username, workspaceId, role } = req.body;
+    const { username, projectId, role } = req.body;
     const userId = req.userId;
     if (!userId || !(0, uuid_1.validate)(userId)) {
         return res.status(401).json({ message: "Usuário não autenticado" });
@@ -25,7 +25,7 @@ const addMember = async (req, res) => {
         const is_admin = await prisma_1.default.user_workspace.findFirst({
             where: {
                 userId: userId,
-                workspaceId: workspaceId,
+                ProjectId: projectId,
                 role: 'master',
             },
         });
@@ -47,16 +47,16 @@ const addMember = async (req, res) => {
         const existingMember = await prisma_1.default.user_workspace.findFirst({
             where: {
                 userId: user.id,
-                workspaceId: workspaceId,
+                ProjectId: projectId,
             },
         });
         if (existingMember) {
-            return res.status(400).json({ message: "Usuário já é membro do workspace" });
+            return res.status(400).json({ message: "Usuário já é membro do projeto" });
         }
         const newMember = await prisma_1.default.user_workspace.create({
             data: {
                 userId: user.id,
-                workspaceId: workspaceId,
+                ProjectId: projectId,
                 role: role || 'member',
             },
         });
@@ -68,7 +68,7 @@ const addMember = async (req, res) => {
 };
 exports.addMember = addMember;
 const removeMember = async (req, res) => {
-    const { username, workspaceId } = req.body;
+    const { username, projectId } = req.body;
     const userId = req.userId;
     if (!userId || !(0, uuid_1.validate)(userId)) {
         return res.status(401).json({ message: "Usuário não autenticado" });
@@ -83,7 +83,7 @@ const removeMember = async (req, res) => {
         const is_admin = await prisma_1.default.user_workspace.findFirst({
             where: {
                 userId: userId,
-                workspaceId: workspaceId,
+                ProjectId: projectId,
                 role: 'master',
             },
         });
@@ -105,11 +105,11 @@ const removeMember = async (req, res) => {
         const existingMember = await prisma_1.default.user_workspace.findFirst({
             where: {
                 userId: user.id,
-                workspaceId: workspaceId,
+                ProjectId: projectId,
             },
         });
         if (!existingMember) {
-            return res.status(400).json({ message: "Usuário não é membro do workspace" });
+            return res.status(400).json({ message: "Usuário não é membro do projeto" });
         }
         await prisma_1.default.user_workspace.delete({
             where: { id: existingMember.id },

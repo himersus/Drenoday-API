@@ -3,7 +3,7 @@ import { validate } from "uuid";
 import prisma  from "../lib/prisma";
 
 export const addMember = async (req: Request | any, res: Response) => {
-    const { username, workspaceId, role } = req.body;
+    const { username, projectId, role } = req.body;
     const userId = req.userId;
 
     if (!userId || !validate(userId)) {
@@ -26,7 +26,7 @@ export const addMember = async (req: Request | any, res: Response) => {
         const is_admin = await prisma.user_workspace.findFirst({
             where: {
                 userId: userId,
-                workspaceId: workspaceId,
+                ProjectId: projectId,
                 role: 'master',
             },
         });
@@ -52,18 +52,18 @@ export const addMember = async (req: Request | any, res: Response) => {
         const existingMember = await prisma.user_workspace.findFirst({
             where: {
                 userId: user.id,
-                workspaceId: workspaceId,
+                ProjectId: projectId,
             },
         });
 
         if (existingMember) {
-            return res.status(400).json({ message: "Usuário já é membro do workspace" });
+            return res.status(400).json({ message: "Usuário já é membro do projeto" });
         }
 
         const newMember = await prisma.user_workspace.create({
             data: {
                 userId: user.id,
-                workspaceId: workspaceId,
+                ProjectId: projectId,
                 role: role || 'member',
             },
         });
@@ -75,7 +75,7 @@ export const addMember = async (req: Request | any, res: Response) => {
 };
 
 export const removeMember = async (req: Request | any, res: Response) => {
-    const { username, workspaceId } = req.body;
+    const { username, projectId } = req.body;
 
     const userId = req.userId;
 
@@ -95,7 +95,7 @@ export const removeMember = async (req: Request | any, res: Response) => {
         const is_admin = await prisma.user_workspace.findFirst({
             where: {
                 userId: userId,
-                workspaceId: workspaceId,
+                ProjectId: projectId,
                 role: 'master',
             },
         });
@@ -121,12 +121,12 @@ export const removeMember = async (req: Request | any, res: Response) => {
         const existingMember = await prisma.user_workspace.findFirst({
             where: {
                 userId: user.id,
-                workspaceId: workspaceId,
+                ProjectId: projectId,
             },
         });
 
         if (!existingMember) {
-            return res.status(400).json({ message: "Usuário não é membro do workspace" });
+            return res.status(400).json({ message: "Usuário não é membro do projeto" });
         }
 
         await prisma.user_workspace.delete({

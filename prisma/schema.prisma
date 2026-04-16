@@ -29,53 +29,50 @@ model User {
 }
 
 model User_workspace {
-  id          String             @id @default(uuid())
-  userId      String
-  workspaceId String
-  role        roleWorkspace?     @default(member)
-  status      statusSolicitation @default(pending)
-  createdAt   DateTime           @default(now())
-  updatedAt   DateTime           @updatedAt
-  User        User               @relation(fields: [userId], references: [id])
-  Workspace   Workspace          @relation(fields: [workspaceId], references: [id])
+  id        String             @id @default(uuid())
+  userId    String
+  ProjectId String?
+  role      roleWorkspace?     @default(member)
+  status    statusSolicitation @default(pending)
+  createdAt DateTime           @default(now())
+  updatedAt DateTime           @updatedAt
+  User      User               @relation(fields: [userId], references: [id])
+  Project   project?           @relation(fields: [ProjectId], references: [id])
 }
 
 model Workspace {
-  id           String           @id @default(uuid())
+  id           String   @id @default(uuid())
   name         String
-  max_projects Int              @default(10)
-  createdAt    DateTime         @default(now())
-  updatedAt    DateTime         @updatedAt
-  users        User_workspace[]
-  projects     project[]
+  max_projects Int      @default(10)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
 }
 
 model project {
-  id                   String       @id @default(uuid())
-  domain               String       @unique
+  id                   String           @id @default(uuid())
+  domain               String           @unique
   name                 String
-  branch               String       @default("main")
-  repo_url             String       @default("")
+  branch               String           @default("main")
+  repo_url             String           @default("")
   description          String?
-  workspaceId          String
   date_expire          DateTime?
-  port                 String       @default("3000")
+  port                 String           @default("3000")
   build_cmd            String?
-  clone                cloneStatus  @default(cloning)
-  run_status           runStatus    @default(stopped)
+  clone                cloneStatus      @default(cloning)
+  run_status           runStatus        @default(stopped)
   start_cmd            String?
-  technology           technology?  @default(docker)
+  technology           technology?      @default(docker)
   default_plan         String?
-  default_type_payment typePayment? @default(monthly)
+  default_type_payment typePayment?     @default(monthly)
   userId               String
-  environments         String[]     @default([])
-  createdAt            DateTime     @default(now())
-  updatedAt            DateTime     @updatedAt
+  environments         String[]         @default([])
+  createdAt            DateTime         @default(now())
+  updatedAt            DateTime         @updatedAt
   payments             payment[]
   deploy               deploy[]
+  user_workspace       User_workspace[]
 
-  Workspace Workspace @relation(fields: [workspaceId], references: [id])
-  User      User      @relation(fields: [userId], references: [id])
+  User User @relation(fields: [userId], references: [id])
 }
 
 model deploy {

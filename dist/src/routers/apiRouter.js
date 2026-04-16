@@ -38,12 +38,10 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 Object.defineProperty(exports, "__esModule", { value: true });
 const express_1 = __importDefault(require("express"));
 const user_1 = require("../controller/user");
-const dotenv_1 = __importDefault(require("dotenv"));
 const userAuth_1 = require("../middleware/userAuth");
 const auth_1 = require("../controller/auth");
 const passport_1 = __importDefault(require("passport"));
 const github_1 = require("../controller/github");
-const workspace_1 = require("../controller/workspace");
 const project_1 = require("../controller/project");
 const member_1 = require("../controller/member");
 const deploy_1 = require("../controller/deploy");
@@ -55,7 +53,6 @@ const schemasUser = __importStar(require("../schemas/user"));
 const schemasWorkspace = __importStar(require("../schemas/workspace"));
 const schemasProject = __importStar(require("../schemas/project"));
 const schemasPlan = __importStar(require("../schemas/plan"));
-dotenv_1.default.config();
 const router = express_1.default.Router();
 // {{AUTH ROUTES}}
 router.post('/auth/login', (0, validate_1.validate)(schemasUser.loginUserSchema), auth_1.login);
@@ -64,20 +61,25 @@ router.post('/auth/send-code-verification', (0, validate_1.validate)(schemasUser
 router.post('/auth/verify-code', (0, validate_1.validate)(schemasUser.verifyCodeSchema), auth_1.verifyCode);
 // {{GITHUB AUTH ROUTES}}
 router.get('/auth/github', passport_1.default.authenticate('github', {
-    scope: ['read:user', 'user:email', 'repo']
+    scope: ['read:user', 'user:email', 'repo'],
+    session: false
 }));
-router.get('/auth/github/callback', passport_1.default.authenticate('github', { failureRedirect: '/auth/github' }), auth_1.loginGitHub);
+router.get('/auth/github/callback', passport_1.default.authenticate('github', { failureRedirect: '/auth/github', session: false }), auth_1.loginGitHub);
 // {{GOOGLE AUTH ROUTES}}
 router.get('/auth/google', (req, res, next) => {
     const create = req.query.create;
     passport_1.default.authenticate('google', {
         scope: ['profile', 'email'],
-        state: JSON.stringify({ create })
+        state: JSON.stringify({ create }),
+        session: false
     })(req, res, next);
 });
-router.get('/auth/google/callback', passport_1.default.authenticate('google', { failureRedirect: '/auth/google' }), auth_1.loginGoogle);
+router.get('/auth/google/callback', passport_1.default.authenticate('google', { failureRedirect: '/auth/google', session: false }), auth_1.loginGoogle);
 // Github 
 router.get('/github/list/repo', userAuth_1.verifyAuthentication, github_1.getUserRepos);
+router.get('/github/list/repo/:name', userAuth_1.verifyAuthentication, github_1.getUserRepos);
+router.get('/github/list/repo/:owner/:repo', userAuth_1.verifyAuthentication, github_1.getUserRepoByName);
+router.get('/github/list/branches/:owner/:repo', userAuth_1.verifyAuthentication, github_1.getUserBranchesByName);
 router.put('/github/sync', userAuth_1.verifyAuthentication, github_1.syncUserWithGitHub);
 router.post('/github/unsync', userAuth_1.verifyAuthentication, github_1.unsyncUserFromGitHub);
 // {{USER ROUTES}}
@@ -87,11 +89,11 @@ router.get('/user/all', userAuth_1.verifyAuthentication, user_1.getAllUsers);
 router.get('/user/each/:userId', userAuth_1.verifyAuthentication, user_1.getUser);
 router.put('/user/update', (0, validate_1.validate)(schemasUser.updateUserSchema), user_1.updateUser);
 // {{Create Workspace ROUTE}}
-router.post('/workspace/create', (0, validate_1.validate)(schemasWorkspace.createWorkspaceSchema), userAuth_1.verifyAuthentication, workspace_1.createWorkspace);
-router.get('/workspace/each/:workspaceId', userAuth_1.verifyAuthentication, workspace_1.getWorkspace);
-router.get('/workspace/all', userAuth_1.verifyAuthentication, workspace_1.getAllWorkspaces);
-router.put('/workspace/update/:workspaceId', (0, validate_1.validate)(schemasWorkspace.updateWorkspaceSchema), userAuth_1.verifyAuthentication, workspace_1.updateWorkspace);
-router.delete('/workspace/delete/:workspaceId', userAuth_1.verifyAuthentication, workspace_1.deleteWorkspace);
+//router.post('/workspace/create', validate(schemasWorkspace.createWorkspaceSchema), verifyAuthentication, createWorkspace);
+//router.get('/workspace/each/:workspaceId', verifyAuthentication, getWorkspace);
+//router.get('/workspace/all', verifyAuthentication, getAllWorkspaces);
+//router.put('/workspace/update/:workspaceId', validate(schemasWorkspace.updateWorkspaceSchema), verifyAuthentication, updateWorkspace);
+//router.delete('/workspace/delete/:workspaceId', verifyAuthentication, deleteWorkspace);
 // {{ Member ROUTES}}
 router.post('/workspace/member/add', (0, validate_1.validate)(schemasWorkspace.addMemberSchema), userAuth_1.verifyAuthentication, member_1.addMember);
 router.delete('/workspace/member/remove', (0, validate_1.validate)(schemasWorkspace.removeMemberSchema), userAuth_1.verifyAuthentication, member_1.removeMember);
@@ -99,7 +101,7 @@ router.delete('/workspace/member/remove', (0, validate_1.validate)(schemasWorksp
 router.post('/project/create', (0, validate_1.validate)(schemasProject.createProjectSchema), userAuth_1.verifyAuthentication, project_1.createProject);
 router.post('/project/run/:projectId', userAuth_1.verifyAuthentication, project_1.runTheProject);
 router.get('/project/each/:projectId', userAuth_1.verifyAuthentication, project_1.getProject);
-router.get('/project/my/:workspaceId', userAuth_1.verifyAuthentication, project_1.getMyProjects);
+router.get('/project/my', userAuth_1.verifyAuthentication, project_1.getMyProjects);
 router.put('/project/update/:projectId', (0, validate_1.validate)(schemasProject.updateProjectSchema), userAuth_1.verifyAuthentication, project_1.updateProject);
 router.delete('/project/delete/:projectId', userAuth_1.verifyAuthentication, project_1.deleteProject);
 // {{ Deploy ROUTES}}

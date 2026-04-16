@@ -9,18 +9,15 @@ const bcrypt_1 = __importDefault(require("bcrypt"));
 const jsonwebtoken_1 = __importDefault(require("jsonwebtoken"));
 const prisma_1 = __importDefault(require("../lib/prisma"));
 const sendemail_1 = require("../middleware/sendemail");
-const crypto_js_1 = __importDefault(require("crypto-js"));
 const username_1 = require("../modify/username");
+const crypt_1 = require("../helper/crypt");
 const login = async (req, res) => {
     const { username, password } = req.body;
     try {
         const user = await prisma_1.default.user.findFirst({
             where: {
-                OR: [
-                    { username },
-                    { email: username }
-                ]
-            }
+                OR: [{ username }, { email: username }],
+            },
         });
         const hash_password = user?.password || "";
         if (!user || !password) {
@@ -30,14 +27,22 @@ const login = async (req, res) => {
         if (!isValidPassword) {
             return res.status(401).json({ message: "Usuário ou senha inválida" });
         }
-        const payload = { id: user.id, is_active: user.is_active, username: user.username, email: user.email, provider: user.provider };
-        const token = jsonwebtoken_1.default.sign(payload, process.env.JWT_SECRET);
+        const payload = {
+            id: user.id,
+            is_active: user.is_active,
+            username: user.username,
+            email: user.email,
+            provider: user.provider,
+        };
+        const token = jsonwebtoken_1.default.sign(payload, process.env.JWT_SECRET, {
+            expiresIn: "1d",
+        });
         res.status(200).json({ token });
     }
     catch (error) {
         return res.status(500).json({
             message: "O login falhou",
-            error: error.message
+            error: error.message,
         });
     }
 };
@@ -60,15 +65,17 @@ const sendCodeVerification = async (req, res) => {
         await prisma_1.default.user.update({
             where: { email },
             data: {
-                confirm_code: await bcrypt_1.default.hash(verificationCode, 10)
+                confirm_code: await bcrypt_1.default.hash(verificationCode, 10),
             },
         });
         res.status(200).json({
-            message: "Código de verificação enviado para o e-mail."
+            message: "Código de verificação enviado para o e-mail.",
         });
     }
     catch (error) {
-        return res.status(500).json({ message: "Falha ao enviar o código de verificação." });
+        return res
+            .status(500)
+            .json({ message: "Falha ao enviar o código de verificação." });
     }
 };
 exports.sendCodeVerification = sendCodeVerification;
@@ -83,7 +90,9 @@ const verifyCode = async (req, res) => {
         }
         const isCodeValid = await bcrypt_1.default.compare(code, user.confirm_code || "");
         if (!isCodeValid) {
-            return res.status(400).json({ message: "Código de verificação inválido" });
+            return res
+                .status(400)
+                .json({ message: "Código de verificação inválido" });
         }
         await prisma_1.default.user.update({
             where: { email },
@@ -107,7 +116,9 @@ const loginWithEmail = async (req, res) => {
         }
         const isCodeValid = await bcrypt_1.default.compare(code, user.confirm_code || "");
         if (!isCodeValid) {
-            return res.status(400).json({ message: "Código de verificação inválido" });
+            return res
+                .status(400)
+                .json({ message: "Código de verificação inválido" });
         }
         await prisma_1.default.user.update({
             where: { email },
@@ -118,9 +129,11 @@ const loginWithEmail = async (req, res) => {
             is_active: user.is_active,
             username: user.username,
             email: user.email,
-            provider: user.provider
+            provider: user.provider,
         };
-        const token = jsonwebtoken_1.default.sign(payload, process.env.JWT_SECRET);
+        const token = jsonwebtoken_1.default.sign(payload, process.env.JWT_SECRET, {
+            expiresIn: "1d",
+        });
         res.status(200).json({ token });
     }
     catch (error) {
@@ -132,12 +145,12 @@ const loginGitHub = async (req, res) => {
     const user = req.user;
     const token = req.user.token;
     const email = user.email;
-    const create = user.create || 'false';
+    const create = user.create || "false";
     const github_token = token;
     const github_username = user.username;
     const github_user_id = user.id;
     if (!github_username || !github_token || !github_user_id) {
-        return res.status(400).json({ message: "Dados do GitHub não fornecidos" });
+        return res.redirect(`${process.env.FRONTEND_URL}/auth/error?message=Dados do GitHub incompletos. Por favor, tente novamente.`);
     }
     if (!user) {
         return res.redirect(`${process.env.FRONTEND_URL}/auth/error?message=Usuário não encontrado. Por favor, registre-se primeiro.`);
@@ -145,34 +158,38 @@ const loginGitHub = async (req, res) => {
     let existUserDB = await prisma_1.default.user.findFirst({
         where: { email },
     });
-    if (!existUserDB && create === 'true') {
+    if (!existUserDB && create === "false") {
+        return res.redirect(`${process.env.FRONTEND_URL}/auth/error?message=Usuário não encontrado. Por favor, registre-se primeiro.&create=${create}`);
+    }
+    const encryptedToken = (0, crypt_1.encryptToken)(github_token);
+    if (!existUserDB && create === "true") {
         let possibleUsername = await (0, username_1.generateUniqueUsername)(github_username, true);
         existUserDB = await prisma_1.default.user.create({
             data: {
                 name: github_username,
-                username: possibleUsername || github_username + Math.floor(1000 + Math.random() * 9000).toString(),
+                username: possibleUsername ||
+                    github_username + Math.floor(1000 + Math.random() * 9000).toString(),
                 email,
                 provider: "github",
                 password: null, // senha aleatória
                 is_active: true,
                 github_username,
-                github_token: crypto_js_1.default.AES.encrypt(github_token, process.env.GITHUB_TOKEN_ENCRYPTION_KEY).toString(),
-                github_id: github_user_id
-            }
+                github_token: encryptedToken,
+                github_id: github_user_id,
+            },
         });
     }
     if (!existUserDB) {
         return res.redirect(`${process.env.FRONTEND_URL}/auth/error?message=Usuário não encontrado. Por favor, registre-se primeiro.`);
     }
-    const encryptedToken = crypto_js_1.default.AES.encrypt(github_token, process.env.GITHUB_TOKEN_ENCRYPTION_KEY).toString();
     try {
         await prisma_1.default.user.update({
             where: { id: existUserDB.id },
             data: {
                 github_username,
                 github_token: encryptedToken,
-                github_id: github_user_id
-            }
+                github_id: github_user_id,
+            },
         });
     }
     catch (error) {
@@ -184,9 +201,11 @@ const loginGitHub = async (req, res) => {
         is_active: existUserDB?.is_active,
         username: existUserDB?.username,
         email: existUserDB?.email,
-        provider: "github"
+        provider: "github",
     };
-    const tokenUser = jsonwebtoken_1.default.sign(payload, process.env.JWT_SECRET);
+    const tokenUser = jsonwebtoken_1.default.sign(payload, process.env.JWT_SECRET, {
+        expiresIn: "1d",
+    });
     // cookies
     res.cookie("auth_token", tokenUser, {
         httpOnly: true,
@@ -217,32 +236,34 @@ const loginGitHub = async (req, res) => {
 exports.loginGitHub = loginGitHub;
 const loginGoogle = async (req, res) => {
     const user = req.user;
-    const state = JSON.parse(req.query.state || '{}');
-    const create = state.create || 'true';
+    const state = JSON.parse(req.query.state || "{}");
+    const create = state.create || "true";
     if (!user) {
         return res.redirect(`${process.env.FRONTEND_URL}/auth/error?message=Usuário não encontrado. Por favor, registre-se primeiro.`);
     }
     // Dados vindos do Google
     const email = user.emails[0].value || user.email;
     const provider_id = user.id;
-    const name = user.displayName || email.split('@')[0];
+    const name = user.displayName || email.split("@")[0];
     let userInDb = await prisma_1.default.user.findFirst({
         where: { email },
     });
-    if (!userInDb && create === 'false') {
+    if (!userInDb && create === "false") {
         return res.redirect(`${process.env.FRONTEND_URL}/auth/error?message=Usuário não encontrado. Por favor, registre-se primeiro.&create=${create}`);
     }
-    if (!userInDb && create === 'true') {
+    if (!userInDb && create === "true") {
         let possibleUsername = await (0, username_1.generateUniqueUsername)(name);
         const newUser = await prisma_1.default.user.create({
             data: {
                 name,
-                username: possibleUsername || email.split('@')[0] + Math.floor(1000 + Math.random() * 9000).toString(),
+                username: possibleUsername ||
+                    email.split("@")[0] +
+                        Math.floor(1000 + Math.random() * 9000).toString(),
                 email,
                 provider: "google",
                 password: Math.random().toString(36).slice(-8), // senha aleatória
                 is_active: true,
-            }
+            },
         });
         userInDb = newUser;
     }
@@ -251,9 +272,11 @@ const loginGoogle = async (req, res) => {
         is_active: userInDb?.is_active,
         username: userInDb?.username,
         email: userInDb?.email,
-        provider: "google"
+        provider: "google",
     };
-    const token = jsonwebtoken_1.default.sign(payload, process.env.JWT_SECRET);
+    const token = jsonwebtoken_1.default.sign(payload, process.env.JWT_SECRET, {
+        expiresIn: "1d",
+    });
     return res.redirect(`${process.env.FRONTEND_URL}/auth/success?token=${token}`);
 };
 exports.loginGoogle = loginGoogle;

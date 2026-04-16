@@ -5,9 +5,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.getDeploy = exports.listDeploys = void 0;
 const uuid_1 = require("uuid");
-const dotenv_1 = __importDefault(require("dotenv"));
 const to_string_1 = require("../helper/to_string");
-dotenv_1.default.config();
 const prisma_1 = __importDefault(require("../lib/prisma"));
 const listDeploys = async (req, res) => {
     const projectId = (0, to_string_1.q)(req.params.projectId);
@@ -27,12 +25,12 @@ const listDeploys = async (req, res) => {
     if (!exitProject) {
         return res.status(404).json({ message: "Projeto não encontrado" });
     }
-    const userWorkspace = await prisma_1.default.user_workspace.findFirst({
+    /*const userWorkspace = await prisma.user_workspace.findFirst({
         where: {
             userId,
             workspaceId: exitProject.workspaceId,
         }
-    });
+    });*/
     /*if (!userWorkspace) {
         return res.status(403).json({ message: "Você não tem acesso a este projeto" });
     }*/
@@ -75,7 +73,7 @@ const getDeploy = async (req, res) => {
     const userWorkspace = await prisma_1.default.user_workspace.findFirst({
         where: {
             userId,
-            workspaceId: exitProject.workspaceId,
+            ProjectId: exitProject.id,
         }
     });
     if (!userWorkspace) {
