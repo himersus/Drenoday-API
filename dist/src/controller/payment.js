@@ -205,17 +205,19 @@ const confirmPayment = async (req, res) => {
     const dateStart = new Date(currentDate);
     const expirationDate = new Date(currentDate);
     if (payment_form === 'monthly') {
-        expirationDate.setMonth(expirationDate.getMonth() + 1);
+        const period_duration = existPayment.time_in_day ? Math.ceil(existPayment.time_in_day / 30) : 1;
+        expirationDate.setMonth(expirationDate.getMonth() + period_duration);
     }
     else if (payment_form === 'yearly') {
-        expirationDate.setFullYear(expirationDate.getFullYear() + 1);
+        const period_duration = existPayment.time_in_day ? Math.ceil(existPayment.time_in_day / 360) : 1;
+        expirationDate.setFullYear(expirationDate.getFullYear() + period_duration);
     }
     else {
         return res.status(400).json({
             message: "Forma de pagamento inválida"
         });
     }
-    const project = await prisma_1.default.project.update({
+    await prisma_1.default.project.update({
         where: {
             id: existPayment.projectId
         },
@@ -279,7 +281,7 @@ const createPayment = async (req, res) => {
     if (existPlan.duration === 30) {
         payment_form = 'monthly';
     }
-    else if (existPlan.duration === 365) {
+    else if (existPlan.duration === 360) {
         payment_form = 'yearly';
     }
     else {
@@ -292,7 +294,8 @@ const createPayment = async (req, res) => {
     let amount = existPlan.price;
     let time_in_day = undefined;
     if (payment_form_str === 'yearly') {
-        amount = existPlan.price * 12 - (existPlan.price * 0.5);
+        const durationInYear = existProject.days ? existProject.days / 360 : 1; // Convertendo duração para meses
+        amount = (existPlan.price * 12 * durationInYear) - (existPlan.price * 0.5);
         time_in_day = existPlan.duration * 12;
     }
     else if (payment_form_str === 'daily') {

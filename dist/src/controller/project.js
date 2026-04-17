@@ -15,9 +15,9 @@ const prisma_1 = __importDefault(require("../lib/prisma"));
 const crypt_1 = require("../helper/crypt");
 async function repositoryUsesDocker(owner, repo, githubToken) {
     const headers = {
-        'Authorization': `Bearer ${githubToken}`,
-        'Accept': 'application/vnd.github+json',
-        'X-GitHub-Api-Version': '2022-11-28'
+        Authorization: `Bearer ${githubToken}`,
+        Accept: "application/vnd.github+json",
+        "X-GitHub-Api-Version": "2022-11-28",
     };
     try {
         // Verifica se existe Dockerfile na raiz
@@ -27,21 +27,21 @@ async function repositoryUsesDocker(owner, repo, githubToken) {
         }
         // Verifica se existe docker-compose.yml ou docker-compose.yaml
         /*const composeYmlResponse = await fetch(
-            `https://api.github.com/repos/${owner}/${repo}/contents/docker-compose.yml`,
-            { headers }
-        );
-
-        if (composeYmlResponse.ok) {
-            return true;
-        }*/
+                `https://api.github.com/repos/${owner}/${repo}/contents/docker-compose.yml`,
+                { headers }
+            );
+    
+            if (composeYmlResponse.ok) {
+                return true;
+            }*/
         /*const composeYamlResponse = await fetch(
-            `https://api.github.com/repos/${owner}/${repo}/contents/docker-compose.yaml`,
-            { headers }
-        );
-
-        if (composeYamlResponse.ok) {
-            return true;
-        }*/
+                `https://api.github.com/repos/${owner}/${repo}/contents/docker-compose.yaml`,
+                { headers }
+            );
+    
+            if (composeYamlResponse.ok) {
+                return true;
+            }*/
         // Verifica se existe pasta .docker
         const dockerDirResponse = await fetch(`https://api.github.com/repos/${owner}/${repo}/contents/.docker`, { headers });
         if (dockerDirResponse.ok) {
@@ -50,26 +50,31 @@ async function repositoryUsesDocker(owner, repo, githubToken) {
         return false;
     }
     catch (error) {
-        console.error('Erro ao verificar Docker no repositório:', error);
+        console.error("Erro ao verificar Docker no repositório:", error);
         throw error;
     }
 }
 // {{Create projecto}}
 const createProject = async (req, res) => {
-    const { name, description, branch, port, repo_url, environments } = req.body;
+    const { name, description, branch, port, repo_url, environments, default_plan, default_type_payment, period_duration, } = req.body;
     const userId = req.userId;
     if (!(0, uuid_1.validate)(userId) || !userId) {
         return res.status(401).json({ message: "Usuário não autenticado" });
     }
     const portNumber = Number(port);
-    if (!port || typeof port !== 'string' || !Number.isInteger(portNumber)) {
+    if (!port || typeof port !== "string" || !Number.isInteger(portNumber)) {
         return res.status(400).json({
-            message: "Porta é obrigatório e deve ser um número valido"
+            message: "Porta é obrigatório e deve ser um número valido",
+        });
+    }
+    if (period_duration && (!Number.isInteger(period_duration) || period_duration <= 0)) {
+        return res.status(400).json({
+            message: "Duração do período deve ser um número inteiro positivo",
         });
     }
     if (portNumber < 1024 || portNumber > 65535) {
         return res.status(400).json({
-            message: "Porta deve estar entre 1024 e 65535"
+            message: "Porta deve estar entre 1024 e 65535",
         });
     }
     try {
@@ -78,57 +83,78 @@ const createProject = async (req, res) => {
                 OR: [
                     { id: (0, uuid_1.validate)(userId) ? userId : undefined },
                     { username: userId },
-                    { email: userId }
-                ]
+                    { email: userId },
+                ],
             },
         });
         if (!existUser) {
             return res.status(404).json({ message: "Usuário não encontrado" });
         }
-        if (!existUser.github_id || !existUser.github_token || !existUser.github_username) {
-            return res.status(400).json({ message: "Informações do GitHub são obrigatórias, tente sincronizar com o github" });
+        if (!existUser.github_id ||
+            !existUser.github_token ||
+            !existUser.github_username) {
+            return res.status(400).json({
+                message: "Informações do GitHub são obrigatórias, tente sincronizar com o github",
+            });
         }
         if (!name) {
-            return res.status(400).json({ message: "O nome do projeto é obrigatório" });
+            return res
+                .status(400)
+                .json({ message: "O nome do projeto é obrigatório" });
         }
-        /*const existPlan = await prisma.plan.findFirst({
+        const existPlan = await prisma_1.default.plan.findFirst({
             where: {
-                name: default_plan
-            }
+                name: {
+                    mode: "insensitive",
+                    equals: default_plan,
+                },
+            },
         });
-
-        if (!existPlan) {
-            return res.status(400).json({ message: "O plano escolhido não está disponível, por favor escolha outro" });
-        }*/
+        if (!existPlan || !default_plan) {
+            return res.status(400).json({
+                message: "O plano escolhido não está disponível, por favor escolha outro",
+            });
+        }
         const domain = await (0, domain_1.generateUniqueDomain)(name);
         if (!domain) {
-            return res.status(500).json({ message: "Não foi possível gerar um domínio único" });
+            return res
+                .status(500)
+                .json({ message: "Não foi possível gerar um domínio único" });
         }
         const encrypted = existUser.github_token;
         const token = (0, crypt_1.decryptToken)(encrypted);
         if (!token) {
             return res.status(500).json({
-                message: "Erro ao descriptografar token do GitHub"
+                message: "Erro ao descriptografar token do GitHub",
             });
         }
         try {
             const parsed = (0, github_1.parseGithubRepo)(repo_url);
             if (!parsed) {
                 return res.status(400).json({
-                    message: "URL do repositório GitHub inválida"
+                    message: "URL do repositório GitHub inválida",
                 });
             }
-            if (await repositoryUsesDocker(parsed.owner, parsed.repo, token) === false) {
+            if ((await repositoryUsesDocker(parsed.owner, parsed.repo, token)) === false) {
                 return res.status(400).json({
-                    message: "O repositório deve conter um Dockerfile na raiz"
+                    message: "O repositório deve conter um Dockerfile na raiz",
                 });
             }
         }
         catch (error) {
             return res.status(400).json({
-                message: "Erro ao verificar o repositório: " + error.message
+                message: "Erro ao verificar o repositório: " + error.message,
             });
         }
+        let days = 0;
+        if (existPlan.duration < 30)
+            days = existPlan.duration;
+        else if (default_type_payment === "monthly")
+            days = period_duration * 30;
+        else if (default_type_payment === "yearly")
+            days = period_duration * 360;
+        else if (!period_duration)
+            days = existPlan.duration;
         // console.log(`Criando projeto para o usuário ${existUser.username} com o repositório ${repo_url}`);
         const project = await prisma_1.default.project.create({
             data: {
@@ -136,24 +162,23 @@ const createProject = async (req, res) => {
                 description, // descrição do projeto
                 branch, // branch do repositório
                 repo_url, // URL do repositório
-                default_plan: "default",
+                default_plan: existPlan.name, // plano escolhido
                 port: `${port}`, // porta onde a aplicação irá rodar
                 userId: existUser.id, // ID do usuário que criou o projeto
                 domain: domain, // domínio único gerado
                 environments: environments || [], // variáveis de ambiente
-            }
+                days: days || 0, // duração do período
+            },
         });
         const response = await fetch("https://api.github.com/user", {
             headers: {
                 Authorization: `Bearer ${token}`,
-                Accept: "application/vnd.github+json"
-            }
+                Accept: "application/vnd.github+json",
+            },
         });
         if (!response.ok) {
-            return res
-                .status(response.status)
-                .json({
-                message: "A sua sessão do GitHub expirou, por favor sincronize novamente"
+            return res.status(response.status).json({
+                message: "A sua sessão do GitHub expirou, por favor sincronize novamente",
             });
         }
         // clone_url vindo da API do GitHub: "https://github.com/user/exemplo.git"
@@ -168,7 +193,7 @@ mkdir -p ${targetPath} \
             if (error) {
                 prisma_1.default.project.update({
                     where: { id: project.id },
-                    data: { clone: 'failed' }
+                    data: { clone: "failed" },
                 });
                 console.error(`Erro ao executar comandos: ${error.message}`);
                 return;
@@ -179,7 +204,7 @@ mkdir -p ${targetPath} \
             // enviar um socket a dizer que o deploy foi criado com sucesso
             prisma_1.default.project.update({
                 where: { id: project.id },
-                data: { clone: 'cloned' }
+                data: { clone: "cloned" },
             });
             console.log(`stdout: ${stdout}`);
         });
@@ -188,7 +213,7 @@ mkdir -p ${targetPath} \
     catch (error) {
         res.status(500).json({
             message: "Failed to create project",
-            error: error.message
+            error: error.message,
         });
     }
 };
@@ -199,17 +224,41 @@ const runTheProject = async (req, res) => {
     if (!(0, uuid_1.validate)(projectId) || !(0, uuid_1.validate)(userId)) {
         return res.status(400).json({ message: "ID inválido" });
     }
+    const existProject = await prisma_1.default.project.findFirst({
+        where: { id: projectId },
+    });
+    if (!existProject) {
+        return res.status(404).json({ message: "Projeto não encontrado" });
+    }
+    const userWorkspace = await prisma_1.default.user_workspace.findFirst({
+        where: {
+            userId,
+            ProjectId: existProject.id,
+        },
+    });
+    if (!userWorkspace) {
+        return res
+            .status(403)
+            .json({ message: "Você não tem acesso a este projeto" });
+    }
+    if (!existProject.date_expire || existProject.date_expire < new Date()) {
+        return res.status(403).json({
+            message: "O plano associado a este projeto expirou. Por favor, renove o plano para continuar.",
+        });
+    }
     try {
         const runResponse = await (0, runProject_1.runProject)(projectId, userId);
         if (runResponse) {
-            return res.status(runResponse.statusCode).json({ message: runResponse.message });
+            return res
+                .status(runResponse.statusCode)
+                .json({ message: runResponse.message });
         }
         res.status(200).json({ message: "Projeto em execução" });
     }
     catch (error) {
         res.status(400).json({
             message: "Falha ao executar o projeto",
-            error: error.message
+            error: error.message,
         });
     }
 };
@@ -223,14 +272,16 @@ const stopTheProject = async (req, res) => {
     try {
         const stopResponse = await (0, stopProject_1.stopProject)(projectId, userId);
         if (stopResponse && stopResponse.statusCode !== 200) {
-            return res.status(stopResponse.statusCode).json({ message: stopResponse.message });
+            return res
+                .status(stopResponse.statusCode)
+                .json({ message: stopResponse.message });
         }
         res.status(200).json({ message: "Projeto parado com sucesso" });
     }
     catch (error) {
         res.status(500).json({
             message: "Failed to stop project",
-            error: error.message
+            error: error.message,
         });
     }
 };
@@ -251,8 +302,8 @@ const getProject = async (req, res) => {
         const userWorkspace = await prisma_1.default.user_workspace.findFirst({
             where: {
                 userId,
-                ProjectId: project.id
-            }
+                ProjectId: project.id,
+            },
         });
         let paid = false;
         const now = new Date();
@@ -260,7 +311,9 @@ const getProject = async (req, res) => {
             paid = true;
         }
         if (!userWorkspace) {
-            return res.status(403).json({ message: "Você não tem acesso a este projeto" });
+            return res
+                .status(403)
+                .json({ message: "Você não tem acesso a este projeto" });
         }
         return res.status(200).json({ ...project, paid: paid });
     }
@@ -276,17 +329,19 @@ const getMyProjects = async (req, res) => {
     }
     const userWorkspace = await prisma_1.default.user_workspace.findFirst({
         where: {
-            userId
-        }
+            userId,
+        },
     });
     if (!userWorkspace) {
-        return res.status(403).json({ message: "Você não tem acesso a este workspace" });
+        return res
+            .status(403)
+            .json({ message: "Você não tem acesso a este workspace" });
     }
     try {
         const projects = await prisma_1.default.project.findMany({
             where: { userId },
         });
-        const projectsWithPaymentStatus = projects.map(project => {
+        const projectsWithPaymentStatus = projects.map((project) => {
             let paid = false;
             const now = new Date();
             if (project.date_expire && project.date_expire > now) {
@@ -319,22 +374,24 @@ const updateProject = async (req, res) => {
             where: {
                 userId,
                 ProjectId: project.id,
-            }
+            },
         });
-        if (!userWorkspace || userWorkspace.role !== 'master') {
-            return res.status(403).json({ message: "Você não tem acesso a este projeto" });
+        if (!userWorkspace || userWorkspace.role !== "master") {
+            return res
+                .status(403)
+                .json({ message: "Você não tem acesso a este projeto" });
         }
         /*if (default_plan) {
-            const existPlan = await prisma.plan.findFirst({
-                where: {
-                    name: default_plan
+                const existPlan = await prisma.plan.findFirst({
+                    where: {
+                        name: default_plan
+                    }
+                });
+    
+                if (!existPlan) {
+                    return res.status(400).json({ message: "O plano escolhido não está disponível, por favor escolha outro" });
                 }
-            });
-
-            if (!existPlan) {
-                return res.status(400).json({ message: "O plano escolhido não está disponível, por favor escolha outro" });
-            }
-        }*/
+            }*/
         const updatedProject = await prisma_1.default.project.update({
             where: { id: projectId },
             data: {
@@ -369,11 +426,13 @@ const deleteProject = async (req, res) => {
         const userWorkspace = await prisma_1.default.user_workspace.findFirst({
             where: {
                 userId,
-                ProjectId: project.id
-            }
+                ProjectId: project.id,
+            },
         });
-        if (!userWorkspace || userWorkspace.role !== 'master') {
-            return res.status(403).json({ message: "Você não tem acesso a este projeto" });
+        if (!userWorkspace || userWorkspace.role !== "master") {
+            return res
+                .status(403)
+                .json({ message: "Você não tem acesso a este projeto" });
         }
         await prisma_1.default.payment.deleteMany({
             where: { projectId: projectId },
@@ -389,7 +448,7 @@ const deleteProject = async (req, res) => {
     catch (error) {
         res.status(500).json({
             message: "Falha ao deletar projeto",
-            error: error.message
+            error: error.message,
         });
     }
 };

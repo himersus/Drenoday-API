@@ -56,6 +56,7 @@ model project {
   repo_url             String           @default("")
   description          String?
   date_expire          DateTime?
+  days                 Int?             @default(0)
   port                 String           @default("3000")
   build_cmd            String?
   clone                cloneStatus      @default(cloning)
@@ -121,15 +122,20 @@ model payment {
 }
 
 model plan {
-  id           String    @id @default(uuid())
-  name         String    @unique
+  id           String  @id @default(uuid())
+  name         String  @unique
   description  String?
   price        Float
   duration     Int // duration in days
-  max_projects Int       @default(1)
-  createdAt    DateTime  @default(now())
-  updatedAt    DateTime  @updatedAt
-  payments     payment[]
+  max_projects Int     @default(1)
+
+  duration_description String?  @default("")
+  features             String[] @default([])
+  shortcut             String?  @default("")
+
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  payments  payment[]
 }
 
 model notification {

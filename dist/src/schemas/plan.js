@@ -11,6 +11,9 @@ exports.createPlanSchema = zod_1.default.object({
     price: zod_1.default.number("O preço do plano é obrigatório").positive("O preço do plano deve ser um número positivo"),
     duration: zod_1.default.number("A duração do plano é obrigatória").int("A duração do plano deve ser um número inteiro").positive("A duração do plano deve ser um número positivo"),
     max_projects: zod_1.default.number("O número máximo de projetos é obrigatório").int("O número máximo de projetos deve ser um número inteiro").positive("O número máximo de projetos deve ser um número positivo"),
+    duration_description: zod_1.default.string("A descrição da duração do plano é obrigatória").optional(),
+    features: zod_1.default.array(zod_1.default.string("Cada feature do plano é obrigatória")).optional(),
+    shortcut: zod_1.default.string("O atalho do plano é obrigatório").optional()
 });
 exports.updatePlanSchema = zod_1.default.object({
     name: zod_1.default.string("O nome do plano é obrigatório").min(3, "O nome do plano deve conter pelo menos 3 caracteres").optional(),
@@ -18,4 +21,7 @@ exports.updatePlanSchema = zod_1.default.object({
     price: zod_1.default.number("O preço do plano é obrigatório").positive("O preço do plano deve ser um número positivo").optional(),
     duration: zod_1.default.number("A duração do plano é obrigatória").int("A duração do plano deve ser um número inteiro").positive("A duração do plano deve ser um número positivo").optional(),
     max_projects: zod_1.default.number("O número máximo de projetos é obrigatório").int("O número máximo de projetos deve ser um número inteiro").positive("O número máximo de projetos deve ser um número positivo").optional(),
+    duration_description: zod_1.default.string("A descrição da duração do plano é obrigatória").optional(),
+    features: zod_1.default.array(zod_1.default.string("Cada feature do plano é obrigatória")).optional(),
+    shortcut: zod_1.default.string("O atalho do plano é obrigatório").optional()
 });

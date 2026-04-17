@@ -58,7 +58,7 @@ const verificationPayment = async (userId, projectId, plan_name) => {
     if (existPlan.duration === 30) {
         payment_form = 'monthly';
     }
-    else if (existPlan.duration === 365) {
+    else if (existPlan.duration === 360) {
         payment_form = 'yearly';
     }
     else {

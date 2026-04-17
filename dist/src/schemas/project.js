@@ -11,6 +11,7 @@ exports.createProjectSchema = zod_1.default.object({
     workspaceId: zod_1.default.string("O ID do workspace é obrigatório").uuid("O ID do workspace deve ser um UUID"),
     branch: zod_1.default.string("O nome da branch é obrigatório").min(3, "O nome da branch deve conter pelo menos 3 caracteres"),
     port: zod_1.default.number("A porta é obrigatória").int("A porta deve ser um número inteiro").positive("A porta deve ser um número positivo"),
+    period_duration: zod_1.default.number("A duração do período é obrigatória").int("A duração do período deve ser um número inteiro").positive("A duração do período deve ser um número positivo"),
     repo_url: zod_1.default.string("A URL do repositório é obrigatória").url("A URL do repositório deve ser uma URL válida"),
     environments: zod_1.default.array(zod_1.default.string()).optional()
 });
@@ -19,5 +20,6 @@ exports.updateProjectSchema = zod_1.default.object({
     description: zod_1.default.string("A descrição do projeto é obrigatória").min(10, "A descrição do projeto deve conter pelo menos 10 caracteres").optional(),
     branch: zod_1.default.string("O nome da branch é obrigatório").min(3, "O nome da branch deve conter pelo menos 3 caracteres").optional(),
     port: zod_1.default.number("A porta é obrigatória").int("A porta deve ser um número inteiro").positive("A porta deve ser um número positivo").optional(),
+    period_duration: zod_1.default.number("A duração do período é obrigatória").int("A duração do período deve ser um número inteiro").positive("A duração do período deve ser um número positivo").optional(),
     environments: zod_1.default.array(zod_1.default.string()).optional()
 });

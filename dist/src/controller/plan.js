@@ -12,7 +12,7 @@ const prisma_1 = __importDefault(require("../lib/prisma"));
 const uuid_1 = require("uuid");
 const to_string_1 = require("../helper/to_string");
 async function addPlan(req, res) {
-    const { name, description, price, duration, max_projects } = req.body;
+    const { name, description, price, duration, max_projects, duration_description, features, shortcut } = req.body;
     if (!name || !description || !duration) {
         return res.status(400).json({ message: "Todos os campos são obrigatórios" });
     }
@@ -32,7 +32,10 @@ async function addPlan(req, res) {
                 description,
                 duration,
                 price,
-                max_projects: max_projects && max_projects > 0 ? max_projects : 1
+                max_projects: max_projects && max_projects > 0 ? max_projects : 1,
+                duration_description: duration_description || '',
+                features: features || [],
+                shortcut: shortcut || ''
             }
         });
         return res.status(201).json(plan);
@@ -54,7 +57,7 @@ async function getPlans(req, res) {
 }
 async function updatePlan(req, res) {
     const planId = (0, to_string_1.q)(req.params.planId);
-    const { name, description, price, duration, max_projects } = req.body;
+    const { name, description, price, duration, max_projects, duration_description, features, shortcut } = req.body;
     if (!(0, uuid_1.validate)(planId)) {
         return res.status(400).json({ message: "ID do plano inválido" });
     }
@@ -79,7 +82,10 @@ async function updatePlan(req, res) {
                 description: description || plan.description,
                 price: price !== undefined && price !== null && !isNaN(price) ? price : plan.price,
                 duration: duration || plan.duration,
-                max_projects: max_projects && max_projects > 0 ? max_projects : plan.max_projects
+                max_projects: max_projects && max_projects > 0 ? max_projects : plan.max_projects,
+                duration_description: duration_description || plan.duration_description,
+                features: features || plan.features,
+                shortcut: shortcut || plan.shortcut
             },
         });
         return res.status(200).json({ message: "Plano atualizado com sucesso" });
