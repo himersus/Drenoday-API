@@ -113,6 +113,15 @@ export const createProject = async (req: Request | any, res: Response) => {
 
     await createMember(existUser.id, project.id);
 
+    const deployDir = process.env.DEPLOY_DIR;
+    const targetPath = `${deployDir}/${existUser.username}/${project.domain}`;
+    cloneRepository(
+      buildCloneUrl(project.repo_url, token),
+      targetPath,
+      project.branch,
+      project.id,
+    );
+
     return res.status(201).json({ ...project, paid: false });
   } catch (error) {
     return res.status(500).json({
@@ -166,38 +175,6 @@ export const runTheProject = async (req: Request | any, res: Response) => {
   }
 
   try {
-    if (existProject.repo_saved == false) {
-      if (!existUser.github_token) {
-        return res
-          .status(400)
-          .json({ message: "Token do GitHub não encontrado" });
-      }
-
-      const token = decryptGithubToken(existUser.github_token);
-      if (!token)
-        return res
-          .status(500)
-          .json({ message: "Erro ao descriptografar token do GitHub" });
-
-      try {
-        await validateGithubRepo(existProject.repo_url, token);
-      } catch (error) {
-        return res.status(400).json({
-          message:
-            "Erro ao verificar o repositório: " + (error as Error).message,
-        });
-      }
-
-      const deployDir = process.env.DEPLOY_DIR;
-      const targetPath = `${deployDir}/${existUser.username}/${existProject.domain}`;
-      cloneRepository(
-        buildCloneUrl(existProject.repo_url, token),
-        targetPath,
-        existProject.branch,
-        existProject.id,
-      );
-    }
-
     const runResponse = await runProject(projectId, userId);
     await prisma.project.update({
       where: { id: projectId },
