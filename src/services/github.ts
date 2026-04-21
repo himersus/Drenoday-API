@@ -39,15 +39,30 @@ export function cloneRepository(
   branch: string,
   projectId: string
 ): void {
-  const cmd = `mkdir -p ${targetPath} && git clone -b ${branch} "${cloneUrl}" "${targetPath}"`;
+ const cmd = [
+  `mkdir -p "${targetPath}"`,
+  `GIT_TERMINAL_PROMPT=0 git clone --depth=1 -b "${branch}" "${cloneUrl}" "${targetPath}"`,
+].join(" && ");
 
-  exec(cmd, (error, _stdout, stderr) => {
-    const status = error ? "failed" : "cloned";
-    console.log(`Erro ${error}`);
-    console.log(`Stderr ${stderr}`);
-    console.log(`output: ${_stdout}`);
-    prisma.project.update({ where: { id: projectId }, data: { clone: status } });
-    if (error) console.error(`Erro ao clonar: ${error.message}`);
-    if (stderr) console.error(`info: ${stderr}`);
+exec(cmd, { timeout: 60_000 }, async (error, _stdout, stderr) => {
+  if (error) {
+    await prisma.project.update({
+      where: { id: projectId },
+      data: { clone: "failed" },
+    });
+
+    console.error(`Erro ao clonar [${projectId}]: ${error.message}`);
+    return;
+  }
+
+  console.log(stderr)
+
+  await prisma.project.update({
+    where: { id: projectId },
+    data: { clone: "cloned" },
   });
+
+
+  console.log(`Clone concluído [${projectId}]`);
+});
 }
