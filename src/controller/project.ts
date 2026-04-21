@@ -206,7 +206,7 @@ export const runTheProject = async (req: Request | any, res: Response) => {
     if (runResponse) {
       return res
         .status(runResponse.statusCode)
-        .json({ message: "Projeto em execução" });
+        .json({ message: runResponse.message });
     }
 
     res.status(400).json({ message: "Falha ao executar o projeto" });
