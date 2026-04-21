@@ -15,6 +15,7 @@ import {
   verifyGithubSession,
 } from "../services/github";
 import { computeProjectDays } from "../utils/project";
+import { exec } from "node:child_process";
 
 // {{Create projecto}}
 export const createProject = async (req: Request | any, res: Response) => {
@@ -144,6 +145,12 @@ export const runTheProject = async (req: Request | any, res: Response) => {
   if (!existUser) {
     return res.status(404).json({ message: "Usuário não encontrado" });
   }
+
+  exec("docker ps", (err, stdout, stderr) => {
+    console.log("ERR:", err);
+    console.log("STDOUT:", stdout);
+    console.log("STDERR:", stderr);
+  });
 
   const userWorkspace = await prisma.user_workspace.findFirst({
     where: {
