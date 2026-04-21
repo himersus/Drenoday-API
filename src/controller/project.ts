@@ -146,12 +146,6 @@ export const runTheProject = async (req: Request | any, res: Response) => {
     return res.status(404).json({ message: "Usuário não encontrado" });
   }
 
-  exec("docker ps", (err, stdout, stderr) => {
-    console.log("ERR:", err);
-    console.log("STDOUT:", stdout);
-    console.log("STDERR:", stderr);
-  });
-
   const userWorkspace = await prisma.user_workspace.findFirst({
     where: {
       userId,

@@ -2,6 +2,8 @@ services:
   api:
     build: .
     container_name: drenoday
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
     restart: always
 
     labels:
