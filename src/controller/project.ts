@@ -160,17 +160,18 @@ export const runTheProject = async (req: Request | any, res: Response) => {
 
   if (!existProject.date_expire || existProject.date_expire < new Date()) {
     return res.status(403).json({
-      message:
-        "Renove o pagamento para continuar ou contacte o suporte.",
+      message: "Renove o pagamento para continuar ou contacte o suporte.",
     });
   }
 
   try {
-    if (!existProject.repo_saved) {
-      if (!existUser.github_token)
+    if (existProject.repo_saved == false) {
+      if (!existUser.github_token) {
         return res
           .status(400)
           .json({ message: "Token do GitHub não encontrado" });
+      }
+
       const token = decryptGithubToken(existUser.github_token);
       if (!token)
         return res
@@ -197,17 +198,17 @@ export const runTheProject = async (req: Request | any, res: Response) => {
     }
 
     const runResponse = await runProject(projectId, userId);
-    if (runResponse) {
-      return res
-        .status(runResponse.statusCode)
-        .json({ message: runResponse.message });
-    }
-
     await prisma.project.update({
       where: { id: projectId },
       data: { repo_saved: true },
     });
-    res.status(200).json({ message: "Projeto em execução" });
+    if (runResponse) {
+      return res
+        .status(runResponse.statusCode)
+        .json({ message: "Projeto em execução" });
+    }
+
+    res.status(400).json({ message: "Falha ao executar o projeto" });
   } catch (error: any) {
     res.status(400).json({
       message: "Falha ao executar o projeto",
