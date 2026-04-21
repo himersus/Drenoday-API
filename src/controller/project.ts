@@ -90,7 +90,7 @@ export const createProject = async (req: Request | any, res: Response) => {
 
   const portNumber = Number(port);
 
-  if (!port || typeof port !== "string" || !Number.isInteger(portNumber)) {
+  if (!port || !portNumber) {
     return res.status(400).json({
       message: "Porta é obrigatório e deve ser um número valido",
     });
@@ -141,14 +141,11 @@ export const createProject = async (req: Request | any, res: Response) => {
 
     const existPlan = await prisma.plan.findFirst({
       where: {
-        name: {
-          mode: "insensitive",
-          equals: default_plan,
-        },
+        name: default_plan,
       },
     });
 
-    if (!existPlan || !default_plan) {
+    if (!existPlan) {
       return res.status(400).json({
         message:
           "O plano escolhido não está disponível, por favor escolha outro",
@@ -197,7 +194,7 @@ export const createProject = async (req: Request | any, res: Response) => {
     if (existPlan.duration < 30) days = existPlan.duration;
     else if (default_type_payment === "monthly") days = period_duration * 30;
     else if (default_type_payment === "yearly") days = period_duration * 360;
-    else if (!period_duration) days = existPlan.duration;
+    else days = existPlan.duration;
 
     // console.log(`Criando projeto para o usuário ${existUser.username} com o repositório ${repo_url}`);
 
