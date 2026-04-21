@@ -3,7 +3,7 @@ import { Request, Response } from "express";
 import { generateUniqueUsername } from "../modify/username";
 import { validate } from "uuid";
 import bcrypt from "bcrypt";
-import { q } from "../helper/to_string";
+import { q } from "../utils/to_string";
 
 import prisma  from "../lib/prisma";
 

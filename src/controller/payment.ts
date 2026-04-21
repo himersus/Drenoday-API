@@ -5,7 +5,7 @@ import { sendSocketContent } from "../sockets";
 import axios from "axios";
 import { referenceSendPaymentService, verificationPayment } from "../services/Payment";
 import { createNotification } from "../services/notification";
-import { q } from "../helper/to_string";
+import { q } from "../utils/to_string";
 import prisma  from "../lib/prisma";
 
 const generateMerchantId = (): string => {

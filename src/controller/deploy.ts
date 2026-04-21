@@ -1,12 +1,12 @@
 import { Request, Response } from "express";
 import { validate } from "uuid";
-import { q } from "../helper/to_string";
+import { q } from "../utils/to_string";
 
 
 import prisma  from "../lib/prisma";
 
 export const listDeploys = async (req: Request | any, res: Response) => {
-    const projectId = q(req.params.projectId);
+    const projectId = q(req.params.projectId) as string;
     const userId = req.userId;
 
     if (!userId || !validate(userId)) {
@@ -87,7 +87,7 @@ export const getDeploy = async (req: Request | any, res: Response) => {
     const userWorkspace = await prisma.user_workspace.findFirst({
         where: {
             userId,
-            ProjectId: exitProject.id,
+            projectId: exitProject.id,
         }
     });
 

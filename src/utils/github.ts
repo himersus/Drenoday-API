@@ -67,3 +67,61 @@ export async function getLastCommitFromBranch(
         url: commit.html_url
     };
 }
+
+export async function repositoryUsesDocker(
+  owner: string,
+  repo: string,
+  githubToken: string,
+): Promise<boolean> {
+  const headers = {
+    Authorization: `Bearer ${githubToken}`,
+    Accept: "application/vnd.github+json",
+    "X-GitHub-Api-Version": "2022-11-28",
+  };
+
+  try {
+    // Verifica se existe Dockerfile na raiz
+    const dockerfileResponse = await fetch(
+      `https://api.github.com/repos/${owner}/${repo}/contents/Dockerfile`,
+      { headers },
+    );
+
+    if (dockerfileResponse.ok) {
+      return true;
+    }
+
+    // Verifica se existe docker-compose.yml ou docker-compose.yaml
+    /*const composeYmlResponse = await fetch(
+            `https://api.github.com/repos/${owner}/${repo}/contents/docker-compose.yml`,
+            { headers }
+        );
+
+        if (composeYmlResponse.ok) {
+            return true;
+        }*/
+
+    /*const composeYamlResponse = await fetch(
+            `https://api.github.com/repos/${owner}/${repo}/contents/docker-compose.yaml`,
+            { headers }
+        );
+
+        if (composeYamlResponse.ok) {
+            return true;
+        }*/
+
+    // Verifica se existe pasta .docker
+    const dockerDirResponse = await fetch(
+      `https://api.github.com/repos/${owner}/${repo}/contents/.docker`,
+      { headers },
+    );
+
+    if (dockerDirResponse.ok) {
+      return true;
+    }
+
+    return false;
+  } catch (error) {
+    console.error("Erro ao verificar Docker no repositório:", error);
+    throw error;
+  }
+}

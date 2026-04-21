@@ -4,13 +4,11 @@ import bcrypt from "bcrypt";
 import jwt from "jsonwebtoken";
 import prisma from "../lib/prisma";
 import { sendEmail } from "../middleware/sendemail";
-import CryptoJS from "crypto-js";
 import { generateUniqueUsername } from "../modify/username";
-import { encryptToken } from "../helper/crypt";
+import { encryptToken } from "../utils/crypt";
 
 export const login = async (req: Request, res: Response) => {
   const { username, password } = req.body;
-
   try {
     const user = await prisma.user.findFirst({
       where: {

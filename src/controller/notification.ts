@@ -1,7 +1,7 @@
 import prisma  from "../lib/prisma";
 import { Request, Response } from "express";
 import { validate } from "uuid";
-import { q } from "../helper/to_string";
+import { q } from "../utils/to_string";
 
 export const myNotifications = async (req: Request | any, res: Response) => {
 

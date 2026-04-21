@@ -3,17 +3,21 @@ import { Request, Response } from "express";
 import CryptoJS from "crypto-js";
 import { validate } from "uuid";
 import prisma from "../lib/prisma";
-import { q } from "../helper/to_string";
-import { decryptToken } from "../helper/crypt";
+import { q } from "../utils/to_string";
+import { decryptToken } from "../utils/crypt";
 
 function getLastPage(linkHeader?: string): number | null {
   if (!linkHeader) return null;
 
-  const match = linkHeader.match(/page=(\d+)&per_page=\d+>; rel="last"/);
+  const links = linkHeader.split(",");
 
-  if (!match) return null;
+  const lastLink = links.find((link) => link.includes('rel="last"'));
 
-  return parseInt(match[1], 10);
+  if (!lastLink) return null;
+
+  const match = lastLink.match(/page=(\d+)/);
+
+  return match ? parseInt(match[1], 10) : null;
 }
 
 export const getUserRepos = async (req: Request | any, res: Response) => {
@@ -21,7 +25,6 @@ export const getUserRepos = async (req: Request | any, res: Response) => {
   const page = Number(req.query.page) || 1;
   const limit = Math.min(Number(req.query.per_page) || 10, 100);
   const name = (req.query.name as string)?.toLowerCase() || "";
-
 
   try {
     if (!userId || !validate(userId)) {
@@ -83,7 +86,9 @@ export const getUserRepos = async (req: Request | any, res: Response) => {
       );
     }
 
-    const totalPages = getLastPage(response.headers.link);
+    const totalPages = response.headers.link
+      ? getLastPage(response.headers.link)
+      : null;
 
     return res.json({
       data: response.data,
@@ -93,7 +98,7 @@ export const getUserRepos = async (req: Request | any, res: Response) => {
         total_pages: totalPages,
       },
     });
-  } catch (error) {
+  } catch {
     return res.status(400).json({
       message:
         "Erro na sincronização com GitHub, por favor, sincronize novamente",
@@ -203,7 +208,10 @@ export const getUserRepoByName = async (req: Request | any, res: Response) => {
   }
 };
 
-export const getUserBranchesByName = async (req: Request | any, res: Response) => {
+export const getUserBranchesByName = async (
+  req: Request | any,
+  res: Response,
+) => {
   const userId = req.userId;
 
   const repo = q(req.params.repo);
@@ -252,7 +260,7 @@ export const getUserBranchesByName = async (req: Request | any, res: Response) =
           page,
           per_page: limit,
         },
-      }
+      },
     );
 
     if (response.status !== 200) {
@@ -266,7 +274,7 @@ export const getUserBranchesByName = async (req: Request | any, res: Response) =
     // 🔹 filtro por nome (search)
     if (name) {
       branches = branches.filter((branch: any) =>
-        branch.name.toLowerCase().includes(name)
+        branch.name.toLowerCase().includes(name),
       );
     }
 

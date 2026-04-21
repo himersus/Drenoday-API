@@ -31,13 +31,13 @@ model User {
 model User_workspace {
   id        String             @id @default(uuid())
   userId    String
-  ProjectId String?
+  projectId String?
   role      roleWorkspace?     @default(member)
   status    statusSolicitation @default(pending)
   createdAt DateTime           @default(now())
   updatedAt DateTime           @updatedAt
   User      User               @relation(fields: [userId], references: [id])
-  Project   project?           @relation(fields: [ProjectId], references: [id])
+  Project   project?           @relation(fields: [projectId], references: [id])
 }
 
 model Workspace {
@@ -55,6 +55,7 @@ model project {
   branch               String           @default("main")
   repo_url             String           @default("")
   description          String?
+  repo_saved           Boolean          @default(false)
   date_expire          DateTime?
   days                 Int?             @default(0)
   port                 String           @default("3000")
@@ -72,8 +73,7 @@ model project {
   payments             payment[]
   deploy               deploy[]
   user_workspace       User_workspace[]
-
-  User User @relation(fields: [userId], references: [id])
+  User                 User             @relation(fields: [userId], references: [id])
 }
 
 model deploy {

@@ -1,10 +1,10 @@
 import { exec } from "child_process";
 import prisma  from "../lib/prisma";
 import { sendSocketContent } from "../sockets";
-import { collectLogs, startLogStream } from "../helper/logs";
+import { collectLogs, startLogStream } from "../utils/logs";
 import fs from "fs";
 import path from "path";
-import { getLastCommitFromBranch } from "../helper/github";
+import { getLastCommitFromBranch } from "../utils/github";
 
 type RunProjectResponse = {
     statusCode: number;
@@ -131,7 +131,7 @@ networks:
         }
         // subir container
         exec(
-            "git pull && docker-compose down && docker-compose up -d --build",
+            "git pull && docker-compose up -d --build",
             { cwd: targetPath },
             async (error, stdout, stderr) => {
                 if (error) {

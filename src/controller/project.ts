@@ -1,72 +1,20 @@
 import { Request, Response } from "express";
 import { validate } from "uuid";
 import { generateUniqueDomain } from "../modify/domain";
-import { exec } from "child_process";
-import CryptoJS from "crypto-js";
-import { parseGithubRepo } from "../helper/github";
 import { stopProject } from "../services/stopProject";
 import { runProject } from "../services/runProject";
-import { q } from "../helper/to_string";
+import { q } from "../utils/to_string";
 import prisma from "../lib/prisma";
-import { decryptToken } from "../helper/crypt";
-
-async function repositoryUsesDocker(
-  owner: string,
-  repo: string,
-  githubToken: string,
-): Promise<boolean> {
-  const headers = {
-    Authorization: `Bearer ${githubToken}`,
-    Accept: "application/vnd.github+json",
-    "X-GitHub-Api-Version": "2022-11-28",
-  };
-
-  try {
-    // Verifica se existe Dockerfile na raiz
-    const dockerfileResponse = await fetch(
-      `https://api.github.com/repos/${owner}/${repo}/contents/Dockerfile`,
-      { headers },
-    );
-
-    if (dockerfileResponse.ok) {
-      return true;
-    }
-
-    // Verifica se existe docker-compose.yml ou docker-compose.yaml
-    /*const composeYmlResponse = await fetch(
-            `https://api.github.com/repos/${owner}/${repo}/contents/docker-compose.yml`,
-            { headers }
-        );
-
-        if (composeYmlResponse.ok) {
-            return true;
-        }*/
-
-    /*const composeYamlResponse = await fetch(
-            `https://api.github.com/repos/${owner}/${repo}/contents/docker-compose.yaml`,
-            { headers }
-        );
-
-        if (composeYamlResponse.ok) {
-            return true;
-        }*/
-
-    // Verifica se existe pasta .docker
-    const dockerDirResponse = await fetch(
-      `https://api.github.com/repos/${owner}/${repo}/contents/.docker`,
-      { headers },
-    );
-
-    if (dockerDirResponse.ok) {
-      return true;
-    }
-
-    return false;
-  } catch (error) {
-    console.error("Erro ao verificar Docker no repositório:", error);
-    throw error;
-  }
-}
+import { assertGithubLinked, validateUserInput } from "../services/project";
+import { createMember, fetchUserById } from "../services/user";
+import {
+  buildCloneUrl,
+  cloneRepository,
+  decryptGithubToken,
+  validateGithubRepo,
+  verifyGithubSession,
+} from "../services/github";
+import { computeProjectDays } from "../utils/project";
 
 // {{Create projecto}}
 export const createProject = async (req: Request | any, res: Response) => {
@@ -81,189 +29,92 @@ export const createProject = async (req: Request | any, res: Response) => {
     default_type_payment,
     period_duration,
   } = req.body;
-
   const userId = req.userId;
 
   if (!validate(userId) || !userId) {
     return res.status(401).json({ message: "Usuário não autenticado" });
   }
 
-  const portNumber = Number(port);
-
-  if (!port || !portNumber) {
-    return res.status(400).json({
-      message: "Porta é obrigatório e deve ser um número valido",
-    });
+  const inputResult = validateUserInput(port, period_duration);
+  if (!inputResult.valid) {
+    return res
+      .status(inputResult.status)
+      .json({ message: inputResult.message });
   }
 
-  if (period_duration && (!Number.isInteger(period_duration) || period_duration <= 0)) {
-    return res.status(400).json({
-      message: "Duração do período deve ser um número inteiro positivo",
-    });
-  }
-
-  if (portNumber < 1024 || portNumber > 65535) {
-    return res.status(400).json({
-      message: "Porta deve estar entre 1024 e 65535",
-    });
+  if (!name) {
+    return res.status(400).json({ message: "O nome do projeto é obrigatório" });
   }
 
   try {
-    const existUser = await prisma.user.findFirst({
-      where: {
-        OR: [
-          { id: validate(userId) ? userId : undefined },
-          { username: userId },
-          { email: userId },
-        ],
-      },
-    });
-
-    if (!existUser) {
+    const existUser = await fetchUserById(userId);
+    if (!existUser)
       return res.status(404).json({ message: "Usuário não encontrado" });
-    }
-    if (
-      !existUser.github_id ||
-      !existUser.github_token ||
-      !existUser.github_username
-    ) {
-      return res.status(400).json({
-        message:
-          "Informações do GitHub são obrigatórias, tente sincronizar com o github",
-      });
-    }
 
-    if (!name) {
-      return res
-        .status(400)
-        .json({ message: "O nome do projeto é obrigatório" });
-    }
+    const githubCheck = assertGithubLinked(existUser);
+    if (!githubCheck.linked)
+      return res.status(400).json({ message: githubCheck.message });
 
     const existPlan = await prisma.plan.findFirst({
-      where: {
-        name: default_plan,
-      },
+      where: { name: default_plan },
     });
-
-    if (!existPlan) {
+    if (!existPlan)
       return res.status(400).json({
         message:
           "O plano escolhido não está disponível, por favor escolha outro",
       });
-    }
 
     const domain = await generateUniqueDomain(name);
-
-    if (!domain) {
+    if (!domain)
       return res
         .status(500)
         .json({ message: "Não foi possível gerar um domínio único" });
-    }
-
-    const encrypted = existUser.github_token;
-
-    const token = decryptToken(encrypted);
-
-    if (!token) {
-      return res.status(500).json({
-        message: "Erro ao descriptografar token do GitHub",
-      });
-    }
+    if (!existUser.github_token)
+      return res
+        .status(400)
+        .json({ message: "Token do GitHub não encontrado" });
+    const token = decryptGithubToken(existUser.github_token);
+    if (!token)
+      return res
+        .status(500)
+        .json({ message: "Erro ao descriptografar token do GitHub" });
 
     try {
-      const parsed = parseGithubRepo(repo_url);
-      if (!parsed) {
-        return res.status(400).json({
-          message: "URL do repositório GitHub inválida",
-        });
-      }
-      if (
-        (await repositoryUsesDocker(parsed.owner, parsed.repo, token)) === false
-      ) {
-        return res.status(400).json({
-          message: "O repositório deve conter um Dockerfile na raiz",
-        });
-      }
+      await validateGithubRepo(repo_url, token);
     } catch (error) {
       return res.status(400).json({
         message: "Erro ao verificar o repositório: " + (error as Error).message,
       });
     }
 
-    let days = 0;
-    if (existPlan.duration < 30) days = existPlan.duration;
-    else if (default_type_payment === "monthly") days = period_duration * 30;
-    else if (default_type_payment === "yearly") days = period_duration * 360;
-    else days = existPlan.duration;
+    await verifyGithubSession(token);
 
-    // console.log(`Criando projeto para o usuário ${existUser.username} com o repositório ${repo_url}`);
+    const days = computeProjectDays(
+      existPlan.duration,
+      default_type_payment,
+      period_duration,
+    );
 
     const project = await prisma.project.create({
       data: {
-        name, // nome do projeto
-        description, // descrição do projeto
-        branch, // branch do repositório
-        repo_url, // URL do repositório
-        default_plan: existPlan.name, // plano escolhido
-        port: `${port}`, // porta onde a aplicação irá rodar
-        userId: existUser.id, // ID do usuário que criou o projeto
-        domain: domain as string, // domínio único gerado
-        environments: environments || [], // variáveis de ambiente
-        days: days || 0, // duração do período
+        name,
+        description,
+        branch,
+        repo_url,
+        default_plan: existPlan.name,
+        port: `${port}`,
+        userId: existUser.id,
+        domain: domain as string,
+        environments: environments || [],
+        days,
       },
     });
 
-    const response = await fetch("https://api.github.com/user", {
-      headers: {
-        Authorization: `Bearer ${token}`,
-        Accept: "application/vnd.github+json",
-      },
-    });
+    await createMember(existUser.id, project.id);
 
-    if (!response.ok) {
-      return res.status(response.status).json({
-        message:
-          "A sua sessão do GitHub expirou, por favor sincronize novamente",
-      });
-    }
-
-    // clone_url vindo da API do GitHub: "https://github.com/user/exemplo.git"
-    const cloneUrl = repo_url.replace(
-      "https://",
-      `https://x-access-token:${token}@`,
-    );
-    const deployDir = process.env.DEPLOY_DIR;
-    const targetPath = `${deployDir}/${existUser.username}/${project.domain}`;
-
-    const cmd = `
-mkdir -p ${targetPath} \
-&& git clone -b ${project.branch} "${cloneUrl}" "${targetPath}"
-`;
-    exec(cmd, (error: any, stdout: string, stderr: string) => {
-      if (error) {
-        prisma.project.update({
-          where: { id: project.id },
-          data: { clone: "failed" },
-        });
-        console.error(`Erro ao executar comandos: ${error.message}`);
-        return;
-      }
-
-      if (stderr) {
-        console.error(`info : ${stderr}`);
-      }
-
-      // enviar um socket a dizer que o deploy foi criado com sucesso
-      prisma.project.update({
-        where: { id: project.id },
-        data: { clone: "cloned" },
-      });
-
-      console.log(`stdout: ${stdout}`);
-    });
-    res.status(201).json({ ...project, paid: false });
+    return res.status(201).json({ ...project, paid: false });
   } catch (error) {
-    res.status(500).json({
+    return res.status(500).json({
       message: "Failed to create project",
       error: (error as Error).message,
     });
@@ -286,10 +137,18 @@ export const runTheProject = async (req: Request | any, res: Response) => {
     return res.status(404).json({ message: "Projeto não encontrado" });
   }
 
+  const existUser = await prisma.user.findUnique({
+    where: { id: userId },
+  });
+
+  if (!existUser) {
+    return res.status(404).json({ message: "Usuário não encontrado" });
+  }
+
   const userWorkspace = await prisma.user_workspace.findFirst({
     where: {
       userId,
-      ProjectId: existProject.id,
+      projectId: existProject.id,
     },
   });
 
@@ -302,17 +161,52 @@ export const runTheProject = async (req: Request | any, res: Response) => {
   if (!existProject.date_expire || existProject.date_expire < new Date()) {
     return res.status(403).json({
       message:
-        "O plano associado a este projeto expirou. Por favor, renove o plano para continuar.",
+        "Renove o pagamento para continuar ou contacte o suporte.",
     });
   }
 
   try {
+    if (!existProject.repo_saved) {
+      if (!existUser.github_token)
+        return res
+          .status(400)
+          .json({ message: "Token do GitHub não encontrado" });
+      const token = decryptGithubToken(existUser.github_token);
+      if (!token)
+        return res
+          .status(500)
+          .json({ message: "Erro ao descriptografar token do GitHub" });
+
+      try {
+        await validateGithubRepo(existProject.repo_url, token);
+      } catch (error) {
+        return res.status(400).json({
+          message:
+            "Erro ao verificar o repositório: " + (error as Error).message,
+        });
+      }
+
+      const deployDir = process.env.DEPLOY_DIR;
+      const targetPath = `${deployDir}/${existUser.username}/${existProject.domain}`;
+      cloneRepository(
+        buildCloneUrl(existProject.repo_url, token),
+        targetPath,
+        existProject.branch,
+        existProject.id,
+      );
+    }
+
     const runResponse = await runProject(projectId, userId);
     if (runResponse) {
       return res
         .status(runResponse.statusCode)
         .json({ message: runResponse.message });
     }
+
+    await prisma.project.update({
+      where: { id: projectId },
+      data: { repo_saved: true },
+    });
     res.status(200).json({ message: "Projeto em execução" });
   } catch (error: any) {
     res.status(400).json({
@@ -367,7 +261,7 @@ export const getProject = async (req: Request | any, res: Response) => {
     const userWorkspace = await prisma.user_workspace.findFirst({
       where: {
         userId,
-        ProjectId: project.id,
+        projectId: project.id,
       },
     });
 
@@ -389,25 +283,24 @@ export const getProject = async (req: Request | any, res: Response) => {
 
 export const getMyProjects = async (req: Request | any, res: Response) => {
   const userId = req.userId; // Supondo que o ID do usuário logado esteja disponível em req.userId
+  const page = parseInt(req.query.page as string) || 1;
+  const name = req.query.name as string | undefined;
+  const per_page = parseInt(req.query.per_page as string) || 10;
   if (!validate(userId)) {
     return res.status(401).json({ message: "Usuário não autenticado" });
   }
 
-  const userWorkspace = await prisma.user_workspace.findFirst({
-    where: {
-      userId,
-    },
-  });
-
-  if (!userWorkspace) {
-    return res
-      .status(403)
-      .json({ message: "Você não tem acesso a este workspace" });
-  }
-
   try {
     const projects = await prisma.project.findMany({
-      where: { userId },
+      where: {
+        userId,
+        name: name ? { contains: name, mode: "insensitive" } : undefined,
+      },
+      skip: (page - 1) * per_page,
+      take: per_page,
+      orderBy: {
+        createdAt: "desc",
+      },
     });
 
     const projectsWithPaymentStatus = projects.map((project) => {
@@ -419,7 +312,23 @@ export const getMyProjects = async (req: Request | any, res: Response) => {
       return { ...project, paid };
     });
 
-    res.status(200).json(projectsWithPaymentStatus);
+    const totalProjects = await prisma.project.count({
+      where: {
+        userId,
+        name: name ? { contains: name, mode: "insensitive" } : undefined,
+      },
+    });
+
+    const total_page = Math.ceil(totalProjects / per_page);
+
+    res.status(200).json({
+      data: projectsWithPaymentStatus,
+      meta: {
+        page,
+        per_page,
+        total_pages: total_page,
+      },
+    });
   } catch (error) {
     res.status(500).json({ message: "Falha ao recuperar projetos" });
   }
@@ -446,7 +355,7 @@ export const updateProject = async (req: Request | any, res: Response) => {
     const userWorkspace = await prisma.user_workspace.findFirst({
       where: {
         userId,
-        ProjectId: project.id,
+        projectId: project.id,
       },
     });
 
@@ -506,7 +415,7 @@ export const deleteProject = async (req: Request | any, res: Response) => {
     const userWorkspace = await prisma.user_workspace.findFirst({
       where: {
         userId,
-        ProjectId: project.id,
+        projectId: project.id,
       },
     });
 

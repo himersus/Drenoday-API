@@ -16,7 +16,6 @@ import * as schemasWorkspace from "../schemas/workspace";
 import * as schemasProject from "../schemas/project";
 import * as schemasPlan from "../schemas/plan";
 
-
 const router = express.Router();
 
 // {{AUTH ROUTES}}
@@ -74,6 +73,7 @@ router.put('/user/update', validate(schemasUser.updateUserSchema), updateUser);
 // {{ Member ROUTES}}
 router.post('/workspace/member/add', validate(schemasWorkspace.addMemberSchema), verifyAuthentication, addMember);
 router.delete('/workspace/member/remove', validate(schemasWorkspace.removeMemberSchema), verifyAuthentication, removeMember);
+
 
 // {{ Project ROUTES}}
 router.post('/project/create', validate(schemasProject.createProjectSchema), verifyAuthentication, createProject);
