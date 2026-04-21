@@ -43,6 +43,9 @@ export function cloneRepository(
 
   exec(cmd, (error, _stdout, stderr) => {
     const status = error ? "failed" : "cloned";
+    console.log(`Erro ${error}`);
+    console.log(`Stderr ${stderr}`);
+    console.log(`output: ${_stdout}`);
     prisma.project.update({ where: { id: projectId }, data: { clone: status } });
     if (error) console.error(`Erro ao clonar: ${error.message}`);
     if (stderr) console.error(`info: ${stderr}`);
