@@ -4,6 +4,7 @@ services:
     container_name: drenoday
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock
+      - /home/drenoday/home/projects:/home/drenoday/home/projects
     restart: always
 
     labels:
