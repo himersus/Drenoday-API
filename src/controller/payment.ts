@@ -279,6 +279,7 @@ export const confirmPayment = async (req: Request | any, res: Response) => {
       id: existPayment.projectId,
     },
     data: {
+      date_last_payment: currentDate,
       date_expire: expirationDate,
     },
   });

@@ -259,6 +259,10 @@ export const getProject = async (req: Request | any, res: Response) => {
           where: { userId },
           take: 1,
         },
+        deploy: {
+          orderBy: { createdAt: "desc" },
+          take: 1,
+        },
       },
     });
 
@@ -277,8 +281,6 @@ export const getProject = async (req: Request | any, res: Response) => {
     const now = new Date();
     const paid = !!(project.date_expire && project.date_expire > now);
 
-    const { user_workspace, ...projectData } = project;
-
     const lastCommit = await getLastCommitFromBranch(
       project.repo_url,
       project.branch,
@@ -288,6 +290,7 @@ export const getProject = async (req: Request | any, res: Response) => {
     const deploy = {
       commit_msg: lastCommit.message || "unknown",
       commit_branch: project.branch,
+      status: project.deploy[0]?.status || "unknown",
     };
 
     return res.status(200).json({
@@ -331,6 +334,12 @@ export const getMyProjects = async (req: Request | any, res: Response) => {
     const [projects, totalProjects] = await Promise.all([
       prisma.project.findMany({
         where,
+        include: {
+          deploy: {
+            orderBy: { createdAt: "desc" },
+            take: 1,
+          },
+        },
         skip: (page - 1) * per_page,
         take: per_page,
         orderBy: { createdAt: "desc" },
@@ -351,6 +360,7 @@ export const getMyProjects = async (req: Request | any, res: Response) => {
         const deploy = {
           commit_msg: lastCommit.message || "unknown",
           commit_branch: project.branch,
+          status: project.deploy[0]?.status || "unknown",
         };
         return {
           ...project,
