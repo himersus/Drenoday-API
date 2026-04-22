@@ -15,6 +15,7 @@ import {
   verifyGithubSession,
 } from "../services/github";
 import { computeProjectAmount, computeProjectDays } from "../utils/project";
+import { getLastCommitFromBranch } from "../utils/github";
 
 // {{Create projecto}}
 export const createProject = async (req: Request | any, res: Response) => {
@@ -241,6 +242,14 @@ export const getProject = async (req: Request | any, res: Response) => {
     return res.status(400).json({ message: "ID inválido" });
   }
 
+  const existUser = await prisma.user.findUnique({
+    where: { id: userId },
+  });
+
+  if (!existUser) {
+    return res.status(404).json({ message: "Usuário não encontrado" });
+  }
+
   try {
     // ✅ Busca projeto já com todos os relacionamentos necessários
     const project = await prisma.project.findUnique({
@@ -248,15 +257,6 @@ export const getProject = async (req: Request | any, res: Response) => {
       include: {
         user_workspace: {
           where: { userId },
-          take: 1,
-        },
-        deploy: {
-          orderBy: { createdAt: "desc" },
-          take: 1,
-        },
-        payments: {
-          where: { status: "completed" },
-          orderBy: { createdAt: "desc" },
           take: 1,
         },
       },
@@ -268,20 +268,32 @@ export const getProject = async (req: Request | any, res: Response) => {
 
     // ✅ Autorização verificada imediatamente, antes de qualquer outro processamento
     if (project.user_workspace.length === 0) {
-      return res.status(403).json({ message: "Você não tem acesso a este projeto" });
+      return res
+        .status(403)
+        .json({ message: "Você não tem acesso a este projeto" });
     }
 
     // ✅ Lógica de negócio só roda após confirmação de acesso
     const now = new Date();
     const paid = !!(project.date_expire && project.date_expire > now);
 
-    const { user_workspace, deploy, payments, ...projectData } = project;
+    const { user_workspace, ...projectData } = project;
+
+    const lastCommit = await getLastCommitFromBranch(
+      project.repo_url,
+      project.branch,
+      existUser.github_token!,
+    );
+
+    const deploy = {
+      commit_msg: lastCommit.message || "unknown",
+      commit_branch: project.branch,
+    };
 
     return res.status(200).json({
-      ...projectData,
+      ...project,
       paid,
-      deploy: deploy[0] ?? null,
-      payment: payments[0] ?? null,
+      deploy,
     });
   } catch (error) {
     // ✅ Erro real registrado
@@ -300,6 +312,14 @@ export const getMyProjects = async (req: Request | any, res: Response) => {
     return res.status(401).json({ message: "Usuário não autenticado" });
   }
 
+  const existUser = await prisma.user.findUnique({
+    where: { id: userId },
+  });
+
+  if (!existUser) {
+    return res.status(404).json({ message: "Usuário não encontrado" });
+  }
+
   // ✅ Where centralizado — sem repetição, sem risco de divergência
   const where = {
     userId,
@@ -314,32 +334,31 @@ export const getMyProjects = async (req: Request | any, res: Response) => {
         skip: (page - 1) * per_page,
         take: per_page,
         orderBy: { createdAt: "desc" },
-        include: {
-          deploy: {
-            orderBy: { createdAt: "desc" },
-            take: 1,
-          },
-          payments: {
-            where: { status: "completed" },
-            orderBy: { createdAt: "desc" },
-            take: 1,
-          },
-        },
       }),
       prisma.project.count({ where }),
     ]);
 
     const now = new Date();
 
-    const projectsWithPaymentStatus = projects.map((project) => {
-      const { deploy, payments, ...projectData } = project;
-      return {
-        ...projectData,
-        paid: !!(project.date_expire && project.date_expire > now),
-        deploy: deploy[0] ?? null,
-        payment: payments[0] ?? null,
-      };
-    });
+    const projectsWithPaymentStatus = await Promise.all(
+      projects.map(async (project) => {
+        const lastCommit = await getLastCommitFromBranch(
+          project.repo_url,
+          project.branch,
+          existUser.github_token!,
+        );
+
+        const deploy = {
+          commit_msg: lastCommit.message || "unknown",
+          commit_branch: project.branch,
+        };
+        return {
+          ...project,
+          paid: !!(project.date_expire && project.date_expire > now),
+          deploy: deploy,
+        };
+      }),
+    );
 
     res.status(200).json({
       data: projectsWithPaymentStatus,
