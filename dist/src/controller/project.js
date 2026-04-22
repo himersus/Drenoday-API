@@ -44,11 +44,11 @@ const createProject = async (req, res) => {
             return res.status(400).json({
                 message: "O plano escolhido não está disponível, por favor escolha outro",
             });
-        const domain = await (0, domain_1.generateUniqueDomain)(name);
-        if (!domain)
+        const subdomain = await (0, domain_1.generateUniqueSubdomain)(name);
+        if (!subdomain)
             return res
                 .status(500)
-                .json({ message: "Não foi possível gerar um domínio único" });
+                .json({ message: "Não foi possível gerar um subdomínio único" });
         if (!existUser.github_token)
             return res
                 .status(400)
@@ -78,7 +78,7 @@ const createProject = async (req, res) => {
                 default_plan: existPlan.name,
                 port: `${port}`,
                 userId: existUser.id,
-                domain: domain,
+                subdomain: subdomain,
                 environments: environments || [],
                 days,
                 amount_to_pay: amount,
@@ -86,7 +86,7 @@ const createProject = async (req, res) => {
         });
         await (0, user_1.createMember)(existUser.id, project.id);
         const deployDir = process.env.DEPLOY_DIR;
-        const targetPath = `${deployDir}/${existUser.username}/${project.domain}`;
+        const targetPath = `${deployDir}/${existUser.username}/${project.subdomain}`;
         (0, github_1.cloneRepository)((0, github_1.buildCloneUrl)(project.repo_url, token), targetPath, project.branch, project.id);
         return res.status(201).json({ ...project, paid: false });
     }

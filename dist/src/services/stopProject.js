@@ -13,13 +13,13 @@ async function stopProject(projectId, userId) {
     if (!project) {
         return {
             statusCode: 404,
-            message: "Projeto não encontrado"
+            message: "Projeto não encontrado",
         };
     }
     if (project.userId !== userId) {
         return {
             statusCode: 403,
-            message: "Você não tem permissão para parar este projeto"
+            message: "Você não tem permissão para parar este projeto",
         };
     }
     const existUser = await prisma_1.default.user.findFirst({
@@ -28,11 +28,11 @@ async function stopProject(projectId, userId) {
     if (!existUser) {
         return {
             statusCode: 404,
-            message: "Usuário não encontrado"
+            message: "Usuário não encontrado",
         };
     }
     const deployDir = process.env.DEPLOY_DIR;
-    const targetPath = `${deployDir}/${existUser.username}/${project.domain}`;
+    const targetPath = `${deployDir}/${existUser.username}/${project.subdomain}`;
     (0, child_process_1.exec)("docker-compose down", { cwd: targetPath }, async (error, stdout, stderr) => {
         if (error) {
             console.error(`[docker error]: ${stderr}`);
@@ -42,6 +42,6 @@ async function stopProject(projectId, userId) {
     });
     return {
         statusCode: 200,
-        message: "Projeto parado com sucesso"
+        message: "Projeto parado com sucesso",
     };
 }

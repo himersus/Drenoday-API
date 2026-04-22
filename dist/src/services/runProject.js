@@ -45,19 +45,19 @@ async function runProject(projectId, userId) {
         return res.status(400).json({ message: "O repositório ainda não foi clonado completamente" });
     }*/
     const deployDir = process.env.DEPLOY_DIR;
-    const targetPath = `${deployDir}/${existUser.username}/${project.domain}`;
+    const targetPath = `${deployDir}/${existUser.username}/${project.subdomain}`;
     const createComposeTreakfik = `
 services:
-  ${project.domain}:
+  ${project.subdomain}:
     build: .
-    container_name: ${project.domain}-api
+    container_name: ${project.subdomain}-api
     restart: always
     labels:
       - "traefik.enable=true"
-      - "traefik.http.routers.${project.domain}.rule=Host(\`${project.domain}.enor.tech\`)"
-      - "traefik.http.routers.${project.domain}.entrypoints=websecure"
-      - "traefik.http.routers.${project.domain}.tls.certresolver=le"
-      - "traefik.http.services.${project.domain}.loadbalancer.server.port=${project.port}"
+      - "traefik.http.routers.${project.subdomain}.rule=Host(\`${project.subdomain}.enor.tech\`)"
+      - "traefik.http.routers.${project.subdomain}.entrypoints=websecure"
+      - "traefik.http.routers.${project.subdomain}.tls.certresolver=le"
+      - "traefik.http.services.${project.subdomain}.loadbalancer.server.port=${project.port}"
     networks:
       - web
 networks:
@@ -149,7 +149,7 @@ networks:
             status: "running",
             message: "Deploy executando com sucesso"
         });
-        (0, logs_1.startLogStream)(buildDeploy.id, projectId, project.domain);
+        (0, logs_1.startLogStream)(buildDeploy.id, projectId, project.subdomain);
     });
     return { statusCode: 200, message: "Deploy iniciado" };
 }

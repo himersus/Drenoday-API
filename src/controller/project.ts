@@ -1,6 +1,6 @@
 import { Request, Response } from "express";
 import { validate } from "uuid";
-import { generateUniqueDomain } from "../modify/domain";
+import { generateUniqueSubdomain } from "../modify/domain";
 import { stopProject } from "../services/stopProject";
 import { runProject } from "../services/runProject";
 import { q } from "../utils/to_string";
@@ -15,7 +15,6 @@ import {
   verifyGithubSession,
 } from "../services/github";
 import { computeProjectAmount, computeProjectDays } from "../utils/project";
-import { exec } from "node:child_process";
 
 // {{Create projecto}}
 export const createProject = async (req: Request | any, res: Response) => {
@@ -65,11 +64,11 @@ export const createProject = async (req: Request | any, res: Response) => {
           "O plano escolhido não está disponível, por favor escolha outro",
       });
 
-    const domain = await generateUniqueDomain(name);
-    if (!domain)
+    const subdomain = await generateUniqueSubdomain(name);
+    if (!subdomain)
       return res
         .status(500)
-        .json({ message: "Não foi possível gerar um domínio único" });
+        .json({ message: "Não foi possível gerar um subdomínio único" });
     if (!existUser.github_token)
       return res
         .status(400)
@@ -102,6 +101,11 @@ export const createProject = async (req: Request | any, res: Response) => {
       period_duration,
     );
 
+    const base_domain = process.env.BASE_DOMAIN;
+    if (!base_domain) {
+      return res.status(500).json({ message: "Base domain não configurado" });
+    }
+
     const project = await prisma.project.create({
       data: {
         name,
@@ -111,7 +115,8 @@ export const createProject = async (req: Request | any, res: Response) => {
         default_plan: existPlan.name,
         port: `${port}`,
         userId: existUser.id,
-        domain: domain as string,
+        subdomain: subdomain as string,
+        domain: `https://${subdomain}.${base_domain}`,
         environments: environments || [],
         days,
         amount_to_pay: amount,
@@ -121,7 +126,7 @@ export const createProject = async (req: Request | any, res: Response) => {
     await createMember(existUser.id, project.id);
 
     const deployDir = process.env.DEPLOY_DIR;
-    const targetPath = `${deployDir}/${existUser.username}/${project.domain}`;
+    const targetPath = `${deployDir}/${existUser.username}/${project.subdomain}`;
     cloneRepository(
       buildCloneUrl(project.repo_url, token),
       targetPath,
@@ -261,7 +266,19 @@ export const getProject = async (req: Request | any, res: Response) => {
         .status(403)
         .json({ message: "Você não tem acesso a este projeto" });
     }
-    return res.status(200).json({ ...project, paid: paid });
+    const last_deploy = await prisma.deploy.findFirst({
+      where: { projectId: project.id },
+      orderBy: { createdAt: "desc" },
+    });
+
+    const last_payment = await prisma.payment.findFirst({
+      where: { projectId: project.id, status: "completed" },
+      orderBy: { createdAt: "desc" },
+    });
+
+    return res
+      .status(200)
+      .json({ ...project, paid: paid, deploy: last_deploy, payment: last_payment });
   } catch (error) {
     return res.status(500).json({ message: "erro ao buscar projeto" });
   }
@@ -289,14 +306,26 @@ export const getMyProjects = async (req: Request | any, res: Response) => {
       },
     });
 
-    const projectsWithPaymentStatus = projects.map((project) => {
-      let paid = false;
-      const now = new Date();
-      if (project.date_expire && project.date_expire > now) {
-        paid = true;
-      }
-      return { ...project, paid };
-    });
+    const projectsWithPaymentStatus = await Promise.all(
+      projects.map(async (project) => {
+        let paid = false;
+        const now = new Date();
+        if (project.date_expire && project.date_expire > now) {
+          paid = true;
+        }
+        const last_deploy = await prisma.deploy.findFirst({
+          where: { projectId: project.id },
+          orderBy: { createdAt: "desc" },
+        });
+
+        const last_payment = await prisma.payment.findFirst({
+          where: { projectId: project.id, status: "completed" },
+          orderBy: { createdAt: "desc" },
+        });
+
+        return { ...project, paid, deploy: last_deploy, payment: last_payment };
+      }),
+    );
 
     const totalProjects = await prisma.project.count({
       where: {

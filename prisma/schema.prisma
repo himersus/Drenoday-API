@@ -50,6 +50,7 @@ model Workspace {
 
 model project {
   id                   String           @id @default(uuid())
+  subdomain            String           @unique
   domain               String           @unique
   name                 String
   branch               String           @default("main")

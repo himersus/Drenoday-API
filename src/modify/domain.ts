@@ -16,11 +16,11 @@ const generateRandomNames = () => {
     return name;
 }
 
-export const generateUniqueDomain = async (name: string) => {
+export const generateUniqueSubdomain = async (name: string) => {
     if (!name) return null;
     const letName = name.toLowerCase();
 
-    if (! await domainExists(letName)) 
+    if (! await subDomainExists(letName)) 
         return letName;
 
     let uniqueDomain = letName;
@@ -28,7 +28,7 @@ export const generateUniqueDomain = async (name: string) => {
 
     while (counter <= 10) {
         uniqueDomain = `${letName}-${generateRandomNames()}`;
-        if (! await domainExists(uniqueDomain)) {
+        if (! await subDomainExists(uniqueDomain)) {
             return uniqueDomain;
         }
         if (counter > 10) {
@@ -42,10 +42,10 @@ export const generateUniqueDomain = async (name: string) => {
 
 
 
-async function domainExists(domain: string): Promise<boolean> {
+async function subDomainExists(domain: string): Promise<boolean> {
 
     const project = await prisma.project.findFirst({
-        where: { domain },
+        where: { subdomain : domain },
     });
     return !!project;
 }
