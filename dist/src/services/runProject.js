@@ -7,10 +7,10 @@ exports.runProject = runProject;
 const child_process_1 = require("child_process");
 const prisma_1 = __importDefault(require("../lib/prisma"));
 const sockets_1 = require("../sockets");
-const logs_1 = require("../helper/logs");
+const logs_1 = require("../utils/logs");
 const fs_1 = __importDefault(require("fs"));
 const path_1 = __importDefault(require("path"));
-const github_1 = require("../helper/github");
+const github_1 = require("../utils/github");
 const generateEnvContent = (projectEnvs) => {
     let envContent = "";
     projectEnvs.forEach((envVar) => {
@@ -109,7 +109,7 @@ networks:
         fs_1.default.writeFileSync(path_1.default.join(targetPath, ".env"), envContent);
     }
     // subir container
-    (0, child_process_1.exec)("git pull && docker-compose down && docker-compose up -d --build", { cwd: targetPath }, async (error, stdout, stderr) => {
+    (0, child_process_1.exec)("git pull && docker-compose up -d --build", { cwd: targetPath }, async (error, stdout, stderr) => {
         if (error) {
             console.error("[docker error]", stderr);
             await prisma_1.default.deploy.update({

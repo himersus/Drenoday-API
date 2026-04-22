@@ -10,7 +10,7 @@ const jsonwebtoken_1 = __importDefault(require("jsonwebtoken"));
 const prisma_1 = __importDefault(require("../lib/prisma"));
 const sendemail_1 = require("../middleware/sendemail");
 const username_1 = require("../modify/username");
-const crypt_1 = require("../helper/crypt");
+const crypt_1 = require("../utils/crypt");
 const login = async (req, res) => {
     const { username, password } = req.body;
     try {

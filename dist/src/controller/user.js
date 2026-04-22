@@ -7,7 +7,7 @@ exports.updateUser = exports.UserLoged = exports.getAllUsers = exports.getUser =
 const username_1 = require("../modify/username");
 const uuid_1 = require("uuid");
 const bcrypt_1 = __importDefault(require("bcrypt"));
-const to_string_1 = require("../helper/to_string");
+const to_string_1 = require("../utils/to_string");
 const prisma_1 = __importDefault(require("../lib/prisma"));
 const createUser = async (req, res) => {
     const { email, name, password } = req.body;

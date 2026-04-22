@@ -5,7 +5,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.getDeploy = exports.listDeploys = void 0;
 const uuid_1 = require("uuid");
-const to_string_1 = require("../helper/to_string");
+const to_string_1 = require("../utils/to_string");
 const prisma_1 = __importDefault(require("../lib/prisma"));
 const listDeploys = async (req, res) => {
     const projectId = (0, to_string_1.q)(req.params.projectId);
@@ -73,7 +73,7 @@ const getDeploy = async (req, res) => {
     const userWorkspace = await prisma_1.default.user_workspace.findFirst({
         where: {
             userId,
-            ProjectId: exitProject.id,
+            projectId: exitProject.id,
         }
     });
     if (!userWorkspace) {

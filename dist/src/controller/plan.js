@@ -10,7 +10,7 @@ exports.getPlanById = getPlanById;
 exports.deletePlan = deletePlan;
 const prisma_1 = __importDefault(require("../lib/prisma"));
 const uuid_1 = require("uuid");
-const to_string_1 = require("../helper/to_string");
+const to_string_1 = require("../utils/to_string");
 async function addPlan(req, res) {
     const { name, description, price, duration, max_projects, duration_description, features, shortcut } = req.body;
     if (!name || !description || !duration) {

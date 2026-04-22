@@ -7,15 +7,17 @@ exports.readCookieGitHub = exports.createCookieGitHub = exports.unsyncUserFromGi
 const axios_1 = __importDefault(require("axios"));
 const uuid_1 = require("uuid");
 const prisma_1 = __importDefault(require("../lib/prisma"));
-const to_string_1 = require("../helper/to_string");
-const crypt_1 = require("../helper/crypt");
+const to_string_1 = require("../utils/to_string");
+const crypt_1 = require("../utils/crypt");
 function getLastPage(linkHeader) {
     if (!linkHeader)
         return null;
-    const match = linkHeader.match(/page=(\d+)&per_page=\d+>; rel="last"/);
-    if (!match)
+    const links = linkHeader.split(",");
+    const lastLink = links.find((link) => link.includes('rel="last"'));
+    if (!lastLink)
         return null;
-    return parseInt(match[1], 10);
+    const match = lastLink.match(/page=(\d+)/);
+    return match ? parseInt(match[1], 10) : null;
 }
 const getUserRepos = async (req, res) => {
     const userId = req.userId;
@@ -67,7 +69,9 @@ const getUserRepos = async (req, res) => {
         if (name) {
             response.data = response.data.filter((repo) => repo.name.toLowerCase().includes(name.toLowerCase()));
         }
-        const totalPages = getLastPage(response.headers.link);
+        const totalPages = response.headers.link
+            ? getLastPage(response.headers.link)
+            : null;
         return res.json({
             data: response.data,
             meta: {
@@ -77,7 +81,7 @@ const getUserRepos = async (req, res) => {
             },
         });
     }
-    catch (error) {
+    catch {
         return res.status(400).json({
             message: "Erro na sincronização com GitHub, por favor, sincronize novamente",
         });

@@ -6,7 +6,7 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.getOneNotification = exports.markNotificationAsRead = exports.myNotifications = void 0;
 const prisma_1 = __importDefault(require("../lib/prisma"));
 const uuid_1 = require("uuid");
-const to_string_1 = require("../helper/to_string");
+const to_string_1 = require("../utils/to_string");
 const myNotifications = async (req, res) => {
     const userId = req.userId; // Supondo que o ID do usuário logado esteja disponível em req.userId
     if (!(0, uuid_1.validate)(userId)) {

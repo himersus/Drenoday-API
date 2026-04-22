@@ -25,7 +25,7 @@ const addMember = async (req, res) => {
         const is_admin = await prisma_1.default.user_workspace.findFirst({
             where: {
                 userId: userId,
-                ProjectId: projectId,
+                projectId: projectId,
                 role: 'master',
             },
         });
@@ -47,7 +47,7 @@ const addMember = async (req, res) => {
         const existingMember = await prisma_1.default.user_workspace.findFirst({
             where: {
                 userId: user.id,
-                ProjectId: projectId,
+                projectId: projectId,
             },
         });
         if (existingMember) {
@@ -56,7 +56,7 @@ const addMember = async (req, res) => {
         const newMember = await prisma_1.default.user_workspace.create({
             data: {
                 userId: user.id,
-                ProjectId: projectId,
+                projectId: projectId,
                 role: role || 'member',
             },
         });
@@ -83,7 +83,7 @@ const removeMember = async (req, res) => {
         const is_admin = await prisma_1.default.user_workspace.findFirst({
             where: {
                 userId: userId,
-                ProjectId: projectId,
+                projectId: projectId,
                 role: 'master',
             },
         });
@@ -105,7 +105,7 @@ const removeMember = async (req, res) => {
         const existingMember = await prisma_1.default.user_workspace.findFirst({
             where: {
                 userId: user.id,
-                ProjectId: projectId,
+                projectId: projectId,
             },
         });
         if (!existingMember) {
