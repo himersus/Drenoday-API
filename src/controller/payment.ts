@@ -10,7 +10,6 @@ import {
 import { createNotification } from "../services/notification";
 import { q } from "../utils/to_string";
 import prisma from "../lib/prisma";
-import { date } from "zod";
 import { runProject } from "../services/runProject";
 
 const generateMerchantId = (): string => {
@@ -281,6 +280,7 @@ export const confirmPayment = async (req: Request | any, res: Response) => {
     data: {
       date_last_payment: currentDate,
       date_expire: expirationDate,
+      status_payment: status , // Atualiza o status do pagamento para o valor fornecido
     },
   });
 
