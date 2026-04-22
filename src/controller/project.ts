@@ -14,7 +14,7 @@ import {
   validateGithubRepo,
   verifyGithubSession,
 } from "../services/github";
-import { computeProjectDays } from "../utils/project";
+import { computeProjectAmount, computeProjectDays } from "../utils/project";
 import { exec } from "node:child_process";
 
 // {{Create projecto}}
@@ -96,6 +96,12 @@ export const createProject = async (req: Request | any, res: Response) => {
       period_duration,
     );
 
+    const amount = computeProjectAmount(
+      existPlan.price,
+      default_type_payment,
+      period_duration,
+    );
+
     const project = await prisma.project.create({
       data: {
         name,
@@ -108,6 +114,7 @@ export const createProject = async (req: Request | any, res: Response) => {
         domain: domain as string,
         environments: environments || [],
         days,
+        amount_to_pay: amount,
       },
     });
 

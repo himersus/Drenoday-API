@@ -54,6 +54,7 @@ model project {
   name                 String
   branch               String           @default("main")
   repo_url             String           @default("")
+  amount_to_pay        Float?           @default(0)
   description          String?
   repo_saved           Boolean          @default(false)
   date_expire          DateTime?

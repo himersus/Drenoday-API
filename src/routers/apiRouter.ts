@@ -74,7 +74,6 @@ router.put('/user/update', validate(schemasUser.updateUserSchema), updateUser);
 router.post('/workspace/member/add', validate(schemasWorkspace.addMemberSchema), verifyAuthentication, addMember);
 router.delete('/workspace/member/remove', validate(schemasWorkspace.removeMemberSchema), verifyAuthentication, removeMember);
 
-
 // {{ Project ROUTES}}
 router.post('/project/create', validate(schemasProject.createProjectSchema), verifyAuthentication, createProject);
 router.post('/project/run/:projectId', verifyAuthentication, runTheProject);
