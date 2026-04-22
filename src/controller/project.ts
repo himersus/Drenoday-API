@@ -362,6 +362,7 @@ export const getMyProjects = async (req: Request | any, res: Response) => {
           commit_branch: project.branch,
           status: project.deploy[0]?.status || "unknown",
         };
+        
         return {
           ...project,
           paid: !!(project.date_expire && project.date_expire > now),

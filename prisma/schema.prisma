@@ -161,7 +161,8 @@ enum Provider {
 
 enum PaymentStatus {
   pending
-  completed
+  approved
+  rejected
   failed
 }
 

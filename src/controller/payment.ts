@@ -217,7 +217,7 @@ export const webhookPayment = async (req: Request, res: Response) => {
     data: {
       date_start: dateStart,
       date_end: expirationDate,
-      status: "completed", // Atualiza o status do pagamento para o valor fornecido
+      status: "approved", // Atualiza o status do pagamento para o valor fornecido
     },
   });
 
@@ -297,7 +297,7 @@ export const confirmPayment = async (req: Request | any, res: Response) => {
     sendSocketContent("confirmed_payment", {
       userId: userId,
       paymentId: paymentId,
-      status: status == "completed" ? "Pago" : "Rejeitado",
+      status: status == "approved" ? "Pago" : "Rejeitado",
     });
 
     const runResponse = await runProject(existProject.id, existProject.userId);
@@ -444,7 +444,8 @@ export const getUserPayments = async (req: Request | any, res: Response) => {
   if (
     status &&
     status !== "pending" &&
-    status !== "completed" &&
+    status !== "approved" &&
+    status !== "rejected" &&
     status !== "failed"
   ) {
     return res.status(400).json({ message: "Status de pagamento inválido" });
