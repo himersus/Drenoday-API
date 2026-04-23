@@ -58,7 +58,7 @@ model project {
   amount_to_pay        Float?           @default(0)
   description          String?
   repo_saved           Boolean          @default(false)
-  status_payment       PaymentStatus?   @default(pending)
+  status_payment       PaymentStatus   @default(pending)
   date_last_payment    DateTime?
   date_expire          DateTime?
   days                 Int?             @default(0)

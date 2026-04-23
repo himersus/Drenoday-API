@@ -166,7 +166,7 @@ const webhookPayment = async (req, res) => {
         data: {
             date_start: dateStart,
             date_end: expirationDate,
-            status: "completed", // Atualiza o status do pagamento para o valor fornecido
+            status: "approved", // Atualiza o status do pagamento para o valor fornecido
         },
     });
     (0, sockets_1.sendSocketContent)("confirmed_payment", {
@@ -185,6 +185,9 @@ const confirmPayment = async (req, res) => {
     const { paymentId, status } = req.body;
     if (!userId || !(0, uuid_1.validate)(userId)) {
         return res.status(401).json({ message: "Usuário não autenticado" });
+    }
+    if (status !== "approved" && status !== "rejected" && status !== "failed") {
+        return res.status(400).json({ message: "Status de pagamento inválido" });
     }
     const existUser = await prisma_1.default.user.findUnique({
         where: { id: userId },
@@ -213,7 +216,9 @@ const confirmPayment = async (req, res) => {
             id: existPayment.projectId,
         },
         data: {
+            date_last_payment: currentDate,
             date_expire: expirationDate,
+            status_payment: status, // Atualiza o status do pagamento para o valor fornecido
         },
     });
     try {
@@ -228,7 +233,7 @@ const confirmPayment = async (req, res) => {
         (0, sockets_1.sendSocketContent)("confirmed_payment", {
             userId: userId,
             paymentId: paymentId,
-            status: status == "completed" ? "Pago" : "Rejeitado",
+            status: status == "approved" ? "Pago" : "Rejeitado",
         });
         const runResponse = await (0, runProject_1.runProject)(existProject.id, existProject.userId);
         await prisma_1.default.project.update({
@@ -240,7 +245,11 @@ const confirmPayment = async (req, res) => {
                 .status(runResponse.statusCode)
                 .json({ message: runResponse.message });
         }
-        res.status(400).json({ message: "O pagamento foi confirmado, tente rodar o projecto manualmente" });
+        res
+            .status(400)
+            .json({
+            message: "O pagamento foi confirmado, tente rodar o projecto manualmente",
+        });
     }
     catch (error) {
         console.error(error);
@@ -336,6 +345,10 @@ const createPayment = async (req, res) => {
                 projectId: existProject.id, // ID do projeto associado ao pagamento
             },
         });
+        await prisma_1.default.project.update({
+            where: { id: existProject.id },
+            data: {},
+        });
         (0, sockets_1.sendSocketContent)("new_payment", {
             userId: userId,
             paymentId: payment.id,
@@ -356,7 +369,8 @@ const getUserPayments = async (req, res) => {
     const status = req.query.status;
     if (status &&
         status !== "pending" &&
-        status !== "completed" &&
+        status !== "approved" &&
+        status !== "rejected" &&
         status !== "failed") {
         return res.status(400).json({ message: "Status de pagamento inválido" });
     }

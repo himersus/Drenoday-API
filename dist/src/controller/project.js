@@ -14,6 +14,7 @@ const project_1 = require("../services/project");
 const user_1 = require("../services/user");
 const github_1 = require("../services/github");
 const project_2 = require("../utils/project");
+const github_2 = require("../utils/github");
 // {{Create projecto}}
 const createProject = async (req, res) => {
     const { name, description, branch, port, repo_url, environments, default_plan, default_type_payment, period_duration, } = req.body;
@@ -69,6 +70,10 @@ const createProject = async (req, res) => {
         await (0, github_1.verifyGithubSession)(token);
         const days = (0, project_2.computeProjectDays)(existPlan.duration, default_type_payment, period_duration);
         const amount = (0, project_2.computeProjectAmount)(existPlan.price, default_type_payment, period_duration);
+        const base_domain = process.env.BASE_DOMAIN;
+        if (!base_domain) {
+            return res.status(500).json({ message: "Base domain não configurado" });
+        }
         const project = await prisma_1.default.project.create({
             data: {
                 name,
@@ -79,6 +84,7 @@ const createProject = async (req, res) => {
                 port: `${port}`,
                 userId: existUser.id,
                 subdomain: subdomain,
+                domain: `https://${subdomain}.${base_domain}`,
                 environments: environments || [],
                 days,
                 amount_to_pay: amount,
@@ -182,81 +188,120 @@ const getProject = async (req, res) => {
     if (!(0, uuid_1.validate)(projectId) || !(0, uuid_1.validate)(userId)) {
         return res.status(400).json({ message: "ID inválido" });
     }
+    const existUser = await prisma_1.default.user.findUnique({
+        where: { id: userId },
+    });
+    if (!existUser) {
+        return res.status(404).json({ message: "Usuário não encontrado" });
+    }
     try {
+        // ✅ Busca projeto já com todos os relacionamentos necessários
         const project = await prisma_1.default.project.findUnique({
             where: { id: projectId },
+            include: {
+                user_workspace: {
+                    where: { userId },
+                    take: 1,
+                },
+                deploy: {
+                    orderBy: { createdAt: "desc" },
+                    take: 1,
+                },
+            },
         });
         if (!project) {
             return res.status(404).json({ message: "Projeto não encontrado" });
         }
-        const userWorkspace = await prisma_1.default.user_workspace.findFirst({
-            where: {
-                userId,
-                projectId: project.id,
-            },
-        });
-        let paid = false;
-        const now = new Date();
-        if (project.date_expire && project.date_expire > now) {
-            paid = true;
-        }
-        if (!userWorkspace) {
+        // ✅ Autorização verificada imediatamente, antes de qualquer outro processamento
+        if (project.user_workspace.length === 0) {
             return res
                 .status(403)
                 .json({ message: "Você não tem acesso a este projeto" });
         }
-        return res.status(200).json({ ...project, paid: paid });
+        // ✅ Lógica de negócio só roda após confirmação de acesso
+        const now = new Date();
+        const paid = !!(project.date_expire && project.date_expire > now) || false;
+        const lastCommit = await (0, github_2.getLastCommitFromBranch)(project.repo_url, project.branch, existUser.github_token);
+        const deploy = {
+            commit_msg: lastCommit.message || "unknown",
+            commit_branch: project.branch,
+            status: project.deploy[0]?.status || "unknown",
+        };
+        return res.status(200).json({
+            ...project,
+            paid,
+            deploy,
+        });
     }
     catch (error) {
-        return res.status(500).json({ message: "erro ao buscar projeto" });
+        // ✅ Erro real registrado
+        console.error("[getProject]", error);
+        return res.status(500).json({ message: "Erro ao buscar projeto" });
     }
 };
 exports.getProject = getProject;
 const getMyProjects = async (req, res) => {
-    const userId = req.userId; // Supondo que o ID do usuário logado esteja disponível em req.userId
+    const userId = req.userId;
     const page = parseInt(req.query.page) || 1;
-    const name = req.query.name;
     const per_page = parseInt(req.query.per_page) || 10;
+    const name = req.query.name;
     if (!(0, uuid_1.validate)(userId)) {
         return res.status(401).json({ message: "Usuário não autenticado" });
     }
+    const existUser = await prisma_1.default.user.findUnique({
+        where: { id: userId },
+    });
+    if (!existUser) {
+        return res.status(404).json({ message: "Usuário não encontrado" });
+    }
+    // ✅ Where centralizado — sem repetição, sem risco de divergência
+    const where = {
+        userId,
+        name: name ? { contains: name, mode: "insensitive" } : undefined,
+    };
     try {
-        const projects = await prisma_1.default.project.findMany({
-            where: {
-                userId,
-                name: name ? { contains: name, mode: "insensitive" } : undefined,
-            },
-            skip: (page - 1) * per_page,
-            take: per_page,
-            orderBy: {
-                createdAt: "desc",
-            },
-        });
-        const projectsWithPaymentStatus = projects.map((project) => {
-            let paid = false;
-            const now = new Date();
-            if (project.date_expire && project.date_expire > now) {
-                paid = true;
-            }
-            return { ...project, paid };
-        });
-        const totalProjects = await prisma_1.default.project.count({
-            where: {
-                userId,
-                name: name ? { contains: name, mode: "insensitive" } : undefined,
-            },
-        });
-        const total_page = Math.ceil(totalProjects / per_page);
+        // ✅ Busca projetos e total em paralelo — sem duplicar lógica
+        const [projects, totalProjects] = await Promise.all([
+            prisma_1.default.project.findMany({
+                where,
+                include: {
+                    deploy: {
+                        orderBy: { createdAt: "desc" },
+                        take: 1,
+                    },
+                },
+                skip: (page - 1) * per_page,
+                take: per_page,
+                orderBy: { createdAt: "desc" },
+            }),
+            prisma_1.default.project.count({ where }),
+        ]);
+        const now = new Date();
+        const projectsWithPaymentStatus = await Promise.all(projects.map(async (project) => {
+            const lastCommit = await (0, github_2.getLastCommitFromBranch)(project.repo_url, project.branch, existUser.github_token);
+            const deploy = {
+                commit_msg: lastCommit.message || "unknown",
+                commit_branch: project.branch,
+                status: project.deploy[0]?.status || "unknown",
+            };
+            return {
+                ...project,
+                paid: !!(project.date_expire && project.date_expire > now),
+                deploy: deploy,
+            };
+        }));
         res.status(200).json({
             data: projectsWithPaymentStatus,
             meta: {
                 page,
                 per_page,
-                total_pages: total_page,
+                total_pages: Math.ceil(totalProjects / per_page),
             },
         });
     }
     catch (error) {
+        // ✅ Log do erro real preservado
+        console.error("[getMyProjects]", error);
         res.status(500).json({ message: "Falha ao recuperar projetos" });
     }
 };

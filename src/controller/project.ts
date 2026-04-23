@@ -279,7 +279,7 @@ export const getProject = async (req: Request | any, res: Response) => {
 
     // ✅ Lógica de negócio só roda após confirmação de acesso
     const now = new Date();
-    const paid = !!(project.date_expire && project.date_expire > now);
+    const paid = !!(project.date_expire && project.date_expire > now) || false;
 
     const lastCommit = await getLastCommitFromBranch(
       project.repo_url,
