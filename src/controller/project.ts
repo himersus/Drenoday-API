@@ -43,6 +43,19 @@ export const createProject = async (req: Request | any, res: Response) => {
       .json({ message: inputResult.message });
   }
 
+  const existThisProjectName = await prisma.project.findFirst({
+    where: {
+      name: name,
+      userId: userId,
+    },
+  });
+
+  if (existThisProjectName) {
+    return res
+      .status(400)
+      .json({ message: "Você já tem um projeto com esse nome, escolha outro nome para o projeto" });
+  }
+
   if (!name) {
     return res.status(400).json({ message: "O nome do projeto é obrigatório" });
   }
