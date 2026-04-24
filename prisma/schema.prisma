@@ -94,6 +94,7 @@ model deploy {
   commit_email  String?
   commit_date   DateTime?
   commit_branch String?
+  avatar_url   String?
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
