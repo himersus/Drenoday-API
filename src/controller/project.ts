@@ -121,7 +121,7 @@ export const createProject = async (req: Request | any, res: Response) => {
         branch,
         repo_url,
         default_plan: existPlan.name,
-        default_type_payment: default_type_payment,
+        default_type_payment: days >= 28 ? default_type_payment : "daily",
         port: `${port}`,
         userId: existUser.id,
         subdomain: subdomain as string,
