@@ -65,6 +65,13 @@ export const createProject = async (req: Request | any, res: Response) => {
           "O plano escolhido não está disponível, por favor escolha outro",
       });
 
+    if (existPlan.duration < 30 && period_duration && period_duration > 1) {
+      return res.status(400).json({
+        message: "O plano escolhido não suporta a duração selecionada, por favor escolha outro plano ou ajuste a duração",
+      });
+    }
+
+
     const subdomain = await generateUniqueSubdomain(name);
     if (!subdomain)
       return res
@@ -89,6 +96,8 @@ export const createProject = async (req: Request | any, res: Response) => {
     }
 
     await verifyGithubSession(token);
+
+
 
     const days = computeProjectDays(
       existPlan.duration,
