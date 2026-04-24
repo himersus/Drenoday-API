@@ -178,7 +178,6 @@ enum roleWorkspace {
 }
 
 enum typePayment {
-  daily
   monthly
   yearly
 }

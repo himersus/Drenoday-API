@@ -189,8 +189,6 @@ export const webhookPayment = async (req: Request, res: Response) => {
     expirationDate.setMonth(expirationDate.getMonth() + 1);
   } else if (payment_form === "yearly") {
     expirationDate.setFullYear(expirationDate.getFullYear() + 1);
-  } else if (payment_form === "daily") {
-    expirationDate.setDate(expirationDate.getDate() + 1);
   } else {
     await createNotification(
       userId,
@@ -353,7 +351,7 @@ export const createPayment = async (req: Request | any, res: Response) => {
     return res.status(404).json({ message: "Projeto não encontrado" });
   }
 
-  if (!existProject.default_plan ) {
+  if (!existProject.default_plan) {
     return res.status(400).json({ message: "Projeto não tem plano associado" });
   }
 
@@ -370,16 +368,6 @@ export const createPayment = async (req: Request | any, res: Response) => {
       .status(400)
       .json({ message: "Comprovante de pagamento inválido" });
   }
-
-  let payment_form = "";
-  if (existPlan.duration === 30) {
-    payment_form = "monthly";
-  } else if (existPlan.duration === 360) {
-    payment_form = "yearly";
-  } else {
-    payment_form = "daily";
-  }
-
 
   try {
     const existPayment = await prisma.payment.findFirst({

@@ -45,6 +45,11 @@ const createProject = async (req, res) => {
             return res.status(400).json({
                 message: "O plano escolhido não está disponível, por favor escolha outro",
             });
+        if (existPlan.duration < 30 && period_duration && period_duration > 1) {
+            return res.status(400).json({
+                message: "O plano escolhido não suporta a duração selecionada, por favor escolha outro plano ou ajuste a duração",
+            });
+        }
         const subdomain = await (0, domain_1.generateUniqueSubdomain)(name);
         if (!subdomain)
             return res
@@ -81,6 +86,7 @@ const createProject = async (req, res) => {
                 branch,
                 repo_url,
                 default_plan: existPlan.name,
+                default_type_payment: default_type_payment || "monthly",
                 port: `${port}`,
                 userId: existUser.id,
                 subdomain: subdomain,

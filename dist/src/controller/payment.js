@@ -55,7 +55,6 @@ const referenceSendPaymentGateway = async (req, res) => {
                 merchant: merchantId,
                 status: "pending", // status do pagamento
                 type_payment: verifyPay.type_payment, // tipo de pagamento
-                qty_months: 1, // quantidade de meses
                 projectId: projectId, // ID do projeto associado ao pagamento
             },
         });
@@ -143,9 +142,6 @@ const webhookPayment = async (req, res) => {
     }
     else if (payment_form === "yearly") {
         expirationDate.setFullYear(expirationDate.getFullYear() + 1);
-    }
-    else if (payment_form === "daily") {
-        expirationDate.setDate(expirationDate.getDate() + 1);
     }
     else {
         await (0, notification_1.createNotification)(userId, "Falha no pagamento", "Forma de pagamento inválida no webhook recebido.");
@@ -245,9 +241,7 @@ const confirmPayment = async (req, res) => {
                 .status(runResponse.statusCode)
                 .json({ message: runResponse.message });
         }
-        res
-            .status(400)
-            .json({
+        res.status(400).json({
             message: "O pagamento foi confirmado, tente rodar o projecto manualmente",
         });
     }
@@ -259,7 +253,7 @@ const confirmPayment = async (req, res) => {
 exports.confirmPayment = confirmPayment;
 const createPayment = async (req, res) => {
     const userId = req.userId;
-    const { projectId, plan_name, proof_payment } = req.body;
+    const { projectId, proof_payment } = req.body;
     if ((0, uuid_1.validate)(!projectId)) {
         return res.status(400).json({ message: "ID do projeto inválido" });
     }
@@ -278,8 +272,11 @@ const createPayment = async (req, res) => {
     if (!existProject) {
         return res.status(404).json({ message: "Projeto não encontrado" });
     }
+    if (!existProject.default_plan) {
+        return res.status(400).json({ message: "Projeto não tem plano associado" });
+    }
     const existPlan = await prisma_1.default.plan.findFirst({
-        where: { name: plan_name },
+        where: { name: existProject.default_plan },
     });
     if (!existPlan) {
         return res.status(404).json({ message: "Plano não encontrado" });
@@ -288,37 +285,6 @@ const createPayment = async (req, res) => {
         return res
             .status(400)
             .json({ message: "Comprovante de pagamento inválido" });
-    }
-    let payment_form = "";
-    if (existPlan.duration === 30) {
-        payment_form = "monthly";
-    }
-    else if (existPlan.duration === 360) {
-        payment_form = "yearly";
-    }
-    else {
-        payment_form = "daily";
-    }
-    const payment_form_str = payment_form || "monthly";
-    if (payment_form_str !== "monthly" &&
-        payment_form_str !== "yearly" &&
-        payment_form_str !== "daily") {
-        return res.status(400).json({ message: "Forma de pagamento inválida" });
-    }
-    let amount = existPlan.price;
-    let time_in_day = undefined;
-    if (payment_form_str === "yearly") {
-        const durationInYear = existProject.days ? existProject.days / 360 : 1; // Convertendo duração para meses
-        amount = existPlan.price * 12 * durationInYear - existPlan.price * 0.5;
-        time_in_day = existPlan.duration * 12;
-    }
-    else if (payment_form_str === "daily") {
-        amount = existPlan.price;
-        time_in_day = existPlan.duration;
-    }
-    else {
-        amount = existPlan.price;
-        time_in_day = existPlan.duration;
     }
     try {
         const existPayment = await prisma_1.default.payment.findFirst({
@@ -340,14 +306,13 @@ const createPayment = async (req, res) => {
                 proof_payment: proof_payment, // comprovante de pagamento
                 time_in_day: existProject.days || 0, // tempo em dias do pagamento
                 status: "pending", // status do pagamento
-                type_payment: payment_form_str, // tipo de pagamento
-                qty_months: 1, // quantidade de meses
+                type_payment: existProject.default_type_payment, // tipo de pagamento
                 projectId: existProject.id, // ID do projeto associado ao pagamento
             },
         });
         await prisma_1.default.project.update({
             where: { id: existProject.id },
-            data: {},
+            data: { status_payment: "pending" },
         });
         (0, sockets_1.sendSocketContent)("new_payment", {
             userId: userId,
