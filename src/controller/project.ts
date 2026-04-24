@@ -313,6 +313,7 @@ export const getProject = async (req: Request | any, res: Response) => {
       commit_branch: project.branch,
       commit_author: lastCommit.author || "unknown",
       status: project.deploy[0]?.status || "unknown",
+      commit_avatar_url: lastCommit.avatar_url || null,
     };
 
     return res.status(200).json({
@@ -384,6 +385,7 @@ export const getMyProjects = async (req: Request | any, res: Response) => {
           commit_branch: project.branch,
           commit_author: lastCommit.author || "unknown",
           status: project.deploy[0]?.status || "unknown",
+          commit_avatar_url: lastCommit.avatar_url || null,
         };
 
         return {

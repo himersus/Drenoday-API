@@ -98,6 +98,7 @@ networks:
                 commit_email: lastCommit.email || "unknown",
                 commit_date: lastCommit.date || new Date(),
                 commit_branch: project.branch,
+                commit_avatar_url: lastCommit.avatar_url || null,
             }
         });
         sendSocketContent("deploy_logs", {
