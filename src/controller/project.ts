@@ -450,6 +450,20 @@ export const updateProject = async (req: Request | any, res: Response) => {
             }
         }*/
 
+    const existThisProjectName = await prisma.project.findFirst({
+      where: {
+        name: name,
+        userId: userId,
+        NOT: { id: projectId },
+      },
+    });
+
+    if (existThisProjectName) {
+      return res
+        .status(400)
+        .json({ message: "Você já tem um projeto com esse nome, escolha outro nome para o projeto" });
+    }
+
     const updatedProject = await prisma.project.update({
       where: { id: projectId },
       data: {
