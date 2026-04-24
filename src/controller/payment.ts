@@ -317,12 +317,9 @@ export const confirmPayment = async (req: Request | any, res: Response) => {
         .json({ message: runResponse.message });
     }
 
-    res
-      .status(400)
-      .json({
-        message:
-          "O pagamento foi confirmado, tente rodar o projecto manualmente",
-      });
+    res.status(400).json({
+      message: "O pagamento foi confirmado, tente rodar o projecto manualmente",
+    });
   } catch (error) {
     console.error(error);
     return res.status(500).json({ message: "Erro ao registrar pagamento" });
@@ -434,7 +431,7 @@ export const createPayment = async (req: Request | any, res: Response) => {
 
     await prisma.project.update({
       where: { id: existProject.id },
-      data: {  },
+      data: { status_payment: "pending" },
     });
 
     sendSocketContent("new_payment", {
