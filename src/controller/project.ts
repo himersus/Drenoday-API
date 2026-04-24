@@ -67,10 +67,10 @@ export const createProject = async (req: Request | any, res: Response) => {
 
     if (existPlan.duration < 30 && period_duration && period_duration > 1) {
       return res.status(400).json({
-        message: "O plano escolhido não suporta a duração selecionada, por favor escolha outro plano ou ajuste a duração",
+        message:
+          "O plano escolhido não suporta a duração selecionada, por favor escolha outro plano ou ajuste a duração",
       });
     }
-
 
     const subdomain = await generateUniqueSubdomain(name);
     if (!subdomain)
@@ -96,8 +96,6 @@ export const createProject = async (req: Request | any, res: Response) => {
     }
 
     await verifyGithubSession(token);
-
-
 
     const days = computeProjectDays(
       existPlan.duration,
@@ -371,7 +369,7 @@ export const getMyProjects = async (req: Request | any, res: Response) => {
           commit_branch: project.branch,
           status: project.deploy[0]?.status || "unknown",
         };
-        
+
         return {
           ...project,
           paid: !!(project.date_expire && project.date_expire > now),
