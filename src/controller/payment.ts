@@ -327,7 +327,7 @@ export const confirmPayment = async (req: Request | any, res: Response) => {
 
 export const createPayment = async (req: Request | any, res: Response) => {
   const userId = req.userId;
-  const { projectId, plan_name, proof_payment } = req.body;
+  const { projectId, proof_payment } = req.body;
 
   if (validate(!projectId)) {
     return res.status(400).json({ message: "ID do projeto inválido" });
@@ -353,8 +353,12 @@ export const createPayment = async (req: Request | any, res: Response) => {
     return res.status(404).json({ message: "Projeto não encontrado" });
   }
 
+  if (!existProject.default_plan ) {
+    return res.status(400).json({ message: "Projeto não tem plano associado" });
+  }
+
   const existPlan = await prisma.plan.findFirst({
-    where: { name: plan_name },
+    where: { name: existProject.default_plan },
   });
 
   if (!existPlan) {
