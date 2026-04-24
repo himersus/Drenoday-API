@@ -311,6 +311,7 @@ export const getProject = async (req: Request | any, res: Response) => {
     const deploy = {
       commit_msg: lastCommit.message || "unknown",
       commit_branch: project.branch,
+      commit_author: lastCommit.author?.name || "unknown",
       status: project.deploy[0]?.status || "unknown",
     };
 
@@ -381,6 +382,7 @@ export const getMyProjects = async (req: Request | any, res: Response) => {
         const deploy = {
           commit_msg: lastCommit.message || "unknown",
           commit_branch: project.branch,
+          commit_author: lastCommit.author?.name || "unknown",
           status: project.deploy[0]?.status || "unknown",
         };
 
