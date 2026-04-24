@@ -69,7 +69,7 @@ model project {
   start_cmd            String?
   technology           technology?      @default(docker)
   default_plan         String?
-  default_type_payment typePayment?     @default(monthly)
+  default_type_payment typePayment     @default(monthly)
   userId               String
   environments         String[]         @default([])
   createdAt            DateTime         @default(now())
@@ -115,7 +115,6 @@ model payment {
   proof_payment String? // URL ou caminho do comprovante de pagamento
   time_in_day   Int?           @default(0)
   type_payment  typePayment
-  qty_months    Int?           @default(0)
   amount        Float
   status        PaymentStatus  @default(pending)
   createdAt     DateTime       @default(now())

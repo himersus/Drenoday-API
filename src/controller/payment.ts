@@ -73,7 +73,6 @@ export const referenceSendPaymentGateway = async (
         merchant: merchantId,
         status: "pending", // status do pagamento
         type_payment: verifyPay.type_payment, // tipo de pagamento
-        qty_months: 1, // quantidade de meses
         projectId: projectId, // ID do projeto associado ao pagamento
       },
     });
@@ -377,29 +376,6 @@ export const createPayment = async (req: Request | any, res: Response) => {
     payment_form = "daily";
   }
 
-  const payment_form_str = (payment_form as typePayment) || "monthly";
-
-  if (
-    payment_form_str !== "monthly" &&
-    payment_form_str !== "yearly" &&
-    payment_form_str !== "daily"
-  ) {
-    return res.status(400).json({ message: "Forma de pagamento inválida" });
-  }
-
-  let amount = existPlan.price;
-  let time_in_day: number | undefined = undefined;
-  if (payment_form_str === "yearly") {
-    const durationInYear = existProject.days ? existProject.days / 360 : 1; // Convertendo duração para meses
-    amount = existPlan.price * 12 * durationInYear - existPlan.price * 0.5;
-    time_in_day = existPlan.duration * 12;
-  } else if (payment_form_str === "daily") {
-    amount = existPlan.price;
-    time_in_day = existPlan.duration;
-  } else {
-    amount = existPlan.price;
-    time_in_day = existPlan.duration;
-  }
 
   try {
     const existPayment = await prisma.payment.findFirst({
@@ -423,8 +399,7 @@ export const createPayment = async (req: Request | any, res: Response) => {
         proof_payment: proof_payment, // comprovante de pagamento
         time_in_day: existProject.days || 0, // tempo em dias do pagamento
         status: "pending", // status do pagamento
-        type_payment: payment_form_str, // tipo de pagamento
-        qty_months: 1, // quantidade de meses
+        type_payment: existProject.default_type_payment, // tipo de pagamento
         projectId: existProject.id, // ID do projeto associado ao pagamento
       },
     });
