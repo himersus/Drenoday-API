@@ -8,7 +8,7 @@ import { createProject, deleteProject, getAllProjects, getMyProjects, getProject
 import { addMember, removeMember } from "../controller/member";
 import { getDeploy, listDeploys } from "../controller/deploy";
 import { addPlan, updatePlan, deletePlan, getPlanById, getPlans } from "../controller/plan";
-import { confirmPayment, createPayment, getUserPayments, getPaymentById, referenceSendPaymentGateway, webhookPayment } from "../controller/payment";
+import { confirmPayment, createPayment, getUserPayments, getPaymentById, referenceSendPaymentGateway, webhookPayment, getAllPayments } from "../controller/payment";
 import { getOneNotification, markNotificationAsRead, myNotifications } from "../controller/notification";
 import { validate }  from "../middleware/validate";
 import * as schemasUser from "../schemas/user";
@@ -101,6 +101,7 @@ router.post('/pay/create', verifyAuthentication, createPayment);
 router.post('/pay/confirm', verifyAuthentication, confirmPayment);
 router.get('/pay/my', verifyAuthentication, getUserPayments);
 router.get('/pay/each/:paymentId', verifyAuthentication, getPaymentById);
+router.get('/backoffice/pay/list', verifyAuthentication, getAllPayments);
 
 // {{ API DE PAGAMENTO EXTERNA }}
 router.post('/pay/reference', verifyAuthentication, referenceSendPaymentGateway);

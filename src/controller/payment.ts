@@ -11,6 +11,7 @@ import { createNotification } from "../services/notification";
 import { q } from "../utils/to_string";
 import prisma from "../lib/prisma";
 import { runProject } from "../services/runProject";
+import { meta } from "zod/v4/core";
 
 const generateMerchantId = (): string => {
   // no maximo 15 digitos, deve conter pelomenos um caracter e todos devem ser alfanumericos
@@ -22,7 +23,6 @@ const generateMerchantId = (): string => {
   }
   return merchantId;
 };
-
 export const referenceSendPaymentGateway = async (
   req: Request | any,
   res: Response,
@@ -56,8 +56,8 @@ export const referenceSendPaymentGateway = async (
       return res.status(data.code || 400).json({
         message: data.message || "Erro ao criar referência de pagamento",
         /*error: data.error || {
-                    message: "Erro desconhecido ao criar referência de pagamento"
-                }*/
+    message: "Erro desconhecido ao criar referência de pagamento"
+    }*/
       });
     }
 
@@ -492,5 +492,65 @@ export const getPaymentById = async (req: Request | any, res: Response) => {
   } catch (error) {
     console.error(error);
     return res.status(500).json({ message: "Erro ao buscar pagamento" });
+  }
+};
+
+export const getAllPayments = async (req: Request | any, res: Response) => {
+  const userId = q(req.userId);
+  const page = parseInt(q(req.query.page) as string) || 1;
+  const per_page = parseInt(q(req.query.per_page) as string) || 10;
+  const name_project = q(req.query.name) as string | undefined;
+
+  // Aceita ?status=PAID ou ?status=PAID&status=PENDING ou ?status=PAID,PENDING
+  const rawStatus = req.query.status;
+  const statusList: PaymentStatus[] = rawStatus
+    ? (Array.isArray(rawStatus) ? rawStatus : String(rawStatus).split(","))
+        .map((s: string) => s.trim() as PaymentStatus)
+        .filter(Boolean)
+    : [];
+
+  if (!userId || !validate(userId)) {
+    return res.status(401).json({ message: "Usuário não autenticado" });
+  }
+
+  const existUser = await prisma.user.findUnique({
+    where: { id: userId },
+  });
+
+  if (!existUser) {
+    return res.status(404).json({ message: "Usuário não encontrado" });
+  }
+
+  try {
+    const where = {
+      userId,
+      status: statusList.length > 0 ? { in: statusList } : undefined,
+      project: name_project
+        ? { name: { contains: name_project, mode: "insensitive" as const } }
+        : undefined,
+    };
+
+    const [payments, totalPayments] = await prisma.$transaction([
+      prisma.payment.findMany({
+        where,
+        orderBy: { createdAt: "desc" },
+        skip: (page - 1) * per_page,
+        take: per_page,
+      }),
+      prisma.payment.count({ where }),
+    ]);
+
+    return res.status(200).json({
+      data: payments,
+      meta: {
+        total: totalPayments,
+        page,
+        per_page,
+        total_pages: Math.ceil(totalPayments / per_page),
+      },
+    });
+  } catch (error) {
+    console.error(error);
+    return res.status(500).json({ message: "Erro ao buscar pagamentos" });
   }
 };
