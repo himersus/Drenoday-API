@@ -28,7 +28,6 @@ const formatUptime = (seconds: number): string => {
 
 export const getServiceMetrics = async (req: Request | any, res: Response) => {
   const projectId = req.params.projectId;
-  const userId = req.user.id;
 
   if (!projectId || validate(projectId) === false) {
     return res.status(400).json({ message: "ID do projeto é obrigatório" });
