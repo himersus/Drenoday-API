@@ -4,7 +4,7 @@ import { verifyAuthentication } from "../middleware/userAuth";
 import { login, loginGitHub, loginGoogle, loginWithEmail, sendCodeVerification, verifyCode } from "../controller/auth";
 import passport from "passport";
 import { createCookieGitHub, getUserBranchesByName, getUserRepoByName, getUserRepos, readCookieGitHub, syncUserWithGitHub, unsyncUserFromGitHub } from "../controller/github";
-import { createProject, deleteProject, getMyProjects, getProject, runTheProject, updateProject } from "../controller/project";
+import { createProject, deleteProject, getAllProjects, getMyProjects, getProject, runTheProject, updateProject } from "../controller/project";
 import { addMember, removeMember } from "../controller/member";
 import { getDeploy, listDeploys } from "../controller/deploy";
 import { addPlan, updatePlan, deletePlan, getPlanById, getPlans } from "../controller/plan";
@@ -79,6 +79,8 @@ router.post('/project/create', validate(schemasProject.createProjectSchema), ver
 router.post('/project/run/:projectId', verifyAuthentication, runTheProject);
 router.get('/project/each/:projectId', verifyAuthentication, getProject);
 router.get('/project/my', verifyAuthentication, getMyProjects);
+
+router.get('/backoffice/project/list', verifyAuthentication, getAllProjects);
 
 router.put('/project/update/:projectId', validate(schemasProject.updateProjectSchema), verifyAuthentication, updateProject);
 router.delete('/project/delete/:projectId', verifyAuthentication, deleteProject);

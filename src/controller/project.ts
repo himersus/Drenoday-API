@@ -411,6 +411,86 @@ export const getMyProjects = async (req: Request | any, res: Response) => {
   }
 };
 
+export const getAllProjects = async (req: Request | any, res: Response) => {
+  const userId = req.userId;
+  const page = parseInt(req.query.page as string) || 1;
+  const limit = parseInt(req.query.limit as string) || 10;
+  const skip = (page - 1) * limit;
+  const name = req.query.name as string | undefined;
+
+  if (!userId || !validate(userId)) {
+    return res.status(401).json({ message: "Usuário não autenticado" });
+  }
+
+  try {
+    const existUser = await prisma.user.findUnique({
+      where: { id: userId },
+    });
+
+    if (!existUser) {
+      return res.status(404).json({ message: "Usuário não encontrado" });
+    }
+
+    const where = {
+      userId,
+      name: name ? { contains: name, mode: "insensitive" as const } : undefined,
+    };
+
+    const [projects, total] = await Promise.all([
+      prisma.project.findMany({
+        where,
+        include: {
+          deploy: {
+            orderBy: { createdAt: "desc" },
+            take: 1,
+          },
+        },
+        skip,
+        take: limit,
+        orderBy: { createdAt: "desc" },
+      }),
+      prisma.project.count({ where }),
+    ]);
+    
+    const now = new Date();
+    const projectsWithPaymentStatus = await Promise.all(
+      projects.map(async (project) => {
+        const lastCommit = await getLastCommitFromBranch(
+          project.repo_url,
+          project.branch,
+          existUser.github_token!,
+        );
+
+        const deploy = {
+          commit_msg: lastCommit.message || "unknown",
+          commit_branch: project.branch,
+          commit_author: lastCommit.author || "unknown",
+          status: project.deploy[0]?.status || "unknown",
+          commit_avatar_url: lastCommit.avatar_url || null,
+        };
+
+        return {
+          ...project,
+          paid: !!(project.date_expire && project.date_expire > now),
+          deploy: deploy,
+        };
+      }),
+    );
+
+    res.status(200).json({
+      data: projectsWithPaymentStatus,
+      meta: {
+        page,
+        per_page: limit,
+        total_pages: Math.ceil(total / limit),
+      },
+    });
+  } catch (error) {
+    console.error("[getAllProjects]", error);
+    res.status(500).json({ message: "Falha ao recuperar projetos" });
+  }
+};
+
 export const updateProject = async (req: Request | any, res: Response) => {
   const projectId = q(req.params.projectId);
   const { name, description, environments } = req.body;
