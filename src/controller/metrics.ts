@@ -6,8 +6,15 @@ import prisma from "../lib/prisma";
 
 const execFileAsync = promisify(execFile);
 
-const dockerExec = async (containerName: string, command: string[]): Promise<string> => {
-  const { stdout } = await execFileAsync("docker", ["exec", containerName, ...command]);
+const dockerExec = async (
+  containerName: string,
+  command: string[],
+): Promise<string> => {
+  const { stdout } = await execFileAsync("docker", [
+    "exec",
+    containerName,
+    ...command,
+  ]);
   return stdout.trim();
 };
 
@@ -41,11 +48,12 @@ export const getServiceMetrics = async (req: Request | any, res: Response) => {
     return res.status(404).json({ message: "Projeto não encontrado" });
   }
 
-  
-    const serviceName = `${existProject.subdomain}-api`; // Supondo que o nome do serviço seja o subdomínio do projeto
+  const serviceName = `${existProject.subdomain}-api`; // Supondo que o nome do serviço seja o subdomínio do projeto
 
   if (!serviceName || !/^[a-zA-Z0-9_-]+$/.test(serviceName)) {
-    return res.status(400).json({ message: "Nome do serviço inválido ou não informado" });
+    return res
+      .status(400)
+      .json({ message: "Nome do serviço inválido ou não informado" });
   }
 
   try {
@@ -121,18 +129,26 @@ export const getServiceMetrics = async (req: Request | any, res: Response) => {
       collected_at: new Date().toISOString(),
     });
   } catch (error: any) {
-    if (error.message?.includes("No such container") || error.stderr?.includes("No such container")) {
+    if (
+      error.message?.includes("No such container") ||
+      error.stderr?.includes("No such container")
+    ) {
       return res.status(404).json({
         message: `Serviço '${serviceName}' não encontrado`,
       });
     }
 
     console.error("Erro ao coletar métricas:", error);
-    return res.status(500).json({ message: "Erro ao coletar métricas do serviço" });
+    return res
+      .status(500)
+      .json({ message: "Erro ao coletar métricas do serviço" });
   }
 };
 
-export const getMyGeneralMetrics = async (req: Request | any, res: Response) => {
+export const getMyGeneralMetrics = async (
+  req: Request | any,
+  res: Response,
+) => {
   const userId = req.user.userId;
 
   if (!userId || validate(userId) === false) {
@@ -150,6 +166,10 @@ export const getMyGeneralMetrics = async (req: Request | any, res: Response) => 
   if (projects.length === 0) {
     return res.status(404).json({ message: "Nenhum projeto encontrado" });
   }
+
+  try {
+    
+
 
   // Coleta memória de todos os projetos em paralelo
   const results = await Promise.allSettled(
@@ -174,7 +194,7 @@ export const getMyGeneralMetrics = async (req: Request | any, res: Response) => 
           usage_percent: parseFloat(percent.toFixed(1)),
         },
       };
-    })
+    }),
   );
 
   const successful = results
@@ -194,23 +214,41 @@ export const getMyGeneralMetrics = async (req: Request | any, res: Response) => 
     successful.length > 0
       ? {
           used_mb: parseFloat(
-            (successful.reduce((acc, p) => acc + p.memory.used_mb, 0) / successful.length).toFixed(2)
+            (
+              successful.reduce((acc, p) => acc + p.memory.used_mb, 0) /
+              successful.length
+            ).toFixed(2),
           ),
           total_mb: parseFloat(
-            (successful.reduce((acc, p) => acc + p.memory.total_mb, 0) / successful.length).toFixed(2)
+            (
+              successful.reduce((acc, p) => acc + p.memory.total_mb, 0) /
+              successful.length
+            ).toFixed(2),
           ),
           usage_percent: parseFloat(
-            (successful.reduce((acc, p) => acc + p.memory.usage_percent, 0) / successful.length).toFixed(1)
+            (
+              successful.reduce((acc, p) => acc + p.memory.usage_percent, 0) /
+              successful.length
+            ).toFixed(1),
           ),
         }
       : null;
 
   return res.status(200).json({
-    total_projects: projects.length,
-    collected: successful.length,
-    average_memory,
-    projects: successful,
-    ...(failed.length > 0 && { failed: failed }),
-    collected_at: new Date().toISOString(),
+    average: {
+      total_projects: projects.length,
+      collected: successful.length,
+      average_memory,
+      projects: successful,
+      ...(failed.length > 0 && { failed: failed }),
+      collected_at: new Date().toISOString(),
+    },
   });
+
+    } catch (error) {
+      console.error("Erro ao coletar métricas gerais:", error);
+      return res
+        .status(500)
+        .json({ message: "Erro ao coletar métricas gerais" });
+    }
 };
