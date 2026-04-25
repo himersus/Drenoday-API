@@ -160,6 +160,8 @@ export const getMyGeneralMetrics = async (
     select: {
       id: true,
       subdomain: true,
+      payments: true,
+      user_workspace: true
     },
   });
 
@@ -168,8 +170,6 @@ export const getMyGeneralMetrics = async (
   }
 
   try {
-    
-
 
   // Coleta memória de todos os projetos em paralelo
   const results = await Promise.allSettled(
@@ -234,6 +234,7 @@ export const getMyGeneralMetrics = async (
         }
       : null;
 
+
   return res.status(200).json({
     average: {
       total_projects: projects.length,
@@ -243,6 +244,18 @@ export const getMyGeneralMetrics = async (
       ...(failed.length > 0 && { failed: failed }),
       collected_at: new Date().toISOString(),
     },
+    services : {
+        total: projects.length,
+        successful: successful.length,
+        failed: failed.length,
+        collected_at: new Date().toISOString(),
+    },
+    payment : {
+        total : projects.reduce((acc, p) => acc + p.payments.length, 0),
+    },
+    members : {
+        total : projects.reduce((acc, p) => acc + p.user_workspace.length, 0),
+    }
   });
 
     } catch (error) {
