@@ -414,7 +414,7 @@ export const getMyProjects = async (req: Request | any, res: Response) => {
 export const getAllProjects = async (req: Request | any, res: Response) => {
   const userId = req.userId;
   const page = parseInt(req.query.page as string) || 1;
-  const limit = parseInt(req.query.limit as string) || 10;
+  const limit = parseInt(req.query.per_page as string) || 10;
   const skip = (page - 1) * limit;
   const name = req.query.name as string | undefined;
 
