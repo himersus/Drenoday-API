@@ -15,7 +15,7 @@ import * as schemasUser from "../schemas/user";
 import * as schemasWorkspace from "../schemas/workspace";
 import * as schemasProject from "../schemas/project";
 import * as schemasPlan from "../schemas/plan";
-import { getServiceMetrics } from "../controller/metrics";
+import { getMyGeneralMetrics, getServiceMetrics } from "../controller/metrics";
 
 const router = express.Router();
 
@@ -81,7 +81,7 @@ router.post('/project/run/:projectId', verifyAuthentication, runTheProject);
 router.get('/project/each/:projectId', verifyAuthentication, getProject);
 router.get('/project/my', verifyAuthentication, getMyProjects);
 router.get('/project/metrics/:projectId', verifyAuthentication, getServiceMetrics);
-
+router.get('/project/metrics', verifyAuthentication, getMyGeneralMetrics);
 router.get('/backoffice/project/list', verifyAuthentication, getAllProjects);
 
 router.put('/project/update/:projectId', validate(schemasProject.updateProjectSchema), verifyAuthentication, updateProject);

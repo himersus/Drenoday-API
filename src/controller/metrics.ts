@@ -131,3 +131,86 @@ export const getServiceMetrics = async (req: Request | any, res: Response) => {
     return res.status(500).json({ message: "Erro ao coletar métricas do serviço" });
   }
 };
+
+export const getMyGeneralMetrics = async (req: Request | any, res: Response) => {
+  const userId = req.user.userId;
+
+  if (!userId || validate(userId) === false) {
+    return res.status(400).json({ message: "ID do usuário é obrigatório" });
+  }
+
+  const projects = await prisma.project.findMany({
+    where: { userId: userId },
+    select: {
+      id: true,
+      subdomain: true,
+    },
+  });
+
+  if (projects.length === 0) {
+    return res.status(404).json({ message: "Nenhum projeto encontrado" });
+  }
+
+  // Coleta memória de todos os projetos em paralelo
+  const results = await Promise.allSettled(
+    projects.map(async (project) => {
+      const containerName = `${project.subdomain}-api`;
+
+      const memRaw = await dockerExec(containerName, [
+        "awk",
+        "/MemTotal/{t=$2} /MemAvailable/{a=$2} END{u=t-a; print u/1024, t/1024, u*100/t}",
+        "/proc/meminfo",
+      ]);
+
+      const [usedMB, totalMB, percent] = memRaw.split(" ").map(parseFloat);
+
+      return {
+        project_id: project.id,
+        subdomain: project.subdomain,
+        container: containerName,
+        memory: {
+          used_mb: parseFloat(usedMB.toFixed(2)),
+          total_mb: parseFloat(totalMB.toFixed(2)),
+          usage_percent: parseFloat(percent.toFixed(1)),
+        },
+      };
+    })
+  );
+
+  const successful = results
+    .filter((r): r is PromiseFulfilledResult<any> => r.status === "fulfilled")
+    .map((r) => r.value);
+
+  const failed = results
+    .filter((r): r is PromiseRejectedResult => r.status === "rejected")
+    .map((_, i) => ({
+      project_id: projects[i].id,
+      subdomain: projects[i].subdomain,
+      container: `${projects[i].subdomain}-api`,
+    }));
+
+  // Calcula a média geral
+  const average_memory =
+    successful.length > 0
+      ? {
+          used_mb: parseFloat(
+            (successful.reduce((acc, p) => acc + p.memory.used_mb, 0) / successful.length).toFixed(2)
+          ),
+          total_mb: parseFloat(
+            (successful.reduce((acc, p) => acc + p.memory.total_mb, 0) / successful.length).toFixed(2)
+          ),
+          usage_percent: parseFloat(
+            (successful.reduce((acc, p) => acc + p.memory.usage_percent, 0) / successful.length).toFixed(1)
+          ),
+        }
+      : null;
+
+  return res.status(200).json({
+    total_projects: projects.length,
+    collected: successful.length,
+    average_memory,
+    projects: successful,
+    ...(failed.length > 0 && { failed: failed }),
+    collected_at: new Date().toISOString(),
+  });
+};
