@@ -6,7 +6,10 @@ import prisma from "../lib/prisma";
 const execAsync = promisify(exec);
 
 // Helper para executar comandos dentro do container
-const dockerExec = async (containerName: string, command: string): Promise<string> => {
+const dockerExec = async (
+  containerName: string,
+  command: string,
+): Promise<string> => {
   const { stdout } = await execAsync(`docker exec ${containerName} ${command}`);
   return stdout.trim();
 };
@@ -27,35 +30,40 @@ export const getServiceMetrics = async (req: Request | any, res: Response) => {
   }
 
   const serviceName = `${existProject.subdomain}-api`;
+  console.log(`Coletando métricas do serviço: ${serviceName}`);
 
   try {
     // Verifica se o container existe e está rodando
     const { stdout: containerCheck } = await execAsync(
-      `docker inspect --format='{{.State.Status}}' ${serviceName} 2>/dev/null`
+      `docker inspect --format='{{.State.Status}}' ${serviceName} 2>/dev/null`,
     );
 
     if (containerCheck.trim() !== "running") {
-      return res.status(404).json({ message: `Serviço '${serviceName}' não encontrado ou não está rodando` });
+      return res
+        .status(404)
+        .json({
+          message: `Serviço '${serviceName}' não encontrado ou não está rodando`,
+        });
     }
 
     // Coleta todas as métricas em paralelo
     const [cpuRaw, memRaw, uptimeRaw, latencyRaw] = await Promise.all([
-      // CPU: usa /proc/stat para calcular uso real
+      // CPU
       dockerExec(
         serviceName,
-        `sh -c "cat /proc/stat | grep '^cpu ' | awk '{usage=($2+$4)*100/($2+$3+$4+$5)} END {print usage}'"`,
+        `sh -c "cat /proc/stat | head -1 | awk '{u=$2+$4; t=$2+$3+$4+$5; print u*100/t}'"`,
       ),
 
-      // Memória: /proc/meminfo
+      // Memória — sem printf, usa print simples para evitar problema de escape
       dockerExec(
         serviceName,
-        `sh -c "awk '/MemTotal/{total=$2} /MemAvailable/{avail=$2} END {used=total-avail; printf \\"%.2f %.2f %.1f\\", used/1024, total/1024, (used/total)*100}' /proc/meminfo"`,
+        `sh -c "awk '/MemTotal/{t=$2} /MemAvailable/{a=$2} END {u=t-a; print u/1024, t/1024, u*100/t}' /proc/meminfo"`,
       ),
 
-      // Uptime: /proc/uptime
+      // Uptime
       dockerExec(serviceName, `cat /proc/uptime`),
 
-      // Latência: tempo de resposta de um comando simples (em ms)
+      // Latência
       (async () => {
         const start = Date.now();
         await dockerExec(serviceName, "echo ok");
@@ -100,11 +108,15 @@ export const getServiceMetrics = async (req: Request | any, res: Response) => {
   } catch (error: any) {
     // Container não existe
     if (error.message?.includes("No such container")) {
-      return res.status(404).json({ message: `Serviço '${serviceName}' não encontrado` });
+      return res
+        .status(404)
+        .json({ message: `Serviço '${serviceName}' não encontrado` });
     }
 
     console.error(error);
-    return res.status(500).json({ message: "Erro ao coletar métricas do serviço" });
+    return res
+      .status(500)
+      .json({ message: "Erro ao coletar métricas do serviço" });
   }
 };
 
