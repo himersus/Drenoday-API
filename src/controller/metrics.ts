@@ -149,7 +149,7 @@ export const getMyGeneralMetrics = async (
   req: Request | any,
   res: Response,
 ) => {
-  const userId = req.user.userId;
+  const userId = req.userId;
 
   if (!userId || validate(userId) === false) {
     return res.status(400).json({ message: "ID do usuário é obrigatório" });
