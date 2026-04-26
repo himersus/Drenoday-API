@@ -144,11 +144,12 @@ networks:
                             success: false
                         }
                     });
+                    const logSplit = stderr.split("\n");
                     sendSocketContent("deploy_logs", {
                         deployId: buildDeploy.id,
                         projectId: projectId,
                         status: "failed",
-                        message: "Erro ao construir o deploy: " + stderr
+                        message: logSplit[logSplit.length - 2] || "Erro desconhecido durante o build do deploy"
                     });
                     return;
                 }
