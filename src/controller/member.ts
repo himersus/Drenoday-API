@@ -138,3 +138,62 @@ export const removeMember = async (req: Request | any, res: Response) => {
         res.status(500).json({ message: "Erro ao remover membro", error: error.message });
     }
 };
+
+export const listMembers = async (req: Request | any, res: Response) => {
+    const projectId = req.params.projectId;
+    const userId = req.userId;
+    const page = parseInt(req.query.page as string) || 1;
+    const per_page = parseInt(req.query.per_page as string) || 10;
+
+    if (!userId || !validate(userId)) {
+        return res.status(401).json({ message: "Usuário não autenticado" });
+    }
+
+    try {
+        const existUserLogado = await prisma.user.findUnique({
+            where: { id: userId }
+        });
+
+        if (!existUserLogado) {
+            return res.status(401).json({ message: "Não autorizado" });
+        }
+
+        const is_member = await prisma.user_workspace.findFirst({
+            where: {
+                userId: userId,
+                projectId: projectId,
+            },
+        });
+
+        if (!is_member) {
+            return res.status(403).json({ message: "Apenas membros do projeto podem listar os membros" });
+        }
+
+        const members = await prisma.user_workspace.findMany({
+            where: { projectId },
+            include: { User: true },
+        });
+        const formattedMembers = members.map(member => ({
+            id: member.User.id,
+            username: member.User.username,
+            email: member.User.email,
+            role: member.role,
+        }));
+
+        const totalMembers = await prisma.user_workspace.count({
+            where: { projectId },
+        });
+
+        res.status(200).json({
+            data : formattedMembers,
+            meta: {
+                page: page,
+                per_page: per_page,
+                total: totalMembers,
+                total_pages: Math.ceil(totalMembers / per_page),
+            }
+        });
+    } catch (error: any) {
+        res.status(500).json({ message: "Erro ao listar membros", error: error.message });
+    }
+};

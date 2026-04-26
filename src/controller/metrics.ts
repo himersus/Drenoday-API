@@ -301,3 +301,71 @@ export const getMyGeneralMetrics = async (
     return res.status(500).json({ message: "Erro ao coletar métricas gerais" });
   }
 };
+
+const runCommand = async (command: string, args: string[]): Promise<string> => {
+  const { stdout } = await execFileAsync(command, args);
+  return stdout.trim();
+};
+
+export const getVpsMetrics = async (req: Request | any, res: Response) => {
+  try {
+    const [memRaw, diskRaw, uptimeRaw, loadRaw] = await Promise.all([
+      // Memória
+      runCommand("awk", [
+        "/MemTotal/{t=$2} /MemAvailable/{a=$2} END{u=t-a; print u/1024, t/1024, u*100/t}",
+        "/proc/meminfo",
+      ]),
+
+      // Disco
+      runCommand("df", ["-h", "--output=used,size,pcent", "/"]),
+
+      // Uptime
+      runCommand("cat", ["/proc/uptime"]),
+
+      // Load average
+      runCommand("cat", ["/proc/loadavg"]),
+    ]);
+
+    // Processa Memória
+    const [usedMB, totalMB, memPercent] = memRaw.split(" ").map(parseFloat);
+
+    // Processa Disco
+    const diskLines = diskRaw.trim().split("\n");
+    const diskValues = diskLines[diskLines.length - 1].trim().split(/\s+/);
+    const diskUsed = diskValues[0];
+    const diskTotal = diskValues[1];
+    const diskPercent = parseFloat(diskValues[2].replace("%", ""));
+
+    // Processa Uptime
+    const uptimeSeconds = parseFloat(uptimeRaw.split(" ")[0]);
+
+    // Processa Load Average (1m, 5m, 15m)
+    const [load1, load5, load15] = loadRaw.split(" ").map(parseFloat);
+
+    return res.status(200).json({
+      memory: {
+        used_mb: parseFloat(usedMB.toFixed(2)),
+        total_mb: parseFloat(totalMB.toFixed(2)),
+        usage_percent: parseFloat(memPercent.toFixed(1)),
+      },
+      disk: {
+        used: diskUsed,
+        total: diskTotal,
+        usage_percent: diskPercent,
+      },
+      uptime: {
+        seconds: uptimeSeconds,
+        human: formatUptime(uptimeSeconds),
+      },
+      load_average: {
+        "1m": load1,
+        "5m": load5,
+        "15m": load15,
+      },
+      collected_at: new Date().toISOString(),
+    });
+  } catch (error: any) {
+    console.error("Erro ao coletar métricas da VPS:", error);
+    return res.status(500).json({ message: "Erro ao coletar métricas da VPS" });
+  }
+};

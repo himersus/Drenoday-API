@@ -36,3 +36,4 @@ export const createNotification = async (userId: string | null, title: string, m
         console.error("Error creating notification:", error);
     }
 }
+

@@ -5,7 +5,7 @@ import { login, loginGitHub, loginGoogle, loginWithEmail, sendCodeVerification, 
 import passport from "passport";
 import { createCookieGitHub, getUserBranchesByName, getUserRepoByName, getUserRepos, readCookieGitHub, syncUserWithGitHub, unsyncUserFromGitHub } from "../controller/github";
 import { createProject, deleteProject, getAllProjects, getMyProjects, getProject, runTheProject, updateProject } from "../controller/project";
-import { addMember, removeMember } from "../controller/member";
+import { addMember, listMembers, removeMember } from "../controller/member";
 import { getDeploy, listDeploys } from "../controller/deploy";
 import { addPlan, updatePlan, deletePlan, getPlanById, getPlans } from "../controller/plan";
 import { confirmPayment, createPayment, getUserPayments, getPaymentById, referenceSendPaymentGateway, webhookPayment, getAllPayments } from "../controller/payment";
@@ -15,7 +15,7 @@ import * as schemasUser from "../schemas/user";
 import * as schemasWorkspace from "../schemas/workspace";
 import * as schemasProject from "../schemas/project";
 import * as schemasPlan from "../schemas/plan";
-import { getMyGeneralMetrics, getServiceMetrics } from "../controller/metrics";
+import { getMyGeneralMetrics, getServiceMetrics, getVpsMetrics } from "../controller/metrics";
 
 const router = express.Router();
 
@@ -74,6 +74,7 @@ router.put('/user/update', validate(schemasUser.updateUserSchema), updateUser);
 // {{ Member ROUTES}}
 router.post('/workspace/member/add', validate(schemasWorkspace.addMemberSchema), verifyAuthentication, addMember);
 router.delete('/workspace/member/remove', validate(schemasWorkspace.removeMemberSchema), verifyAuthentication, removeMember);
+router.get('/workspace/member/list/:projectId', verifyAuthentication, listMembers);
 
 // {{ Project ROUTES}}
 router.post('/project/create', validate(schemasProject.createProjectSchema), verifyAuthentication, createProject);
@@ -115,6 +116,8 @@ router.get("/notification/my", verifyAuthentication, myNotifications);
 router.post("/notification/read/:notificationId", verifyAuthentication, markNotificationAsRead);
 router.get("/notification/each/:notificationId", verifyAuthentication, getOneNotification);
 
+
+router.get("/metrics/general", verifyAuthentication, getVpsMetrics);
 
 router.get("/cookie/create", createCookieGitHub);
 router.get("/cookie/read", readCookieGitHub);

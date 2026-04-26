@@ -4,6 +4,8 @@ import { validate } from "uuid";
 import { q } from "../utils/to_string";
 
 export const myNotifications = async (req: Request | any, res: Response) => {
+    const page = parseInt(q(req.query.page) || "1");
+    const per_page = parseInt(q(req.query.per_page) || "10");
 
     const userId = req.userId; // Supondo que o ID do usuário logado esteja disponível em req.userId
     if (!validate(userId)) {
@@ -39,12 +41,29 @@ export const myNotifications = async (req: Request | any, res: Response) => {
             orderBy: {
                 createdAt: 'desc',
             },
+            skip : (page - 1) * per_page,
+            take : per_page,
         });
 
-        return res.status(200).json(notifications);
+        const totalNotifications = await prisma.notification.count({
+            where: {
+                userId: userId,
+            },
+        });
+
+        return res.status(200).json({
+            data : notifications,
+            meta: {
+                page : page,
+                per_page : per_page,
+                total: totalNotifications,
+                total_pages: Math.ceil(totalNotifications / per_page),
+
+            }
+        });
     } catch (error) {
         console.error("Error fetching notifications:", error);
-        return res.status(500).json([]);
+        return res.status(500).json({ message: "Erro ao buscar notificações" });
     }
 }
 

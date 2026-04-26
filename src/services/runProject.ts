@@ -170,6 +170,14 @@ networks:
                         success: true
                     }
                 });
+
+                await prisma.project.update({
+                    where: { id: projectId },
+                    data: {
+                        run_status: true,
+                    }
+                });
+                
                 sendSocketContent("deploy_logs", {
                     deployId: buildDeploy.id,
                     projectId: projectId,
