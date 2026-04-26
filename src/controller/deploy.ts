@@ -55,7 +55,8 @@ export const listDeploys = async (req: Request | any, res: Response) => {
 export const getDeploy = async (req: Request | any, res: Response) => {
     const deployId = q(req.params.deployId);
     const userId = req.userId;
-
+    const page = parseInt(q(req.query.page) || "1");
+    const per_page = parseInt(q(req.query.per_page) || "10");
     if (!userId || !validate(userId)) {
         return res.status(401).json({ message: "Usuário não autenticado" });
     }
@@ -96,7 +97,21 @@ export const getDeploy = async (req: Request | any, res: Response) => {
     }
 
     try {
-        res.status(200).json(exitDeploy);
+
+        const count_deploys = await prisma.deploy.count({
+            where: { projectId: exitProject.id }
+        });
+        const totalPages = Math.ceil(count_deploys / per_page);
+        
+        res.status(200).json({
+            data : exitDeploy,
+            pagination: {
+                page,
+                per_page,
+                total_pages: totalPages,
+                total : count_deploys
+            }
+        });
     } catch (error) {
         res.status(500).json({ message: "Failed to get deploy" });
     }
