@@ -207,7 +207,11 @@ export const getMyGeneralMetrics = async (
             subdomain: project.subdomain,
             container: containerName,
             status: "offline",
-            memory: null,
+            memory: {
+                used_mb: 0,
+                total_mb: 0,
+                usage_percent: 0,
+            },
           };
         }
 
