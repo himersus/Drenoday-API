@@ -300,7 +300,12 @@ export const confirmPayment = async (req: Request | any, res: Response) => {
       paymentId: paymentId,
       status: status == "approved" ? "Pago" : "Rejeitado",
     });
+  } catch (error) {
+    console.error(error);
+    return res.status(400).json({ message: "Erro ao confirmar pagamento" });
+  }
 
+  try {
     const runResponse = await runProject(existProject.id, existProject.userId);
 
     await prisma.project.update({
