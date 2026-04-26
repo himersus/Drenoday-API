@@ -18,6 +18,20 @@ const dockerExec = async (
   return stdout.trim();
 };
 
+const isContainerRunning = async (containerName: string): Promise<boolean> => {
+  try {
+    const { stdout } = await execFileAsync("docker", [
+      "inspect",
+      "--format",
+      "{{.State.Status}}",
+      containerName,
+    ]);
+    return stdout.trim() === "running";
+  } catch {
+    return false; // container não existe — retorna false sem lançar erro
+  }
+};
+
 const formatUptime = (seconds: number): string => {
   const d = Math.floor(seconds / 86400);
   const h = Math.floor((seconds % 86400) / 3600);
@@ -50,10 +64,19 @@ export const getServiceMetrics = async (req: Request | any, res: Response) => {
 
   const serviceName = `${existProject.subdomain}-api`; // Supondo que o nome do serviço seja o subdomínio do projeto
 
+
   if (!serviceName || !/^[a-zA-Z0-9_-]+$/.test(serviceName)) {
     return res
       .status(400)
       .json({ message: "Nome do serviço inválido ou não informado" });
+  }
+
+  const running = await isContainerRunning(serviceName);
+  
+  if (!running) {
+    return res.status(404).json({
+      message: `Serviço '${serviceName}' não encontrado ou não está rodando`,
+    });
   }
 
   try {
@@ -161,7 +184,7 @@ export const getMyGeneralMetrics = async (
       id: true,
       subdomain: true,
       payments: true,
-      user_workspace: true
+      user_workspace: true,
     },
   });
 
@@ -170,98 +193,107 @@ export const getMyGeneralMetrics = async (
   }
 
   try {
+    // Coleta memória de todos os projetos em paralelo
+    const results = await Promise.allSettled(
+      projects.map(async (project) => {
+        const containerName = `${project.subdomain}-api`;
 
-  // Coleta memória de todos os projetos em paralelo
-  const results = await Promise.allSettled(
-    projects.map(async (project) => {
-      const containerName = `${project.subdomain}-api`;
+        // Verifica se está rodando antes de tentar coletar
+        const running = await isContainerRunning(containerName);
 
-      const memRaw = await dockerExec(containerName, [
-        "awk",
-        "/MemTotal/{t=$2} /MemAvailable/{a=$2} END{u=t-a; print u/1024, t/1024, u*100/t}",
-        "/proc/meminfo",
-      ]);
-
-      const [usedMB, totalMB, percent] = memRaw.split(" ").map(parseFloat);
-
-      return {
-        project_id: project.id,
-        subdomain: project.subdomain,
-        container: containerName,
-        memory: {
-          used_mb: parseFloat(usedMB.toFixed(2)),
-          total_mb: parseFloat(totalMB.toFixed(2)),
-          usage_percent: parseFloat(percent.toFixed(1)),
-        },
-      };
-    }),
-  );
-
-  const successful = results
-    .filter((r): r is PromiseFulfilledResult<any> => r.status === "fulfilled")
-    .map((r) => r.value);
-
-  const failed = results
-    .filter((r): r is PromiseRejectedResult => r.status === "rejected")
-    .map((_, i) => ({
-      project_id: projects[i].id,
-      subdomain: projects[i].subdomain,
-      container: `${projects[i].subdomain}-api`,
-    }));
-
-  // Calcula a média geral
-  const average_memory =
-    successful.length > 0
-      ? {
-          used_mb: parseFloat(
-            (
-              successful.reduce((acc, p) => acc + p.memory.used_mb, 0) /
-              successful.length
-            ).toFixed(2),
-          ),
-          total_mb: parseFloat(
-            (
-              successful.reduce((acc, p) => acc + p.memory.total_mb, 0) /
-              successful.length
-            ).toFixed(2),
-          ),
-          usage_percent: parseFloat(
-            (
-              successful.reduce((acc, p) => acc + p.memory.usage_percent, 0) /
-              successful.length
-            ).toFixed(1),
-          ),
+        if (!running) {
+          return {
+            project_id: project.id,
+            subdomain: project.subdomain,
+            container: containerName,
+            status: "offline",
+            memory: null,
+          };
         }
-      : null;
 
+        const memRaw = await dockerExec(containerName, [
+          "awk",
+          "/MemTotal/{t=$2} /MemAvailable/{a=$2} END{u=t-a; print u/1024, t/1024, u*100/t}",
+          "/proc/meminfo",
+        ]);
 
-  return res.status(200).json({
-    average: {
-      total_projects: projects.length,
-      collected: successful.length,
-      average_memory,
-      projects: successful,
-      ...(failed.length > 0 && { failed: failed }),
-      collected_at: new Date().toISOString(),
-    },
-    services : {
+        const [usedMB, totalMB, percent] = memRaw.split(" ").map(parseFloat);
+
+        return {
+          project_id: project.id,
+          subdomain: project.subdomain,
+          container: containerName,
+          status: "online",
+          memory: {
+            used_mb: parseFloat(usedMB.toFixed(2)),
+            total_mb: parseFloat(totalMB.toFixed(2)),
+            usage_percent: parseFloat(percent.toFixed(1)),
+          },
+        };
+      }),
+    );
+
+    const successful = results
+      .filter((r): r is PromiseFulfilledResult<any> => r.status === "fulfilled")
+      .map((r) => r.value);
+
+    const failed = results
+      .filter((r): r is PromiseRejectedResult => r.status === "rejected")
+      .map((_, i) => ({
+        project_id: projects[i].id,
+        subdomain: projects[i].subdomain,
+        container: `${projects[i].subdomain}-api`,
+      }));
+
+    // Calcula a média geral
+    const average_memory =
+      successful.length > 0
+        ? {
+            used_mb: parseFloat(
+              (
+                successful.reduce((acc, p) => acc + p.memory.used_mb, 0) /
+                successful.length
+              ).toFixed(2),
+            ),
+            total_mb: parseFloat(
+              (
+                successful.reduce((acc, p) => acc + p.memory.total_mb, 0) /
+                successful.length
+              ).toFixed(2),
+            ),
+            usage_percent: parseFloat(
+              (
+                successful.reduce((acc, p) => acc + p.memory.usage_percent, 0) /
+                successful.length
+              ).toFixed(1),
+            ),
+          }
+        : null;
+
+    return res.status(200).json({
+      average: {
+        total_projects: projects.length,
+        collected: successful.length,
+        average_memory,
+        projects: successful,
+        ...(failed.length > 0 && { failed: failed }),
+        collected_at: new Date().toISOString(),
+      },
+      services: {
         total: projects.length,
         successful: successful.length,
         failed: failed.length,
         collected_at: new Date().toISOString(),
-    },
-    payment : {
-        total : projects.reduce((acc, p) => acc + p.payments.length, 0),
-    },
-    members : {
-        total : projects.reduce((acc, p) => acc + p.user_workspace.length, 0),
-    }
-  });
-
-    } catch (error) {
-      console.error("Erro ao coletar métricas gerais:", error);
-      return res
-        .status(500)
-        .json({ message: "Erro ao coletar métricas gerais" });
-    }
+      },
+      payment: {
+        total: projects.reduce((acc, p) => acc + p.payments.length, 0),
+      },
+      members: {
+        total: projects.reduce((acc, p) => acc + p.user_workspace.length, 0),
+      },
+    });
+  } catch (error) {
+    console.error("Erro ao coletar métricas gerais:", error);
+    return res.status(500).json({ message: "Erro ao coletar métricas gerais" });
+  }
 };
