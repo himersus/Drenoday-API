@@ -144,13 +144,15 @@ networks:
     };
   }
 
-  const environments  = await prisma.environment.findMany({
+  const environments = await prisma.environment.findMany({
     where: { projectId: projectId },
   });
 
   // criar a varialeis de ambiente
   if (environments) {
-    const envContent = generateEnvContent(environments.map((env) => `${env.key}=${decryptEnv(env.value)}`));
+    const envContent = generateEnvContent(
+      environments.map((env) => `${env.key}=${decryptEnv(env.value)}`),
+    );
     fs.writeFileSync(path.join(targetPath, ".env"), envContent);
   }
   // subir container
@@ -160,14 +162,15 @@ networks:
     async (error, stdout, stderr) => {
       if (error) {
         console.error("[docker error]", stderr);
+        const logSplit = stderr.split("\n");
         await prisma.deploy.update({
           where: { id: buildDeploy.id },
           data: {
             status: "failed",
             success: false,
+            logs: logSplit,
           },
         });
-        const logSplit = stderr.split("\n");
         sendSocketContent("deploy_logs", {
           deployId: buildDeploy.id,
           projectId: projectId,
