@@ -71,13 +71,25 @@ model project {
   default_plan         String?
   default_type_payment typePayment      @default(monthly)
   userId               String
-  environments         String[]         @default([])
   createdAt            DateTime         @default(now())
   updatedAt            DateTime         @updatedAt
   payments             payment[]
   deploy               deploy[]
   user_workspace       User_workspace[]
   User                 User             @relation(fields: [userId], references: [id])
+  environment          environment[]
+}
+
+model environment {
+  id        String   @id @default(uuid())
+  projectId String
+  key       String
+  value     String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  Project   project  @relation(fields: [projectId], references: [id])
+
+  @@unique([projectId, key])
 }
 
 model deploy {

@@ -23,7 +23,7 @@ export const createProjectSchema = z.object({
   repo_url: z
     .string("A URL do repositório é obrigatória")
     .url("A URL do repositório deve ser uma URL válida"),
-  environments: z.array(z.string()).optional(),
+  environments: z.array(z.object({ key: z.string("A chave do ambiente é obrigatória"), value: z.string("O valor do ambiente é obrigatório e deve ser uma string") })).optional(),
   default_plan: z
     .string("O plano padrão é obrigatório")
     .min(3, "O plano padrão deve conter pelo menos 3 caracteres"),
@@ -55,8 +55,18 @@ export const updateProjectSchema = z.object({
     .int("A duração do período deve ser um número inteiro")
     .positive("A duração do período deve ser um número positivo")
     .optional(),
-  environments: z.array(z.string()).optional(),
+  environments: z.array(z.object({ key: z.string(), value: z.string() })).optional(),
+});
+
+export const saveEnvSchema = z.object({
+  environments: z.array(
+    z.object({
+      key: z.string("A chave do ambiente é obrigatória"),
+      value: z.string("O valor do ambiente é obrigatório e deve ser uma string"),
+    })
+  ),
 });
 
 export type CreateProjectInput = z.infer<typeof createProjectSchema>;
 export type UpdateProjectInput = z.infer<typeof updateProjectSchema>;
+export type SaveEnvInput = z.infer<typeof saveEnvSchema>;

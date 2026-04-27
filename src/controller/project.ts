@@ -16,6 +16,7 @@ import {
 } from "../services/github";
 import { computeProjectAmount, computeProjectDays } from "../utils/project";
 import { getLastCommitFromBranch } from "../utils/github";
+import { encryptEnv } from "../utils/crypt";
 
 // {{Create projecto}}
 export const createProject = async (req: Request | any, res: Response) => {
@@ -30,6 +31,7 @@ export const createProject = async (req: Request | any, res: Response) => {
     default_type_payment,
     period_duration,
   } = req.body;
+
   const userId = req.userId;
 
   if (!validate(userId) || !userId) {
@@ -51,9 +53,10 @@ export const createProject = async (req: Request | any, res: Response) => {
   });
 
   if (existThisProjectName) {
-    return res
-      .status(400)
-      .json({ message: "Você já tem um projeto com esse nome, escolha outro nome para o projeto" });
+    return res.status(400).json({
+      message:
+        "Você já tem um projeto com esse nome, escolha outro nome para o projeto",
+    });
   }
 
   if (!name) {
@@ -139,11 +142,21 @@ export const createProject = async (req: Request | any, res: Response) => {
         userId: existUser.id,
         subdomain: subdomain as string,
         domain: `https://${subdomain}.${base_domain}`,
-        environments: environments || [],
         days,
         amount_to_pay: amount,
       },
     });
+
+    const upserts = environments.map(
+      ({ key, value }: { key: string; value: string }) =>
+        prisma.environment.upsert({
+          where: { projectId_key: { projectId: project.id, key } },
+          update: { value: encryptEnv(value) },
+          create: { projectId: project.id, key, value: encryptEnv(value) },
+        }),
+    );
+
+    await prisma.$transaction(upserts);
 
     await createMember(existUser.id, project.id);
 
@@ -451,7 +464,7 @@ export const getAllProjects = async (req: Request | any, res: Response) => {
       }),
       prisma.project.count({ where }),
     ]);
-    
+
     const now = new Date();
     const projectsWithPaymentStatus = await Promise.all(
       projects.map(async (project) => {
@@ -493,7 +506,7 @@ export const getAllProjects = async (req: Request | any, res: Response) => {
 
 export const updateProject = async (req: Request | any, res: Response) => {
   const projectId = q(req.params.projectId);
-  const { name, description, environments } = req.body;
+  const { name, description } = req.body;
   const userId = req.userId;
 
   if (!validate(projectId) || !validate(userId)) {
@@ -543,9 +556,10 @@ export const updateProject = async (req: Request | any, res: Response) => {
     });
 
     if (existThisProjectName) {
-      return res
-        .status(400)
-        .json({ message: "Você já tem um projeto com esse nome, escolha outro nome para o projeto" });
+      return res.status(400).json({
+        message:
+          "Você já tem um projeto com esse nome, escolha outro nome para o projeto",
+      });
     }
 
     const updatedProject = await prisma.project.update({
@@ -554,7 +568,6 @@ export const updateProject = async (req: Request | any, res: Response) => {
         name: name || project.name,
         description: description || project.description,
         default_plan: "default",
-        environments: environments || project.environments,
         //port: port || project.port, // carece de logica para validar se a porta é diferente e se é válida, caso seja diferente da porta atual, tem de verificar se a nova porta está disponível
         // branch: branch || project.branch, // carece de lógica para verificar se a branch é diferente e se existe no repositório
       },

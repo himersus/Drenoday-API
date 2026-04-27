@@ -16,6 +16,7 @@ import * as schemasWorkspace from "../schemas/workspace";
 import * as schemasProject from "../schemas/project";
 import * as schemasPlan from "../schemas/plan";
 import { getMyGeneralMetrics, getServiceMetrics, getVpsMetrics } from "../controller/metrics";
+import { deleteEnvVar, getEnvVars, saveEnvVars } from "../controller/environment";
 
 const router = express.Router();
 
@@ -84,7 +85,10 @@ router.get('/project/my', verifyAuthentication, getMyProjects);
 router.get('/project/metrics/:projectId', verifyAuthentication, getServiceMetrics);
 router.get('/project/metrics', verifyAuthentication, getMyGeneralMetrics);
 
-router.get('/backoffice/project/list', verifyAuthentication, getAllProjects);
+// {{ ENVIRENETS }}
+router.post("/env/save/:projectId", validate(schemasProject.saveEnvSchema), verifyAuthentication, saveEnvVars);
+router.get("/env/list/:projectId", verifyAuthentication, getEnvVars);
+router.delete("/env/delete/:projectId/:envId", verifyAuthentication, deleteEnvVar);
 
 router.put('/project/update/:projectId', validate(schemasProject.updateProjectSchema), verifyAuthentication, updateProject);
 router.delete('/project/delete/:projectId', verifyAuthentication, deleteProject);
@@ -105,7 +109,6 @@ router.post('/pay/create', verifyAuthentication, createPayment);
 router.post('/pay/confirm', verifyAuthentication, confirmPayment);
 router.get('/pay/my', verifyAuthentication, getUserPayments);
 router.get('/pay/each/:paymentId', verifyAuthentication, getPaymentById);
-router.get('/backoffice/pay/list', verifyAuthentication, getAllPayments);
 
 // {{ API DE PAGAMENTO EXTERNA }}
 router.post('/pay/reference', verifyAuthentication, referenceSendPaymentGateway);
@@ -118,6 +121,10 @@ router.get("/notification/each/:notificationId", verifyAuthentication, getOneNot
 
 
 router.get("/metrics/general", verifyAuthentication, getVpsMetrics);
+
+router.get('/backoffice/project/list', verifyAuthentication, getAllProjects);
+router.get('/backoffice/pay/list', verifyAuthentication, getAllPayments);
+
 
 router.get("/cookie/create", createCookieGitHub);
 router.get("/cookie/read", readCookieGitHub);

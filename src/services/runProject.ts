@@ -5,6 +5,7 @@ import { collectLogs, startLogStream } from "../utils/logs";
 import fs from "fs";
 import path from "path";
 import { getLastCommitFromBranch } from "../utils/github";
+import { decryptEnv } from "../utils/crypt";
 
 type RunProjectResponse = {
   statusCode: number;
@@ -143,9 +144,13 @@ networks:
     };
   }
 
+  const environments  = await prisma.environment.findMany({
+    where: { projectId: projectId },
+  });
+
   // criar a varialeis de ambiente
-  if (project.environments && project.environments.length > 0) {
-    const envContent = generateEnvContent(project.environments);
+  if (environments) {
+    const envContent = generateEnvContent(environments.map((env) => `${env.key}=${decryptEnv(env.value)}`));
     fs.writeFileSync(path.join(targetPath, ".env"), envContent);
   }
   // subir container
