@@ -6,7 +6,7 @@ datasource db {
   provider = "postgresql"
 }
 
-model User {
+model user {
   id              String           @id @default(uuid())
   email           String           @unique
   name            String
@@ -22,13 +22,14 @@ model User {
   is_active       Boolean          @default(false)
   createdAt       DateTime         @default(now())
   updatedAt       DateTime         @updatedAt
-  workspaces      User_workspace[]
+  workspaces      user_workspace[]
   projects        project[]
   notifications   notification[]
   payments        payment[]
+
 }
 
-model User_workspace {
+model user_workspace {
   id        String             @id @default(uuid())
   userId    String
   projectId String?
@@ -36,11 +37,11 @@ model User_workspace {
   status    statusSolicitation @default(pending)
   createdAt DateTime           @default(now())
   updatedAt DateTime           @updatedAt
-  User      User               @relation(fields: [userId], references: [id])
+  User      user               @relation(fields: [userId], references: [id])
   Project   project?           @relation(fields: [projectId], references: [id])
 }
 
-model Workspace {
+model workspace {
   id           String   @id @default(uuid())
   name         String
   max_projects Int      @default(10)
@@ -76,8 +77,8 @@ model project {
   updatedAt            DateTime         @updatedAt
   payments             payment[]
   deploy               deploy[]
-  user_workspace       User_workspace[]
-  User                 User             @relation(fields: [userId], references: [id])
+  user_workspace       user_workspace[]
+  User                 user             @relation(fields: [userId], references: [id])
   environment          environment[]
 }
 
@@ -134,7 +135,7 @@ model payment {
   createdAt     DateTime       @default(now())
   updatedAt     DateTime       @updatedAt
   project       project        @relation(fields: [projectId], references: [id])
-  User          User           @relation(fields: [userId], references: [id])
+  User          user           @relation(fields: [userId], references: [id])
   Plan          plan           @relation(fields: [planId], references: [id], onDelete: SetDefault)
 }
 
@@ -164,7 +165,7 @@ model notification {
   read      Boolean  @default(false)
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
-  User      User     @relation(fields: [userId], references: [id])
+  User      user     @relation(fields: [userId], references: [id])
 }
 
 enum Provider {
