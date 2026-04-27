@@ -5,7 +5,7 @@ import { collectLogs, startLogStream } from "../utils/logs";
 import fs from "fs";
 import path from "path";
 import { getLastCommitFromBranch } from "../utils/github";
-import { decryptEnv } from "../utils/crypt";
+import { decryptEnv, encryptEnv } from "../utils/crypt";
 
 type RunProjectResponse = {
   statusCode: number;
@@ -64,11 +64,16 @@ export async function runProject(
   }
   /*if (project.clone !== 'cloned') {
             return res.status(400).json({ message: "O repositório ainda não foi clonado completamente" });
-        }*/
+  }*/
 
   const deployDir = process.env.DEPLOY_DIR;
   const targetPath = `${deployDir}/${existUser.username}/${project.subdomain}`;
-
+  if (!project.path) {
+    await prisma.project.update({
+      where: { id: project.id },
+      data: { path: encryptEnv(targetPath) },
+    });
+  }
   const createComposeTreakfik = `
 services:
   ${project.subdomain}:
@@ -157,7 +162,7 @@ networks:
   }
   // subir container
   exec(
-    "git pull && docker-compose up -d --build",
+    "git pull && docker-compose down -v && docker-compose up -d --build",
     { cwd: targetPath },
     async (error, stdout, stderr) => {
       if (error) {
@@ -178,6 +183,10 @@ networks:
           message:
             logSplit[logSplit.length - 2] ||
             "Erro desconhecido durante o build do deploy",
+        });
+        await prisma.project.update({
+          where: { id: projectId },
+          data: { run_status: false },
         });
         return;
       }

@@ -162,6 +162,13 @@ export const createProject = async (req: Request | any, res: Response) => {
 
     const deployDir = process.env.DEPLOY_DIR;
     const targetPath = `${deployDir}/${existUser.username}/${project.subdomain}`;
+    if (!project.path) {
+      await prisma.project.update({
+        where: { id: project.id },
+        data: { path: encryptEnv(targetPath) },
+      });
+    }
+
     cloneRepository(
       buildCloneUrl(project.repo_url, token),
       targetPath,
@@ -506,11 +513,18 @@ export const getAllProjects = async (req: Request | any, res: Response) => {
 
 export const updateProject = async (req: Request | any, res: Response) => {
   const projectId = q(req.params.projectId);
-  const { name, description } = req.body;
+  const { name, description, branch, port } = req.body;
   const userId = req.userId;
 
   if (!validate(projectId) || !validate(userId)) {
     return res.status(400).json({ message: "ID inválido" });
+  }
+
+  const inputResult = validateUserInput(port, undefined);
+  if (!inputResult.valid) {
+    return res
+      .status(inputResult.status)
+      .json({ message: inputResult.message });
   }
 
   try {
@@ -567,11 +581,21 @@ export const updateProject = async (req: Request | any, res: Response) => {
       data: {
         name: name || project.name,
         description: description || project.description,
-        default_plan: "default",
-        //port: port || project.port, // carece de logica para validar se a porta é diferente e se é válida, caso seja diferente da porta atual, tem de verificar se a nova porta está disponível
-        // branch: branch || project.branch, // carece de lógica para verificar se a branch é diferente e se existe no repositório
+        port: port || project.port, // carece de logica para validar se a porta é diferente e se é válida, caso seja diferente da porta atual, tem de verificar se a nova porta está disponível
+        branch: branch || project.branch, // carece de lógica para verificar se a branch é diferente e se existe no repositório
       },
     });
+
+    if (
+      (branch && branch !== project.branch) ||
+      (port && port !== project.port)
+    ) {
+      await runProject(projectId, userId);
+      await prisma.project.update({
+        where: { id: projectId },
+        data: { repo_saved: true },
+      });
+    }
 
     res.status(200).json(updatedProject);
   } catch (error) {

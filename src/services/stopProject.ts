@@ -1,5 +1,6 @@
 import { exec } from "child_process";
 import prisma from "../lib/prisma";
+import { encryptEnv } from "../utils/crypt";
 
 type StopProjectResponse = {
   statusCode: number;
@@ -42,14 +43,25 @@ export async function stopProject(
   const deployDir = process.env.DEPLOY_DIR;
   const targetPath = `${deployDir}/${existUser.username}/${project.subdomain}`;
 
+  if (!project.path) {
+    await prisma.project.update({
+      where: { id: project.id },
+      data: { path: encryptEnv(targetPath) },
+    });
+  }
   exec(
-    "docker-compose down",
+    "docker-compose down --rmi all --volumes",
     { cwd: targetPath },
     async (error, stdout, stderr) => {
       if (error) {
         console.error(`[docker error]: ${stderr}`);
         return;
       }
+
+      await prisma.project.update({
+        where: { id: projectId },
+        data: { run_status: false },
+      });
 
       console.log(`[docker]: ${stdout}`);
     },
