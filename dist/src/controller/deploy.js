@@ -10,36 +10,52 @@ const prisma_1 = __importDefault(require("../lib/prisma"));
 const listDeploys = async (req, res) => {
     const projectId = (0, to_string_1.q)(req.params.projectId);
     const userId = req.userId;
+    const page = parseInt((0, to_string_1.q)(req.query.page) || "1");
+    const per_page = parseInt((0, to_string_1.q)(req.query.per_page) || "10");
     if (!userId || !(0, uuid_1.validate)(userId)) {
         return res.status(401).json({ message: "Usuário não autenticado" });
     }
     const existUser = await prisma_1.default.user.findUnique({
-        where: { id: userId }
+        where: { id: userId },
     });
     if (!existUser) {
         return res.status(404).json({ message: "Usuário não encontrado" });
     }
     const exitProject = await prisma_1.default.project.findUnique({
-        where: { id: projectId }
+        where: { id: projectId },
     });
     if (!exitProject) {
         return res.status(404).json({ message: "Projeto não encontrado" });
     }
     /*const userWorkspace = await prisma.user_workspace.findFirst({
-        where: {
-            userId,
-            workspaceId: exitProject.workspaceId,
-        }
-    });*/
+          where: {
+              userId,
+              workspaceId: exitProject.workspaceId,
+          }
+      });*/
     /*if (!userWorkspace) {
-        return res.status(403).json({ message: "Você não tem acesso a este projeto" });
-    }*/
+          return res.status(403).json({ message: "Você não tem acesso a este projeto" });
+      }*/
     try {
         const deploys = await prisma_1.default.deploy.findMany({
             where: { projectId },
-            orderBy: { createdAt: 'desc' }
+            orderBy: { createdAt: "desc" },
+            skip: (page - 1) * per_page,
+            take: per_page,
         });
-        res.status(200).json(deploys);
+        const totalDeploys = await prisma_1.default.deploy.count({
+            where: { projectId },
+        });
+        const totalPages = Math.ceil(totalDeploys / per_page);
+        res.status(200).json({
+            data: deploys,
+            meta: {
+                page,
+                per_page,
+                total: totalDeploys,
+                total_pages: totalPages,
+            },
+        });
     }
     catch (error) {
         res.status(500).json({ message: "Failed to list deploys" });
@@ -53,19 +69,19 @@ const getDeploy = async (req, res) => {
         return res.status(401).json({ message: "Usuário não autenticado" });
     }
     const existUser = await prisma_1.default.user.findUnique({
-        where: { id: userId }
+        where: { id: userId },
     });
     if (!existUser) {
         return res.status(404).json({ message: "Usuário não encontrado" });
     }
     const exitDeploy = await prisma_1.default.deploy.findUnique({
-        where: { id: deployId }
+        where: { id: deployId },
     });
     if (!exitDeploy) {
         return res.status(404).json({ message: "Deploy não encontrado" });
     }
     const exitProject = await prisma_1.default.project.findUnique({
-        where: { id: exitDeploy.projectId }
+        where: { id: exitDeploy.projectId },
     });
     if (!exitProject) {
         return res.status(404).json({ message: "Projeto não encontrado" });
@@ -74,10 +90,12 @@ const getDeploy = async (req, res) => {
         where: {
             userId,
             projectId: exitProject.id,
-        }
+        },
     });
     if (!userWorkspace) {
-        return res.status(403).json({ message: "Você não tem acesso a este deploy" });
+        return res
+            .status(403)
+            .json({ message: "Você não tem acesso a este deploy" });
     }
     try {
         res.status(200).json(exitDeploy);

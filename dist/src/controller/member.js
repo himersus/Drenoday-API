@@ -3,7 +3,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.removeMember = exports.addMember = void 0;
+exports.listMembers = exports.removeMember = exports.addMember = void 0;
 const uuid_1 = require("uuid");
 const prisma_1 = __importDefault(require("../lib/prisma"));
 const addMember = async (req, res) => {
@@ -121,3 +121,55 @@ const removeMember = async (req, res) => {
     }
 };
 exports.removeMember = removeMember;
+const listMembers = async (req, res) => {
+    const projectId = req.params.projectId;
+    const userId = req.userId;
+    const page = parseInt(req.query.page) || 1;
+    const per_page = parseInt(req.query.per_page) || 10;
+    if (!userId || !(0, uuid_1.validate)(userId)) {
+        return res.status(401).json({ message: "Usuário não autenticado" });
+    }
+    try {
+        const existUserLogado = await prisma_1.default.user.findUnique({
+            where: { id: userId }
+        });
+        if (!existUserLogado) {
+            return res.status(401).json({ message: "Não autorizado" });
+        }
+        const is_member = await prisma_1.default.user_workspace.findFirst({
+            where: {
+                userId: userId,
+                projectId: projectId,
+            },
+        });
+        if (!is_member) {
+            return res.status(403).json({ message: "Apenas membros do projeto podem listar os membros" });
+        }
+        const members = await prisma_1.default.user_workspace.findMany({
+            where: { projectId },
+            include: { user: true },
+        });
+        const formattedMembers = members.map(member => ({
+            id: member.user.id,
+            username: member.user.username,
+            email: member.user.email,
+            role: member.role,
+        }));
+        const totalMembers = await prisma_1.default.user_workspace.count({
+            where: { projectId },
+        });
+        res.status(200).json({
+            data: formattedMembers,
+            meta: {
+                page: page,
+                per_page: per_page,
+                total: totalMembers,
+                total_pages: Math.ceil(totalMembers / per_page),
+            }
+        });
+    }
+    catch (error) {
+        res.status(500).json({ message: "Erro ao listar membros", error: error.message });
+    }
+};
+exports.listMembers = listMembers;

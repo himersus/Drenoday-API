@@ -53,6 +53,8 @@ const schemasUser = __importStar(require("../schemas/user"));
 const schemasWorkspace = __importStar(require("../schemas/workspace"));
 const schemasProject = __importStar(require("../schemas/project"));
 const schemasPlan = __importStar(require("../schemas/plan"));
+const metrics_1 = require("../controller/metrics");
+const environment_1 = require("../controller/environment");
 const router = express_1.default.Router();
 // {{AUTH ROUTES}}
 router.post('/auth/login', (0, validate_1.validate)(schemasUser.loginUserSchema), auth_1.login);
@@ -97,11 +99,18 @@ router.put('/user/update', (0, validate_1.validate)(schemasUser.updateUserSchema
 // {{ Member ROUTES}}
 router.post('/workspace/member/add', (0, validate_1.validate)(schemasWorkspace.addMemberSchema), userAuth_1.verifyAuthentication, member_1.addMember);
 router.delete('/workspace/member/remove', (0, validate_1.validate)(schemasWorkspace.removeMemberSchema), userAuth_1.verifyAuthentication, member_1.removeMember);
+router.get('/workspace/member/list/:projectId', userAuth_1.verifyAuthentication, member_1.listMembers);
 // {{ Project ROUTES}}
 router.post('/project/create', (0, validate_1.validate)(schemasProject.createProjectSchema), userAuth_1.verifyAuthentication, project_1.createProject);
 router.post('/project/run/:projectId', userAuth_1.verifyAuthentication, project_1.runTheProject);
 router.get('/project/each/:projectId', userAuth_1.verifyAuthentication, project_1.getProject);
 router.get('/project/my', userAuth_1.verifyAuthentication, project_1.getMyProjects);
+router.get('/project/metrics/:projectId', userAuth_1.verifyAuthentication, metrics_1.getServiceMetrics);
+router.get('/project/metrics', userAuth_1.verifyAuthentication, metrics_1.getMyGeneralMetrics);
+// {{ ENVIRENETS }}
+router.post("/env/save/:projectId", (0, validate_1.validate)(schemasProject.saveEnvSchema), userAuth_1.verifyAuthentication, environment_1.saveEnvVars);
+router.get("/env/list/:projectId", userAuth_1.verifyAuthentication, environment_1.getEnvVars);
+router.delete("/env/delete/:projectId/:envId", userAuth_1.verifyAuthentication, environment_1.deleteEnvVar);
 router.put('/project/update/:projectId', (0, validate_1.validate)(schemasProject.updateProjectSchema), userAuth_1.verifyAuthentication, project_1.updateProject);
 router.delete('/project/delete/:projectId', userAuth_1.verifyAuthentication, project_1.deleteProject);
 // {{ Deploy ROUTES}}
@@ -125,6 +134,9 @@ router.post('/pay/webhook', payment_1.webhookPayment);
 router.get("/notification/my", userAuth_1.verifyAuthentication, notification_1.myNotifications);
 router.post("/notification/read/:notificationId", userAuth_1.verifyAuthentication, notification_1.markNotificationAsRead);
 router.get("/notification/each/:notificationId", userAuth_1.verifyAuthentication, notification_1.getOneNotification);
+router.get("/metrics/general", userAuth_1.verifyAuthentication, metrics_1.getVpsMetrics);
+router.get('/backoffice/project/list', userAuth_1.verifyAuthentication, project_1.getAllProjects);
+router.get('/backoffice/pay/list', userAuth_1.verifyAuthentication, payment_1.getAllPayments);
 router.get("/cookie/create", github_1.createCookieGitHub);
 router.get("/cookie/read", github_1.readCookieGitHub);
 exports.default = router;

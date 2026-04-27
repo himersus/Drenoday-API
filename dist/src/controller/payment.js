@@ -3,7 +3,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.getPaymentById = exports.getUserPayments = exports.createPayment = exports.confirmPayment = exports.webhookPayment = exports.getAppyPayToken = exports.referenceSendPaymentGateway = void 0;
+exports.getAllPayments = exports.getPaymentById = exports.getUserPayments = exports.createPayment = exports.confirmPayment = exports.webhookPayment = exports.getAppyPayToken = exports.referenceSendPaymentGateway = void 0;
 const uuid_1 = require("uuid");
 const sockets_1 = require("../sockets");
 const axios_1 = __importDefault(require("axios"));
@@ -39,8 +39,8 @@ const referenceSendPaymentGateway = async (req, res) => {
             return res.status(data.code || 400).json({
                 message: data.message || "Erro ao criar referência de pagamento",
                 /*error: data.error || {
-                            message: "Erro desconhecido ao criar referência de pagamento"
-                        }*/
+            message: "Erro desconhecido ao criar referência de pagamento"
+            }*/
             });
         }
         const createPayment = await prisma_1.default.payment.create({
@@ -231,6 +231,12 @@ const confirmPayment = async (req, res) => {
             paymentId: paymentId,
             status: status == "approved" ? "Pago" : "Rejeitado",
         });
+    }
+    catch (error) {
+        console.error(error);
+        return res.status(400).json({ message: "Erro ao confirmar pagamento" });
+    }
+    try {
         const runResponse = await (0, runProject_1.runProject)(existProject.id, existProject.userId);
         await prisma_1.default.project.update({
             where: { id: existProject.id },
@@ -396,3 +402,57 @@ const getPaymentById = async (req, res) => {
     }
 };
 exports.getPaymentById = getPaymentById;
+const getAllPayments = async (req, res) => {
+    const userId = (0, to_string_1.q)(req.userId);
+    const page = parseInt((0, to_string_1.q)(req.query.page)) || 1;
+    const per_page = parseInt((0, to_string_1.q)(req.query.per_page)) || 10;
+    const name_project = (0, to_string_1.q)(req.query.name);
+    // Aceita ?status=PAID ou ?status=PAID&status=PENDING ou ?status=PAID,PENDING
+    const rawStatus = req.query.status;
+    const statusList = rawStatus
+        ? (Array.isArray(rawStatus) ? rawStatus : String(rawStatus).split(","))
+            .map((s) => s.trim())
+            .filter(Boolean)
+        : [];
+    if (!userId || !(0, uuid_1.validate)(userId)) {
+        return res.status(401).json({ message: "Usuário não autenticado" });
+    }
+    const existUser = await prisma_1.default.user.findUnique({
+        where: { id: userId },
+    });
+    if (!existUser) {
+        return res.status(404).json({ message: "Usuário não encontrado" });
+    }
+    try {
+        const where = {
+            userId,
+            status: statusList.length > 0 ? { in: statusList } : undefined,
+            project: name_project
+                ? { name: { contains: name_project, mode: "insensitive" } }
+                : undefined,
+        };
+        const [payments, totalPayments] = await prisma_1.default.$transaction([
+            prisma_1.default.payment.findMany({
+                where,
+                orderBy: { createdAt: "desc" },
+                skip: (page - 1) * per_page,
+                take: per_page,
+            }),
+            prisma_1.default.payment.count({ where }),
+        ]);
+        return res.status(200).json({
+            data: payments,
+            meta: {
+                total: totalPayments,
+                page,
+                per_page,
+                total_pages: Math.ceil(totalPayments / per_page),
+            },
+        });
+    }
+    catch (error) {
+        console.error(error);
+        return res.status(500).json({ message: "Erro ao buscar pagamentos" });
+    }
+};
+exports.getAllPayments = getAllPayments;

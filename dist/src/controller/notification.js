@@ -8,6 +8,8 @@ const prisma_1 = __importDefault(require("../lib/prisma"));
 const uuid_1 = require("uuid");
 const to_string_1 = require("../utils/to_string");
 const myNotifications = async (req, res) => {
+    const page = parseInt((0, to_string_1.q)(req.query.page) || "1");
+    const per_page = parseInt((0, to_string_1.q)(req.query.per_page) || "10");
     const userId = req.userId; // Supondo que o ID do usuário logado esteja disponível em req.userId
     if (!(0, uuid_1.validate)(userId)) {
         return res.status(400).json({ message: "ID do usuário inválido" });
@@ -40,12 +42,27 @@ const myNotifications = async (req, res) => {
             orderBy: {
                 createdAt: 'desc',
             },
+            skip: (page - 1) * per_page,
+            take: per_page,
         });
-        return res.status(200).json(notifications);
+        const totalNotifications = await prisma_1.default.notification.count({
+            where: {
+                userId: userId,
+            },
+        });
+        return res.status(200).json({
+            data: notifications,
+            meta: {
+                page: page,
+                per_page: per_page,
+                total: totalNotifications,
+                total_pages: Math.ceil(totalNotifications / per_page),
+            }
+        });
     }
     catch (error) {
         console.error("Error fetching notifications:", error);
-        return res.status(500).json([]);
+        return res.status(500).json({ message: "Erro ao buscar notificações" });
     }
 };
 exports.myNotifications = myNotifications;

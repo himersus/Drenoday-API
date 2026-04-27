@@ -3,7 +3,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.deleteProject = exports.updateProject = exports.getMyProjects = exports.getProject = exports.stopTheProject = exports.runTheProject = exports.createProject = void 0;
+exports.deleteProject = exports.updateProject = exports.getAllProjects = exports.getMyProjects = exports.getProject = exports.stopTheProject = exports.runTheProject = exports.createProject = void 0;
 const uuid_1 = require("uuid");
 const domain_1 = require("../modify/domain");
 const stopProject_1 = require("../services/stopProject");
@@ -15,6 +15,7 @@ const user_1 = require("../services/user");
 const github_1 = require("../services/github");
 const project_2 = require("../utils/project");
 const github_2 = require("../utils/github");
+const crypt_1 = require("../utils/crypt");
 // {{Create projecto}}
 const createProject = async (req, res) => {
     const { name, description, branch, port, repo_url, environments, default_plan, default_type_payment, period_duration, } = req.body;
@@ -27,6 +28,17 @@ const createProject = async (req, res) => {
         return res
             .status(inputResult.status)
             .json({ message: inputResult.message });
+    }
+    const existThisProjectName = await prisma_1.default.project.findFirst({
+        where: {
+            name: name,
+            userId: userId,
+        },
+    });
+    if (existThisProjectName) {
+        return res.status(400).json({
+            message: "Você já tem um projeto com esse nome, escolha outro nome para o projeto",
+        });
     }
     if (!name) {
         return res.status(400).json({ message: "O nome do projeto é obrigatório" });
@@ -91,14 +103,25 @@ const createProject = async (req, res) => {
                 userId: existUser.id,
                 subdomain: subdomain,
                 domain: `https://${subdomain}.${base_domain}`,
-                environments: environments || [],
                 days,
                 amount_to_pay: amount,
             },
         });
+        const upserts = environments.map(({ key, value }) => prisma_1.default.environment.upsert({
+            where: { projectId_key: { projectId: project.id, key } },
+            update: { value: (0, crypt_1.encryptEnv)(value) },
+            create: { projectId: project.id, key, value: (0, crypt_1.encryptEnv)(value) },
+        }));
+        await prisma_1.default.$transaction(upserts);
         await (0, user_1.createMember)(existUser.id, project.id);
         const deployDir = process.env.DEPLOY_DIR;
         const targetPath = `${deployDir}/${existUser.username}/${project.subdomain}`;
+        if (!project.path) {
+            await prisma_1.default.project.update({
+                where: { id: project.id },
+                data: { path: (0, crypt_1.encryptEnv)(targetPath) },
+            });
+        }
         (0, github_1.cloneRepository)((0, github_1.buildCloneUrl)(project.repo_url, token), targetPath, project.branch, project.id);
         return res.status(201).json({ ...project, paid: false });
     }
@@ -231,7 +254,9 @@ const getProject = async (req, res) => {
         const deploy = {
             commit_msg: lastCommit.message || "unknown",
             commit_branch: project.branch,
+            commit_author: lastCommit.author || "unknown",
             status: project.deploy[0]?.status || "unknown",
+            commit_avatar_url: lastCommit.avatar_url || null,
         };
         return res.status(200).json({
             ...project,
@@ -288,7 +313,9 @@ const getMyProjects = async (req, res) => {
             const deploy = {
                 commit_msg: lastCommit.message || "unknown",
                 commit_branch: project.branch,
+                commit_author: lastCommit.author || "unknown",
                 status: project.deploy[0]?.status || "unknown",
+                commit_avatar_url: lastCommit.avatar_url || null,
             };
             return {
                 ...project,
@@ -312,12 +339,84 @@ const getMyProjects = async (req, res) => {
     }
 };
 exports.getMyProjects = getMyProjects;
+const getAllProjects = async (req, res) => {
+    const userId = req.userId;
+    const page = parseInt(req.query.page) || 1;
+    const limit = parseInt(req.query.per_page) || 10;
+    const skip = (page - 1) * limit;
+    const name = req.query.name;
+    if (!userId || !(0, uuid_1.validate)(userId)) {
+        return res.status(401).json({ message: "Usuário não autenticado" });
+    }
+    try {
+        const existUser = await prisma_1.default.user.findUnique({
+            where: { id: userId },
+        });
+        if (!existUser) {
+            return res.status(404).json({ message: "Usuário não encontrado" });
+        }
+        const where = {
+            userId,
+            name: name ? { contains: name, mode: "insensitive" } : undefined,
+        };
+        const [projects, total] = await Promise.all([
+            prisma_1.default.project.findMany({
+                where,
+                include: {
+                    deploy: {
+                        orderBy: { createdAt: "desc" },
+                        take: 1,
+                    },
+                },
+                skip,
+                take: limit,
+                orderBy: { createdAt: "desc" },
+            }),
+            prisma_1.default.project.count({ where }),
+        ]);
+        const now = new Date();
+        const projectsWithPaymentStatus = await Promise.all(projects.map(async (project) => {
+            const lastCommit = await (0, github_2.getLastCommitFromBranch)(project.repo_url, project.branch, existUser.github_token);
+            const deploy = {
+                commit_msg: lastCommit.message || "unknown",
+                commit_branch: project.branch,
+                commit_author: lastCommit.author || "unknown",
+                status: project.deploy[0]?.status || "unknown",
+                commit_avatar_url: lastCommit.avatar_url || null,
+            };
+            return {
+                ...project,
+                paid: !!(project.date_expire && project.date_expire > now),
+                deploy: deploy,
+            };
+        }));
+        res.status(200).json({
+            data: projectsWithPaymentStatus,
+            meta: {
+                page,
+                per_page: limit,
+                total_pages: Math.ceil(total / limit),
+            },
+        });
+    }
+    catch (error) {
+        console.error("[getAllProjects]", error);
+        res.status(500).json({ message: "Falha ao recuperar projetos" });
+    }
+};
+exports.getAllProjects = getAllProjects;
 const updateProject = async (req, res) => {
     const projectId = (0, to_string_1.q)(req.params.projectId);
-    const { name, description, environments } = req.body;
+    const { name, description, branch, port } = req.body;
     const userId = req.userId;
     if (!(0, uuid_1.validate)(projectId) || !(0, uuid_1.validate)(userId)) {
         return res.status(400).json({ message: "ID inválido" });
+    }
+    const inputResult = (0, project_1.validateUserInput)(port, undefined);
+    if (!inputResult.valid) {
+        return res
+            .status(inputResult.status)
+            .json({ message: inputResult.message });
     }
     try {
         const project = await prisma_1.default.project.findUnique({
@@ -348,17 +447,35 @@ const updateProject = async (req, res) => {
                     return res.status(400).json({ message: "O plano escolhido não está disponível, por favor escolha outro" });
                 }
             }*/
+        const existThisProjectName = await prisma_1.default.project.findFirst({
+            where: {
+                name: name,
+                userId: userId,
+                NOT: { id: projectId },
+            },
+        });
+        if (existThisProjectName) {
+            return res.status(400).json({
+                message: "Você já tem um projeto com esse nome, escolha outro nome para o projeto",
+            });
+        }
         const updatedProject = await prisma_1.default.project.update({
             where: { id: projectId },
             data: {
                 name: name || project.name,
                 description: description || project.description,
-                default_plan: "default",
-                environments: environments || project.environments,
-                //port: port || project.port, // carece de logica para validar se a porta é diferente e se é válida, caso seja diferente da porta atual, tem de verificar se a nova porta está disponível
-                // branch: branch || project.branch, // carece de lógica para verificar se a branch é diferente e se existe no repositório
+                port: port || project.port, // carece de logica para validar se a porta é diferente e se é válida, caso seja diferente da porta atual, tem de verificar se a nova porta está disponível
+                branch: branch || project.branch, // carece de lógica para verificar se a branch é diferente e se existe no repositório
             },
         });
+        if ((branch && branch !== project.branch) ||
+            (port && port !== project.port)) {
+            await (0, runProject_1.runProject)(projectId, userId);
+            await prisma_1.default.project.update({
+                where: { id: projectId },
+                data: { repo_saved: true },
+            });
+        }
         res.status(200).json(updatedProject);
     }
     catch (error) {

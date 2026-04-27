@@ -6,6 +6,7 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.stopProject = stopProject;
 const child_process_1 = require("child_process");
 const prisma_1 = __importDefault(require("../lib/prisma"));
+const crypt_1 = require("../utils/crypt");
 async function stopProject(projectId, userId) {
     const project = await prisma_1.default.project.findFirst({
         where: { id: projectId },
@@ -33,11 +34,21 @@ async function stopProject(projectId, userId) {
     }
     const deployDir = process.env.DEPLOY_DIR;
     const targetPath = `${deployDir}/${existUser.username}/${project.subdomain}`;
-    (0, child_process_1.exec)("docker-compose down", { cwd: targetPath }, async (error, stdout, stderr) => {
+    if (!project.path) {
+        await prisma_1.default.project.update({
+            where: { id: project.id },
+            data: { path: (0, crypt_1.encryptEnv)(targetPath) },
+        });
+    }
+    (0, child_process_1.exec)("docker-compose down --rmi all --volumes", { cwd: targetPath }, async (error, stdout, stderr) => {
         if (error) {
             console.error(`[docker error]: ${stderr}`);
             return;
         }
+        await prisma_1.default.project.update({
+            where: { id: projectId },
+            data: { run_status: false },
+        });
         console.log(`[docker]: ${stdout}`);
     });
     return {

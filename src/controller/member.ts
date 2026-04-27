@@ -171,12 +171,12 @@ export const listMembers = async (req: Request | any, res: Response) => {
 
         const members = await prisma.user_workspace.findMany({
             where: { projectId },
-            include: { User: true },
+            include: { user: true },
         });
         const formattedMembers = members.map(member => ({
-            id: member.User.id,
-            username: member.User.username,
-            email: member.User.email,
+            id: member.user.id,
+            username: member.user.username,
+            email: member.user.email,
             role: member.role,
         }));
 

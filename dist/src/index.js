@@ -25,24 +25,24 @@ app.use((0, cors_1.default)({
     origin: [
         "http://localhost:5500",
         "http://localhost:3000",
-        "https://drenoday.enor.tech"
+        "https://drenoday.enor.tech",
     ],
-    credentials: true
+    credentials: true,
 }));
 app.use(express_1.default.json());
 app.use((0, cookie_parser_1.default)());
 // CONFIGURAR SESSÃO
 app.use(passport_1.default.initialize());
-app.get('/', (req, res) => {
-    res.send('Welcome to drenoday API!');
+app.get("/", (req, res) => {
+    res.send("Welcome to drenoday API!");
 });
 app.get("/cookie", (req, res) => {
     res.json(req.cookies);
 });
-app.use('/api/v1', apiRouter_1.default);
+app.use("/api/v1", apiRouter_1.default);
 httpServer.listen(port, "0.0.0.0", () => {
     console.log(`Server is running on http://0.0.0.0:${port}`);
 });
 /*httpServer.listen(port, () => {
     console.log(`Server is running on port ${port}`);
-});*/ 
+});*/

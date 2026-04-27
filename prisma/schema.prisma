@@ -14,7 +14,7 @@ model user {
   password        String?          @default("")
   confirm_code    String?
   avatar          String?
-  roleuser        roleuser         @default(user)
+  roleUser        roleUser         @default(user)
   github_token    String?
   github_username String?
   github_id       String?
@@ -204,7 +204,7 @@ enum methodMerchant {
   proof
 }
 
-enum roleuser {
+enum roleUser {
   admin
   user
 }

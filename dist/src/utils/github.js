@@ -45,7 +45,8 @@ async function getLastCommitFromBranch(repoUrl, branch, github_token) {
         author: commit.commit.author?.name ?? "Desconhecido",
         email: commit.commit.author?.email ?? null,
         date: commit.commit.author?.date,
-        url: commit.html_url
+        url: commit.html_url,
+        avatar_url: commit.author?.avatar_url ?? null
     };
 }
 async function repositoryUsesDocker(owner, repo, githubToken) {

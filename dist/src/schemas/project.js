@@ -3,7 +3,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.updateProjectSchema = exports.createProjectSchema = void 0;
+exports.saveEnvSchema = exports.updateProjectSchema = exports.createProjectSchema = void 0;
 const zod_1 = __importDefault(require("zod"));
 const client_1 = require("@prisma/client");
 exports.createProjectSchema = zod_1.default.object({
@@ -28,7 +28,7 @@ exports.createProjectSchema = zod_1.default.object({
     repo_url: zod_1.default
         .string("A URL do repositório é obrigatória")
         .url("A URL do repositório deve ser uma URL válida"),
-    environments: zod_1.default.array(zod_1.default.string()).optional(),
+    environments: zod_1.default.array(zod_1.default.object({ key: zod_1.default.string("A chave do ambiente é obrigatória"), value: zod_1.default.string("O valor do ambiente é obrigatório e deve ser uma string") })).optional(),
     default_plan: zod_1.default
         .string("O plano padrão é obrigatório")
         .min(3, "O plano padrão deve conter pelo menos 3 caracteres"),
@@ -59,5 +59,11 @@ exports.updateProjectSchema = zod_1.default.object({
         .int("A duração do período deve ser um número inteiro")
         .positive("A duração do período deve ser um número positivo")
         .optional(),
-    environments: zod_1.default.array(zod_1.default.string()).optional(),
+    environments: zod_1.default.array(zod_1.default.object({ key: zod_1.default.string(), value: zod_1.default.string() })).optional(),
+});
+exports.saveEnvSchema = zod_1.default.object({
+    environments: zod_1.default.array(zod_1.default.object({
+        key: zod_1.default.string("A chave do ambiente é obrigatória"),
+        value: zod_1.default.string("O valor do ambiente é obrigatório e deve ser uma string"),
+    })),
 });

@@ -40,10 +40,10 @@ const createUser = async (req, res) => {
                 username: username,
             }
         });
-        res.status(201).json(user);
+        return res.status(201).json(user);
     }
     catch (error) {
-        res.status(500).json({ message: "Failed to create user" });
+        return res.status(500).json({ message: "Failed to create user" });
     }
 };
 exports.createUser = createUser;
