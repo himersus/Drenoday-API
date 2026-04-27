@@ -14,7 +14,7 @@ model user {
   password        String?          @default("")
   confirm_code    String?
   avatar          String?
-  roleUser        roleUser         @default(user)
+  roleuser        roleuser         @default(user)
   github_token    String?
   github_username String?
   github_id       String?
@@ -37,7 +37,7 @@ model user_workspace {
   status    statusSolicitation @default(pending)
   createdAt DateTime           @default(now())
   updatedAt DateTime           @updatedAt
-  User      user               @relation(fields: [userId], references: [id])
+  user      user               @relation(fields: [userId], references: [id])
   Project   project?           @relation(fields: [projectId], references: [id])
 }
 
@@ -78,7 +78,7 @@ model project {
   payments             payment[]
   deploy               deploy[]
   user_workspace       user_workspace[]
-  User                 user             @relation(fields: [userId], references: [id])
+  user                 user             @relation(fields: [userId], references: [id])
   environment          environment[]
 }
 
@@ -135,7 +135,7 @@ model payment {
   createdAt     DateTime       @default(now())
   updatedAt     DateTime       @updatedAt
   project       project        @relation(fields: [projectId], references: [id])
-  User          user           @relation(fields: [userId], references: [id])
+  user          user           @relation(fields: [userId], references: [id])
   Plan          plan           @relation(fields: [planId], references: [id], onDelete: SetDefault)
 }
 
@@ -165,7 +165,7 @@ model notification {
   read      Boolean  @default(false)
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
-  User      user     @relation(fields: [userId], references: [id])
+  user      user     @relation(fields: [userId], references: [id])
 }
 
 enum Provider {
@@ -204,7 +204,7 @@ enum methodMerchant {
   proof
 }
 
-enum roleUser {
+enum roleuser {
   admin
   user
 }
