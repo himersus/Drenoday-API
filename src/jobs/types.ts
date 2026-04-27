@@ -3,7 +3,7 @@ export type ExpiredProject = {
   subdomain: string;
   path: string;
   date_expire: Date | null;
-  user: {
+  User: {
     id: string;
     email: string;
     name: string;

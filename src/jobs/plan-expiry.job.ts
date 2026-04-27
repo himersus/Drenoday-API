@@ -31,7 +31,7 @@ const stopExpiredProjects = async () => {
         subdomain: true,
         path: true, // caminho do docker-compose
         date_expire: true,
-        user: {
+        User: {
           select: {
             id: true,
             email: true,
@@ -51,12 +51,12 @@ const stopExpiredProjects = async () => {
     );
 
     for (const p of expiredProjects as ExpiredProject[]) {
-      const existing = userMap.get(p.user.id);
+      const existing = userMap.get(p.User.id);
       if (existing) {
         existing.projects.push(p);
       } else {
-        userMap.set(p.user.id, {
-          user: p.user,
+        userMap.set(p.User.id, {
+          user: p.User,
           projects: [p],
         });
       }
@@ -85,7 +85,7 @@ const stopExpiredProjects = async () => {
 
               await prisma.notification.create({
                 data: {
-                  userId: project.user.id,
+                  userId: project.User.id,
                   title: "Plano Expirado",
                   message: `O plano do seu projeto '${project.subdomain}' expirou e ele foi parado. Entre em contato para renovar ou atualizar seu plano.`,
                   type: "warning",
@@ -93,10 +93,10 @@ const stopExpiredProjects = async () => {
               });
 
               await sendEmailWhenPlanExpires(
-                project.user.email,
-                project.user.name,
+                project.User.email,
+                project.User.name,
                 "Plano Expirado - Projeto Parado",
-                `Olá ${project.user.name},\n\nO plano do seu projeto '${project.subdomain}' expirou e ele foi parado automaticamente. Para continuar usando nossos serviços, por favor, renove ou atualize seu plano.\n\nAtenciosamente,\nEquipe DrenoDay`,
+                `Olá ${project.User.name},\n\nO plano do seu projeto '${project.subdomain}' expirou e ele foi parado automaticamente. Para continuar usando nossos serviços, por favor, renove ou atualize seu plano.\n\nAtenciosamente,\nEquipe DrenoDay`,
               );
 
               console.log(
@@ -133,7 +133,7 @@ const warnExpiringProjects = async () => {
         subdomain: true,
         path: true,
         date_expire: true,
-        user: {
+        User: {
           select: {
             id: true,
             email: true,
@@ -157,11 +157,11 @@ const warnExpiringProjects = async () => {
     }>();
 
     for (const project of expiringProjects as ExpiredProject[]) {
-      const existing = userMap.get(project.user.id);
+      const existing = userMap.get(project.User.id);
       if (existing) {
         existing.projects.push(project);
       } else {
-        userMap.set(project.user.id, { user: project.user, projects: [project] });
+        userMap.set(project.User.id, { user: project.User, projects: [project] });
       }
     }
 
