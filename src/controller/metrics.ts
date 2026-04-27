@@ -18,6 +18,19 @@ const dockerExec = async (
   return stdout.trim();
 };
 
+const getContainerUptime = async (containerName: string): Promise<number> => {
+  const { stdout } = await execFileAsync("docker", [
+    "inspect",
+    "--format",
+    "{{.State.StartedAt}}",
+    containerName,
+  ]);
+
+  const startedAt = new Date(stdout.trim());
+  const uptimeSeconds = (Date.now() - startedAt.getTime()) / 1000;
+  return uptimeSeconds;
+};
+
 const isContainerRunning = async (containerName: string): Promise<boolean> => {
   try {
     const { stdout } = await execFileAsync("docker", [
@@ -111,7 +124,7 @@ export const getServiceMetrics = async (req: Request | any, res: Response) => {
       ]),
 
       // Uptime via /proc/uptime
-      dockerExec(serviceName, ["cat", "/proc/uptime"]),
+      getContainerUptime(serviceName),
 
       // Latência do exec
       (async () => {
@@ -128,7 +141,7 @@ export const getServiceMetrics = async (req: Request | any, res: Response) => {
     const [usedMB, totalMB, memPercent] = memRaw.split(" ").map(parseFloat);
 
     // Processa Uptime
-    const uptimeSeconds = parseFloat(uptimeRaw.split(" ")[0]);
+    const uptimeSeconds = uptimeRaw;
 
     return res.status(200).json({
       service: serviceName,
