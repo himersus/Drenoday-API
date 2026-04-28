@@ -32,6 +32,7 @@ const login = async (req, res) => {
             is_active: user.is_active,
             username: user.username,
             email: user.email,
+            roleUser: user.roleUser,
             provider: user.provider,
         };
         const token = jsonwebtoken_1.default.sign(payload, process.env.JWT_SECRET, {
@@ -129,6 +130,7 @@ const loginWithEmail = async (req, res) => {
             is_active: user.is_active,
             username: user.username,
             email: user.email,
+            roleUser: user.roleUser,
             provider: user.provider,
         };
         const token = jsonwebtoken_1.default.sign(payload, process.env.JWT_SECRET, {
@@ -201,6 +203,7 @@ const loginGitHub = async (req, res) => {
         is_active: existUserDB?.is_active,
         username: existUserDB?.username,
         email: existUserDB?.email,
+        roleUser: existUserDB?.roleUser,
         provider: "github",
     };
     const tokenUser = jsonwebtoken_1.default.sign(payload, process.env.JWT_SECRET, {
@@ -273,6 +276,7 @@ const loginGoogle = async (req, res) => {
         username: userInDb?.username,
         email: userInDb?.email,
         provider: "google",
+        roleUser: userInDb?.roleUser,
     };
     const token = jsonwebtoken_1.default.sign(payload, process.env.JWT_SECRET, {
         expiresIn: "1d",

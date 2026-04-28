@@ -32,6 +32,7 @@ export const login = async (req: Request, res: Response) => {
       is_active: user.is_active,
       username: user.username,
       email: user.email,
+      roleUser : user.roleUser,
       provider: user.provider,
     };
 
@@ -151,6 +152,7 @@ export const loginWithEmail = async (req: Request, res: Response) => {
       is_active: user.is_active,
       username: user.username,
       email: user.email,
+      roleUser : user.roleUser,
       provider: user.provider,
     };
 
@@ -246,6 +248,7 @@ export const loginGitHub = async (req: Request | any, res: Response) => {
     is_active: existUserDB?.is_active,
     username: existUserDB?.username,
     email: existUserDB?.email,
+    roleUser : existUserDB?.roleUser,
     provider: "github",
   };
 
@@ -338,6 +341,7 @@ export const loginGoogle = async (req: Request | any, res: Response) => {
     username: userInDb?.username,
     email: userInDb?.email,
     provider: "google",
+    roleUser: userInDb?.roleUser,
   };
 
   const token = jwt.sign(payload, process.env.JWT_SECRET as string, {
